@@ -1,0 +1,3 @@
+com\example\backend\dto\LoginRequest.class
+com\example\backend\dto\RegisterRequest.class
+com\example\backend\BackendApplication.class

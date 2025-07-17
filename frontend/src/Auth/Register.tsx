@@ -1,50 +1,45 @@
 import React, { useState } from "react";
-import "../Auth.css";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+import "../styles/auth.css";
 
 const Register: React.FC = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
     try {
-      const res = await fetch("http://localhost:8088/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userName, password, email }),
+      const res = await axios.post("http://localhost:8088/api/auth/register", {
+        username,
+        email,
+        password,
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Błąd rejestracji");
-      }
-      setMessage("Rejestracja zakończona sukcesem! Możesz się zalogować.");
-    } catch (err: any) {
-      setError(err.message || "Błąd rejestracji");
+      localStorage.setItem("token", String(res.data));
+      navigate("/login");
+    } catch (err) {
+      alert("Rejestracja nie powiodła się");
     }
   };
 
   return (
     <div className="center-container">
       <h2>Rejestracja</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleRegister}>
+        <input
+          type="text"
+          placeholder="Nazwa użytkownika"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Nazwa użytkownika"
-          value={userName}
-          onChange={(e) => setUserName(e.target.value)}
           required
         />
         <input
@@ -54,14 +49,11 @@ const Register: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-
-        <button type="submit">Zarejestruj</button>
+        <button type="submit">Zarejestruj się</button>
       </form>
-      {message && <div style={{ color: "green" }}>{message}</div>}
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      <div>
-        Masz już konto? <a href="/login">Zaloguj się</a>
-      </div>
+      <p style={{ marginTop: "1rem" }}>
+        Masz już konto? <Link to="/login">Zaloguj się</Link>
+      </p>
     </div>
   );
 };

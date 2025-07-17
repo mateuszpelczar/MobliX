@@ -1,41 +1,36 @@
 import React, { useState } from "react";
-import "../Auth.css";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+import "../styles/auth.css";
 
-interface LoginProps {
-  onLogin: (jwt: string) => void;
-}
-
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [userName, setUserName] = useState("");
+const Login: React.FC = () => {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     try {
-      const res = await fetch("http://localhost:8088/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userName, password }),
+      const res = await axios.post("http://localhost:8088/api/auth/login", {
+        email,
+        password,
       });
-      if (!res.ok) throw new Error("Błędny login lub hasło");
-      const jwt = await res.text();
-      onLogin(jwt);
-    } catch (err: any) {
-      setError(err.message || "Błąd logowania");
+      localStorage.setItem("token", String(res.data));
+      navigate("/main");
+    } catch (err) {
+      alert("Błędne dane logowania");
     }
   };
 
   return (
     <div className="center-container">
       <h2>Logowanie</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleLogin}>
         <input
-          type="text"
-          placeholder="Nazwa użytkownika"
-          value={userName}
-          onChange={(e) => setUserName(e.target.value)}
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
@@ -47,10 +42,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         />
         <button type="submit">Zaloguj</button>
       </form>
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      <div>
-        Nie masz konta? <a href="/register">Zarejestruj się</a>
-      </div>
+      <p style={{ marginTop: "1rem" }}>
+        Nie masz konta? <Link to="/register">Zarejestruj się</Link>
+      </p>
     </div>
   );
 };
