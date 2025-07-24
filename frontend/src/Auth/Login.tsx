@@ -16,6 +16,8 @@ const Login: React.FC = () => {
         password,
       });
       localStorage.setItem("token", String(res.data));
+      const data = res.data as { role: string };
+      localStorage.setItem("role", String(data.role));
       navigate("/main");
     } catch (err) {
       alert("Błędne dane logowania");

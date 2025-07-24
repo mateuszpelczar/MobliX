@@ -1,20 +1,16 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainPanel from "./components/MainPanel";
+import AdminPanel from "./components/AdminPanel";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
 import PrivateRoute from "./routes/PrivateRoutes";
 
-function App() {
+const App: React.FC = () => {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        {/* Przekierowanie z / na /login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
+
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -26,9 +22,20 @@ function App() {
             </PrivateRoute>
           }
         />
+
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute requiredRole="ADMIN">
+              <AdminPanel />
+            </PrivateRoute>
+          }
+        />
+
+        <Route path="/unauthorized" element={<h2>Brak dostępu</h2>} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
-}
+};
 
 export default App;

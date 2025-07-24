@@ -1,6 +1,8 @@
 C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\StaffController.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LoginRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Ad.java
@@ -36,6 +38,8 @@ C:\MobliX\backend\src\main\java\com\example\backend\repository\TransactionReposi
 C:\MobliX\backend\src\main\java\com\example\backend\repository\UserRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\security\CustomUserDetails.java
 C:\MobliX\backend\src\main\java\com\example\backend\security\JwtAuthenticationFilter.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\AdminService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\StaffService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java
