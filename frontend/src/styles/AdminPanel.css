@@ -1,21 +1,12 @@
+/* Admin Panel styles */
+.admin-container {
+  @apply p-8;
+}
+
 .main-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
+  @apply fixed inset-0 flex flex-col justify-center items-center z-10;
 }
 
 .main-buttons {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  gap: 1rem;
-  z-index: 20;
+  @apply absolute top-4 right-4 flex gap-4 z-20;
 }

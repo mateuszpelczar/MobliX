@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -14,55 +18,138 @@
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  @apply font-medium text-blue-500 no-underline;
 }
+
 a:hover {
-  color: #535bf2;
+  @apply text-blue-600;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply m-0 p-0;
+  background: linear-gradient(90deg, #8b5cf6 0%, #0f172a 100%);
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  @apply text-5xl leading-tight;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+  @apply rounded-lg border border-transparent px-5 py-2.5 text-base font-medium bg-gray-800 cursor-pointer transition-colors duration-300;
 }
+
 button:hover {
-  border-color: #646cff;
+  @apply border-blue-500;
 }
+
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  @apply outline-2 outline-blue-500 outline-offset-2;
+}
+
+/* Global panel layout styles */
+.panel-layout {
+  @apply relative h-screen w-full;
+}
+
+.panel-header {
+  @apply absolute top-0 left-0 right-0 h-20 bg-white z-50;
+}
+
+.panel-logo {
+  @apply absolute top-4 left-4 font-bold text-4xl text-black;
+}
+
+.panel-buttons {
+  @apply absolute top-4 right-4 flex gap-4;
+}
+
+.panel-button {
+  @apply bg-white text-gray-900 border border-gray-300 rounded-md px-4 py-2 font-medium cursor-pointer hover:bg-gray-50 transition-colors shadow-md;
+}
+
+.panel-search-bar {
+  @apply absolute top-20 left-0 right-0 h-16 bg-black z-40;
+}
+
+.panel-content {
+  @apply flex flex-col justify-center items-center h-full w-full pt-20 pb-32;
+  background: linear-gradient(90deg, #8b5cf6 0%, #0f172a 100%);
+}
+
+.panel-content-with-search {
+  @apply flex flex-col justify-center items-center h-full w-full pt-36 pb-32;
+  background: linear-gradient(90deg, #8b5cf6 0%, #0f172a 100%);
+}
+
+.panel-footer {
+  @apply absolute bottom-0 left-0 right-0 h-24 bg-white z-50;
+}
+
+/* Global account dropdown styles */
+.account-dropdown-button {
+  @apply bg-white text-gray-900 border border-gray-300 rounded-md px-4 py-2 font-medium cursor-pointer hover:bg-gray-50 transition-colors shadow-md flex items-center gap-2;
+}
+
+.dropdown-menu {
+  @apply absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200;
+}
+
+.dropdown-item {
+  @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100;
+}
+
+.dropdown-button {
+  @apply block w-full text-left px-4 py-2 text-sm text-gray-900 bg-white;
+}
+
+.dropdown-logout {
+  @apply block w-full text-left px-4 py-2 text-sm text-red-600 bg-white;
+}
+
+/* Search bar styles */
+.search-bar-container {
+  @apply flex items-center justify-between h-full px-6;
+}
+
+.search-icons {
+  @apply flex items-center gap-4;
+}
+
+.search-icon {
+  @apply w-6 h-6 filter brightness-0 invert;
+}
+
+.search-input-container {
+  @apply flex-1 max-w-md mx-auto;
+}
+
+.search-input {
+  @apply w-full px-4 py-2 rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-purple-500;
+}
+
+.voivodeship-button {
+  @apply bg-purple-600 text-white px-4 py-2 rounded-lg font-medium cursor-pointer hover:bg-purple-700 transition-colors flex items-center gap-2;
+}
+
+.voivodeship-dropdown {
+  @apply absolute right-6 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200 max-h-64 overflow-y-auto;
+}
+
+.voivodeship-item {
+  @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    @apply text-gray-800 bg-white;
   }
+
   a:hover {
-    color: #747bff;
+    @apply text-blue-600;
   }
+
   button {
-    background-color: #f9f9f9;
+    @apply bg-gray-100;
   }
 }

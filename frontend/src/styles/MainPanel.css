@@ -1,21 +1,35 @@
-.main-buttons {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  gap: 1rem;
-  z-index: 20;
+/* Main layout */
+.main-layout {
+  @apply relative h-screen;
 }
 
+/* Top buttons in right corner */
+.top-buttons {
+  @apply absolute top-4 right-4 flex gap-4 z-20;
+}
+
+/* Logo in top left */
+.logo-container {
+  @apply absolute top-4 left-4 z-20;
+}
+
+.main-logo {
+  @apply font-bold text-4xl text-black;
+}
+
+.main-button {
+  @apply bg-white text-gray-900 border border-gray-300 rounded-md px-4 py-2 font-medium cursor-pointer hover:bg-gray-50 transition-colors;
+}
+
+/* Main content centered on screen */
 .main-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
+  @apply flex flex-col justify-center items-center h-full;
+}
+
+.main-title {
+  @apply text-3xl font-bold text-gray-900 mb-4;
+}
+
+.main-description {
+  @apply text-gray-600 text-lg;
 }

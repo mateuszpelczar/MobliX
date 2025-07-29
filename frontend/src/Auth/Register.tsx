@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import "../styles/auth.css";
+import "../styles/Auth.css";
 
 const Register: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -51,7 +51,7 @@ const Register: React.FC = () => {
         />
         <button type="submit">Zarejestruj się</button>
       </form>
-      <p style={{ marginTop: "1rem" }}>
+      <p className="auth-link">
         Masz już konto? <Link to="/login">Zaloguj się</Link>
       </p>
     </div>
