@@ -1,3 +1,15 @@
 com\example\backend\dto\LoginRequest.class
-com\example\backend\dto\RegisterRequest.class
+com\example\backend\dto\LogEntryDto$LogEntryDtoBuilder.class
+com\example\backend\dto\RaportDto.class
 com\example\backend\BackendApplication.class
+com\example\backend\dto\SystemContentDto.class
+com\example\backend\dto\UserRoleChangeRequest.class
+com\example\backend\dto\StatisticDto.class
+com\example\backend\dto\RaportDto$RaportDtoBuilder.class
+com\example\backend\dto\StatisticDto$StatisticDtoBuilder.class
+com\example\backend\dto\CategoryDto.class
+com\example\backend\dto\CategoryDto$CategoryDtoBuilder.class
+com\example\backend\dto\RegisterRequest.class
+com\example\backend\dto\UserRoleChangeRequest$UserRoleChangeRequestBuilder.class
+com\example\backend\dto\LogEntryDto.class
+com\example\backend\dto\SystemContentDto$SystemContentDtoBuilder.class

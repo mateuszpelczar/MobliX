@@ -22,4 +22,8 @@ public class Log {
 
     @ManyToOne
     private User user;
+
+    public String getMessage() {
+        return action;
+    }
 }

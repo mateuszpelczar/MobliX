@@ -32,4 +32,8 @@ public class Report {
 
     @ManyToOne
     private Ad ad;
+
+    public String getDescription() {
+        return reason;
+    }
 }

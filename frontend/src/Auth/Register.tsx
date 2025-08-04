@@ -25,35 +25,50 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="center-container">
-      <h2>Rejestracja</h2>
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="Nazwa użytkownika"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Hasło"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Zarejestruj się</button>
-      </form>
-      <p className="auth-link">
-        Masz już konto? <Link to="/login">Zaloguj się</Link>
-      </p>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-[#191929]">
+      <div className="bg-white rounded-2xl shadow-2xl p-12 w-full max-w-md flex flex-col gap-8">
+        <h2 className="text-3xl font-bold text-gray-800 text-center mb-6">
+          Rejestracja
+        </h2>
+        <form onSubmit={handleRegister} className="flex flex-col gap-6">
+          <input
+            type="text"
+            placeholder="Nazwa użytkownika"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+          />
+          <input
+            type="password"
+            placeholder="Hasło"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+          />
+          <button
+            type="submit"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium text-lg shadow-lg transition-colors w-full"
+          >
+            Zarejestruj się
+          </button>
+        </form>
+        <p className="text-center text-gray-600 text-sm">
+          Masz już konto?{" "}
+          <Link to="/login" className="text-purple-600 hover:underline">
+            Zaloguj się
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };

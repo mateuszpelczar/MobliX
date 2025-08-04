@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainPanel from "./components/MainPanel";
 import AdminPanel from "./components/AdminPanel";
+import UserPanel from "./components/UserPanel";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
 import PrivateRoute from "./routes/PrivateRoutes";
@@ -32,6 +33,7 @@ const App: React.FC = () => {
           }
         />
 
+        <Route path="/userpanel" element={<UserPanel />} />
         <Route path="/unauthorized" element={<h2>Brak dostępu</h2>} />
       </Routes>
     </BrowserRouter>

@@ -1,24 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 
-const AdminPanel: React.FC = () => {
-  const navigate = useNavigate();
+const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-    setIsDropdownOpen(false);
-  };
-
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  // No dropdown logic needed for UserPanel header
   return (
     <div className="panel-layout">
       {/* White header bar at top */}
       <div className="panel-header">
-        {/* Logo in top left */}
         <div className="panel-logo">MobliX</div>
-        {/* Account dropdown in top right corner */}
         <div className="panel-buttons">
           <div className="relative" ref={dropdownRef}>
             <button
@@ -60,7 +50,14 @@ const AdminPanel: React.FC = () => {
                   <a href="#" className="dropdown-item">
                     Ustawienia
                   </a>
-                  <button onClick={handleLogout} className="dropdown-logout">
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("token");
+                      window.location.href = "/";
+                    }}
+                    className="dropdown-logout"
+                  >
                     Wyloguj
                   </button>
                 </div>
@@ -69,28 +66,39 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* Main content with large white box and admin buttons */}
+
+      {/* Main content with large white box and user buttons */}
       <div className="panel-content flex justify-center items-center min-h-[600px]">
         <div className="bg-white rounded-2xl shadow-2xl p-16 w-full max-w-5xl flex flex-col gap-10">
           <div className="grid grid-cols-2 gap-8">
-            <button className="admin-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
-              Zarządzaj kontami
+            <button className="user-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Wiadomości
             </button>
-            <button className="admin-btn bg-purple-500 hover:bg-purple-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+            <button className="user-btn bg-purple-500 hover:bg-purple-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Zarządzaj ogłoszeniem
+            </button>
+            <button className="user-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Przeglądaj historię transakcji
+            </button>
+            <button className="user-btn bg-pink-500 hover:bg-pink-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Dodaj ogłoszenie
+            </button>
+            <button className="user-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
               Edytuj ogłoszenie
             </button>
-            <button className="admin-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
-              Logi systemowe
+            <button className="user-btn bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Edytuj dane profilowe
             </button>
-            <button className="admin-btn bg-pink-500 hover:bg-pink-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
-              Zarządzaj treściami systemowymi
+            <button className="user-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Powiadomienia
             </button>
-            <button className="admin-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg col-span-2">
-              Wyświetl / Generuj raporty
+            <button className="user-btn bg-teal-500 hover:bg-teal-600 text-white font-semibold py-6 px-8 rounded-xl shadow-md transition-colors text-lg">
+              Obserwowane przedmioty
             </button>
           </div>
         </div>
       </div>
+
       {/* White footer bar at bottom */}
       <div className="panel-footer">
         <div className="flex justify-center items-center h-full gap-8 text-sm">
@@ -136,4 +144,4 @@ const AdminPanel: React.FC = () => {
   );
 };
 
-export default AdminPanel;
+export default UserPanel;
