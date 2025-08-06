@@ -17,6 +17,27 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Responsive layout helpers */
+.panel-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-footer {
+  background-color: white;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
 a {
   @apply font-medium text-blue-500 no-underline;
 }

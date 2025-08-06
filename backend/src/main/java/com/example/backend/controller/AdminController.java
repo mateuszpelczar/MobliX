@@ -3,80 +3,44 @@ package com.example.backend.controller;
 import com.example.backend.dto.*;
 import com.example.backend.service.AdminService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Repeatable;
 import java.util.List;
-
 
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     private final AdminService adminService;
 
     public AdminController(AdminService adminService){
-        this.adminService=adminService;
+        this.adminService = adminService;
     }
 
-
-    @GetMapping("/raports")
-    public ResponseEntity<List<RaportDto>> getAllRaports(){
-        return ResponseEntity.ok(adminService.getAllRaports());
-    }
-
-    @GetMapping("/stats/best-selling-smartphone")
-    public ResponseEntity<StatisticDto> getBestSellingSmartphone(@RequestParam String from, @RequestParam String to) {
-        return ResponseEntity.ok(adminService.getBestSellingSmartphone(from, to));
-    }
-
-    @GetMapping("/stats/most-searched-item")
-    public ResponseEntity<StatisticDto> getMostSearchedItem(@RequestParam String from, @RequestParam String to) {
-        return ResponseEntity.ok(adminService.getMostSearchedItem(from, to));
+    @GetMapping("/users")
+    public ResponseEntity<List<UserDto>> getAllUsers() {
+        logger.info("Pobieranie listy wszystkich użytkowników");
+        List<UserDto> users = adminService.getAllUsers();
+        logger.info("Pobrano {} użytkowników", users.size());
+        return ResponseEntity.ok(users);
     }
 
     @PutMapping("/users/{userId}/role")
     public ResponseEntity<Void> changeUserRole(@PathVariable Long userId, @RequestBody UserRoleChangeRequest request) {
+        logger.info("Zmiana roli dla użytkownika o ID: {} na rolę: {}", userId, request.getRole());
         adminService.changeUserRole(userId, request);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+        logger.info("Usuwanie użytkownika o ID: {}", userId);
         adminService.deleteUser(userId);
         return ResponseEntity.ok().build();
     }
-
-    @PostMapping("/categories")
-    public ResponseEntity<CategoryDto> addCategory(@RequestBody CategoryDto categoryDto) {
-        return ResponseEntity.ok(adminService.addCategory(categoryDto));
-    }
-    @PutMapping("/categories/{categoryId}")
-    public ResponseEntity<CategoryDto> editCategory(@PathVariable Long categoryId, @RequestBody CategoryDto categoryDto) {
-        return ResponseEntity.ok(adminService.editCategory(categoryId, categoryDto));
-    }
-
-    // 8. Wyświetlanie logów systemowych
-    @GetMapping("/logs")
-    public ResponseEntity<List<LogEntryDto>> getSystemLogs() {
-        return ResponseEntity.ok(adminService.getSystemLogs());
-    }
-
-    @GetMapping("/system-content")
-    public ResponseEntity<List<SystemContentDto>> getSystemContents() {
-        return ResponseEntity.ok(adminService.getSystemContents());
-    }
-
-    @PutMapping("/system-content/{contentId}")
-    public ResponseEntity<SystemContentDto> updateSystemContent(@PathVariable Long contentId, @RequestBody SystemContentDto dto) {
-        return ResponseEntity.ok(adminService.updateSystemContent(contentId, dto));
-    }
-
-    @PostMapping("/system-content")
-    public ResponseEntity<SystemContentDto> addSystemContent(@RequestBody SystemContentDto dto) {
-        return ResponseEntity.ok(adminService.addSystemContent(dto));
-    }
-
-
-
 }

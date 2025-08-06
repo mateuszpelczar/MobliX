@@ -2,14 +2,9 @@ C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\StaffController.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\CategoryDto.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\LogEntryDto.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LoginRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\RaportDto.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\StatisticDto.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\SystemContentDto.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserRoleChangeRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Ad.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Category.java
@@ -47,5 +42,4 @@ C:\MobliX\backend\src\main\java\com\example\backend\security\JwtAuthenticationFi
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdminService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\StaffService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java

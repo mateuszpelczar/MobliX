@@ -1,0 +1,117 @@
+.panel-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.panel-footer {
+  background-color: white;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+  .panel-footer {
+    padding: 0.5rem 0;
+  }
+
+  .panel-footer a {
+    font-size: 10px;
+    padding: 0.25rem;
+  }
+
+  .panel-content-with-search {
+    padding-bottom: 1rem;
+  }
+
+  /* Make the Add announcement button more prominent on mobile */
+  [class*="bg-purple-600"] {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 20;
+  }
+
+  /* Fix for smartphone cards */
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* Make dropdowns mobile-friendly */
+  .dropdown-menu,
+  .voivodeship-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 50vh;
+    z-index: 50;
+  }
+
+  /* Fix date display */
+  .text-xs {
+    font-size: 0.65rem;
+  }
+}
+
+/* Fix overflow on mobile */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force proper height */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Extra small screen utility classes */
+@media (min-width: 480px) {
+  .xs\:px-5 {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  .xs\:py-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .xs\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  .xs\:min-w-\[140px\] {
+    min-width: 140px;
+  }
+  .xs\:top-4 {
+    top: 1rem;
+  }
+  .xs\:mt-2 {
+    margin-top: 0.5rem;
+  }
+  .xs\:mr-\[-25px\] {
+    margin-right: -25px;
+  }
+}
+
+/* Animation for Dodaj Ogłoszenie button */
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s infinite;
+}

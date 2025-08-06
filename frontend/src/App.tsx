@@ -5,6 +5,7 @@ import UserPanel from "./components/UserPanel";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
 import PrivateRoute from "./routes/PrivateRoutes";
+import ChangeRole from "./components/admin/ChangeRole";
 
 const App: React.FC = () => {
   return (
@@ -29,6 +30,15 @@ const App: React.FC = () => {
           element={
             <PrivateRoute requiredRole="ADMIN">
               <AdminPanel />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin/change-role"
+          element={
+            <PrivateRoute requiredRole="ADMIN">
+              <ChangeRole />
             </PrivateRoute>
           }
         />
