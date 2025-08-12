@@ -16,7 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
+//klasa reprezentujaca uzytkownika w systemie
 @Entity
 @Data
 @NoArgsConstructor
@@ -42,7 +42,7 @@ public class User {
   private List<Message> receivedMessages;
 
   @OneToMany(mappedBy = "user")
-  private List<Ad> ads;
+  private List<Advertisement> advers;
 
   @OneToMany(mappedBy = "user")
   private List<FavoriteAd> favoriteAds;

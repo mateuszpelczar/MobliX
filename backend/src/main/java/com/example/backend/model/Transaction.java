@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca transakcje miedzy uzytkownikami
 @Entity
 @Data
 @NoArgsConstructor
@@ -32,5 +32,5 @@ public class Transaction {
     private User seller;
 
     @ManyToOne
-    private Ad ad;
+    private Advertisement advers;
 }

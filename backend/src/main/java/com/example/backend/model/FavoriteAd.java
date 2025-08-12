@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca ulubione ogloszenia uzytkownikow
 @Entity
 @Table(name="ulubione_ogloszenia")
 @Data
@@ -24,6 +24,6 @@ public class FavoriteAd {
     private User user;
 
     @ManyToOne
-    private Ad ad;
+    private Advertisement advers;
   
 }

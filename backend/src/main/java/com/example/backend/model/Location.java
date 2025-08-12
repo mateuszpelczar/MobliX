@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca lokalizacje ogloszen
 @Entity
 @Table(name="lokalizacje")
 @Data
@@ -26,7 +26,7 @@ public class Location {
    private String region;
 
    @OneToMany(mappedBy = "location")
-   private List<Ad> ads;
+   private List<Advertisement> advers;
   
   
 }

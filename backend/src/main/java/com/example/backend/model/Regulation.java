@@ -2,18 +2,16 @@ package com.example.backend.model;
 
 import java.util.Date;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca regulacje i zasady korzystania z aplikacji
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "regulacje")
 public class Regulation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

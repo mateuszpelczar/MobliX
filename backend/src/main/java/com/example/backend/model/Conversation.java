@@ -11,12 +11,12 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca rozmowy miedzy uzytkownikami
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="rozmowy")
+@Table(name="konwersacje")
 public class Conversation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

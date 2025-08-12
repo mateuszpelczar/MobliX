@@ -3,14 +3,7 @@ package com.example.backend.model;
 import java.util.List;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Data;
@@ -20,13 +13,13 @@ import lombok.Data;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Ad {
+public class Advertisement {
+//klasa reprezentujaca ogloszenia
+   @Id
+   @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private Long id;
 
-  @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
-  private Long id;
-
-  private String title;
+    private String title;
     private String description;
     private String productDescription; // Dodany opis produktu
     private Double price;
@@ -41,10 +34,10 @@ public class Ad {
     @ManyToOne
     private Location location;
 
-    @OneToMany(mappedBy = "ad")
+    @OneToMany(mappedBy = "advers")
     private List<Image> images;
 
-    @OneToMany(mappedBy = "ad")
+    @OneToMany(mappedBy = "advers")
     private List<Moderation> moderations;
   
 }

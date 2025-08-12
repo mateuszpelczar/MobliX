@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca kategorie ogloszen
 @Entity
 @Table(name="kategorie")
 @Data
@@ -25,7 +25,7 @@ public class Category {
   private String name;
 
   @OneToMany(mappedBy = "category")
-  private List<Ad> ads;
+  private List<Advertisement> advers;
   
 
   

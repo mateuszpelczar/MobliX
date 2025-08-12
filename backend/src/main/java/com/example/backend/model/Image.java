@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca zdjecia ogloszen
 @Entity
 @Data
 @NoArgsConstructor
@@ -23,6 +23,6 @@ public class Image {
     private String url;
 
     @ManyToOne
-    private Ad ad;
+    private Advertisement advers;
   
 }

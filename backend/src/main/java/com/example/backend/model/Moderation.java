@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca moderacje ogloszen
 @Entity
 @Data
 @NoArgsConstructor
@@ -32,6 +32,6 @@ public class Moderation {
     private User moderator;
 
     @ManyToOne
-    private Ad ad;
+    private Advertisement advers;
 
 }

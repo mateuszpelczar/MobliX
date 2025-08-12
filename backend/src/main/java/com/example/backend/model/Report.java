@@ -13,12 +13,12 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+//klasa reprezentujaca raporty uzytkownikow o ogloszeniach
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="raporty")
+@Table(name="reporty")
 public class Report {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +31,7 @@ public class Report {
     private User reporter;
 
     @ManyToOne
-    private Ad ad;
+    private Advertisement advers;
 
     public String getDescription() {
         return reason;
