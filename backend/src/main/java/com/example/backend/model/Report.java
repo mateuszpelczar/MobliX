@@ -31,7 +31,7 @@ public class Report {
     private User reporter;
 
     @ManyToOne
-    private Advertisement advers;
+    private Advertisement advertisement;
 
     public String getDescription() {
         return reason;

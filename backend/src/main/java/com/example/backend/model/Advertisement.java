@@ -34,10 +34,10 @@ public class Advertisement {
     @ManyToOne
     private Location location;
 
-    @OneToMany(mappedBy = "advers")
+    @OneToMany(mappedBy = "advertisement")
     private List<Image> images;
 
-    @OneToMany(mappedBy = "advers")
+    @OneToMany(mappedBy = "advertisement")
     private List<Moderation> moderations;
   
 }

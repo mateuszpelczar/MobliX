@@ -42,7 +42,7 @@ public class User {
   private List<Message> receivedMessages;
 
   @OneToMany(mappedBy = "user")
-  private List<Advertisement> advers;
+  private List<Advertisement> advertisements;
 
   @OneToMany(mappedBy = "user")
   private List<FavoriteAd> favoriteAds;

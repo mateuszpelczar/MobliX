@@ -20,6 +20,7 @@ com\example\backend\repository\ModerationRepository.class
 com\example\backend\service\JwtService.class
 com\example\backend\model\Moderation.class
 com\example\backend\repository\UserRepository.class
+com\example\backend\model\Advertisement.class
 com\example\backend\repository\ConversationRepository.class
 com\example\backend\service\UserService.class
 com\example\backend\dto\RegisterRequest.class
@@ -29,9 +30,8 @@ com\example\backend\repository\MessageRepository.class
 com\example\backend\controller\AdminController.class
 com\example\backend\BackendApplication.class
 com\example\backend\repository\FavoriteAdRepository.class
-com\example\backend\model\Ad.class
+com\example\backend\repository\AdvertisementRepository.class
 com\example\backend\model\User.class
-com\example\backend\repository\AdRepository.class
 com\example\backend\service\CustomUserDetailsService.class
 com\example\backend\model\Report.class
 com\example\backend\repository\TransactionRepository.class

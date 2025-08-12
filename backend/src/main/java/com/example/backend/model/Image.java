@@ -23,6 +23,6 @@ public class Image {
     private String url;
 
     @ManyToOne
-    private Advertisement advers;
-  
+    private Advertisement advertisement;
+
 }

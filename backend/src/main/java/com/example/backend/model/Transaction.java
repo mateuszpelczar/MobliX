@@ -32,5 +32,5 @@ public class Transaction {
     private User seller;
 
     @ManyToOne
-    private Advertisement advers;
+    private Advertisement advertisement;
 }

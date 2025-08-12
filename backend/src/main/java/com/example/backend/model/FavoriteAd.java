@@ -24,6 +24,6 @@ public class FavoriteAd {
     private User user;
 
     @ManyToOne
-    private Advertisement advers;
+    private Advertisement advertisement;
   
 }

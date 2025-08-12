@@ -13,7 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 //klasa reprezentujaca kategorie ogloszen
 @Entity
-@Table(name="kategorie")
+@Table(name="categories")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -25,8 +25,5 @@ public class Category {
   private String name;
 
   @OneToMany(mappedBy = "category")
-  private List<Advertisement> advers;
-  
-
-  
+  private List<Advertisement> advertisements;
 }

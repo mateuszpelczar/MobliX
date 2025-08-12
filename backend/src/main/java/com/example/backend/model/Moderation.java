@@ -32,6 +32,6 @@ public class Moderation {
     private User moderator;
 
     @ManyToOne
-    private Advertisement advers;
+    private Advertisement advertisement;
 
 }

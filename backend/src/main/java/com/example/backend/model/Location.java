@@ -26,7 +26,7 @@ public class Location {
    private String region;
 
    @OneToMany(mappedBy = "location")
-   private List<Advertisement> advers;
+   private List<Advertisement> advertisements;
   
   
 }

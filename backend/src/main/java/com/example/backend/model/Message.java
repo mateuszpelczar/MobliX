@@ -13,7 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 //klasa reprezentujaca wiadomosci miedzy uzytkownikami
 @Entity
-@Table(name="wiadomosci")
+@Table(name="messages")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -329,6 +329,11 @@ const ChangeRole: React.FC = () => {
               </div>
             )}
 
+            {/* NAGŁÓWEK ZARZĄDZANIE UŻYTKOWNIKAMI */}
+            <div className="w-full flex justify-center items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-800 bg-transparent">Zarządzanie użytkownikami</h1>
+            </div>
+
             <div className="flex-grow">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">
                 Lista użytkowników
@@ -406,7 +411,6 @@ const ChangeRole: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
@@ -414,25 +418,37 @@ const ChangeRole: React.FC = () => {
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Zasady
+            Zasady bezpieczeństwa
           </a>
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Wyszukiwania
+            Popularne wyszukiwania
           </a>
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Jak działa
+            Jak działa MobliX
           </a>
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Regulamin
+          </a>
+          <a
+            href="#"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Polityka cookies
+          </a>
+          <a
+            href="#"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Ustawienia plików cookies
           </a>
         </div>
       </div>
