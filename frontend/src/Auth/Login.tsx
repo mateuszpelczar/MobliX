@@ -16,8 +16,22 @@ const Login: React.FC = () => {
         password,
       });
       localStorage.setItem("token", String(res.data));
-      const data = res.data as { role: string };
-      localStorage.setItem("role", String(data.role));
+      const token = String(res.data);
+      // Fetch current user and persist id/role
+      try {
+        const me = await axios.get("http://localhost:8088/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const user = me.data as { id?: number; role?: string };
+        if (user?.id != null) {
+          localStorage.setItem("userId", String(user.id));
+        }
+        if (user?.role) {
+          localStorage.setItem("role", String(user.role));
+        }
+      } catch (e) {
+        // non-fatal
+      }
       navigate("/main");
     } catch (err) {
       alert("Błędne dane logowania");

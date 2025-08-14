@@ -73,7 +73,9 @@ const ChangeRole: React.FC = () => {
 
         // Sprawdzamy czy rola użytkownika to ADMIN
         if (!(decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN")) {
-          setError("Brak uprawnień do wyświetlania listy użytkowników. Wymagana rola ADMIN.");
+          setError(
+            "Brak uprawnień do wyświetlania listy użytkowników. Wymagana rola ADMIN."
+          );
           setLoading(false);
           return;
         }
@@ -95,9 +97,9 @@ const ChangeRole: React.FC = () => {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
             },
-            timeout: 10000 // 10 sekund timeoutu
+            timeout: 10000, // 10 sekund timeoutu
           }
         );
 
@@ -105,31 +107,29 @@ const ChangeRole: React.FC = () => {
         setUsers(response.data);
       } catch (err) {
         console.error("Błąd podczas pobierania użytkowników:", err);
+        const e = err as any;
+        const statusCode = e?.response?.status as number | undefined;
+        const errorMessage = e?.response?.data?.message || e?.message || "";
 
-        if (axios.isAxiosError(err)) {
-          const statusCode = err.response?.status;
-          const errorMessage = err.response?.data?.message || err.message;
+        if (statusCode === 403) {
+          setError(
+            "Brak uprawnień do pobrania listy użytkowników. Sprawdź czy masz rolę ADMIN."
+          );
+        } else if (e?.code === "ECONNABORTED") {
+          setError("Upłynął limit czasu połączenia. Spróbuj ponownie później.");
+        } else if (!e?.response) {
+          setError(
+            "Błąd sieci. Sprawdź czy backend jest uruchomiony na porcie 8088 i spróbuj ponownie."
+          );
 
-          console.error(`Status: ${statusCode}, Komunikat: ${errorMessage}`);
-
-          if (statusCode === 403) {
-            setError("Brak uprawnień do pobrania listy użytkowników. Sprawdź czy masz rolę ADMIN.");
-          } else if (err.code === 'ECONNABORTED') {
-            setError("Upłynął limit czasu połączenia. Spróbuj ponownie później.");
-          } else if (!err.response) {
-            setError("Błąd sieci. Sprawdź czy backend jest uruchomiony na porcie 8088 i spróbuj ponownie.");
-
-            // Spróbuj ponownie za 5 sekund
-            setTimeout(() => {
-              fetchUsers();
-            }, 5000);
-          } else {
-            setError(
-              `Nie udało się pobrać listy użytkowników. Błąd: ${statusCode} - ${errorMessage}`
-            );
-          }
+          // Spróbuj ponownie za 5 sekund
+          setTimeout(() => {
+            fetchUsers();
+          }, 5000);
         } else {
-          setError("Nie udało się pobrać listy użytkowników. Spróbuj ponownie.");
+          setError(
+            `Nie udało się pobrać listy użytkowników. Błąd: ${statusCode} - ${errorMessage}`
+          );
         }
       }
     } finally {
@@ -137,6 +137,7 @@ const ChangeRole: React.FC = () => {
     }
   };
 
+  //zmiana roli uzytkownika
   const handleRoleChange = async (userId: number, newRole: string) => {
     try {
       setSuccessMessage(null);
@@ -171,6 +172,26 @@ const ChangeRole: React.FC = () => {
       setError("Nie udało się zmienić roli użytkownika. Spróbuj ponownie.");
     }
   };
+  // Usuwanie użytkownika
+  const handleDeleteUser = async (userId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/");
+        return;
+      }
+      await axios.delete(`http://localhost:8088/api/admin/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      // Odśwież listę użytkowników po usunięciu
+      fetchUsers();
+    } catch (error) {
+      setError("Błąd podczas usuwania użytkownika");
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -185,7 +206,6 @@ const ChangeRole: React.FC = () => {
   // Sprawdzanie roli użytkownika
   const token = localStorage.getItem("token");
   let isAdmin = false;
-  let isUser = false;
   let isStaff = false;
 
   if (token) {
@@ -193,7 +213,6 @@ const ChangeRole: React.FC = () => {
       const decoded = jwtDecode<JwtPayLoad>(token);
       // Poprawiona weryfikacja ról
       isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
-      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
       isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
     } catch (err) {
       console.error("Nieprawidłowy token JWT", err);
@@ -264,19 +283,20 @@ const ChangeRole: React.FC = () => {
                       <a href="#" className="dropdown-item">
                         Ustawienia
                       </a>
-                      {isAdmin && location.pathname !== '/admin/change-role' && (
-                        <a
-                          href="/admin"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setIsDropdownOpen(false);
-                            navigate("/admin");
-                          }}
-                          className="dropdown-item"
-                        >
-                          Panel admina
-                        </a>
-                      )}
+                      {isAdmin &&
+                        location.pathname !== "/admin/change-role" && (
+                          <a
+                            href="/admin"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setIsDropdownOpen(false);
+                              navigate("/admin");
+                            }}
+                            className="dropdown-item"
+                          >
+                            Panel admina
+                          </a>
+                        )}
                       {isStaff && (
                         <a href="#" className="dropdown-item">
                           Panel pracownika
@@ -331,7 +351,9 @@ const ChangeRole: React.FC = () => {
 
             {/* NAGŁÓWEK ZARZĄDZANIE UŻYTKOWNIKAMI */}
             <div className="w-full flex justify-center items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800 bg-transparent">Zarządzanie użytkownikami</h1>
+              <h1 className="text-2xl font-bold text-gray-800 bg-transparent">
+                Zarządzanie użytkownikami
+              </h1>
             </div>
 
             <div className="flex-grow">
@@ -363,14 +385,23 @@ const ChangeRole: React.FC = () => {
                         <th className="py-2 px-3 sm:py-3 sm:px-6 text-left border-b">
                           Zmień rolę
                         </th>
+                        <th className="py-2 px-3 sm:py-3 sm:px-6 text-left border-b">
+                          Akcja
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="text-gray-600 text-xs sm:text-sm">
                       {users.map((user) => (
                         <tr key={user.id} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-3 sm:py-3 sm:px-6">{user.id}</td>
-                          <td className="py-2 px-3 sm:py-3 sm:px-6">{user.email}</td>
-                          <td className="py-2 px-3 sm:py-3 sm:px-6">{user.username}</td>
+                          <td className="py-2 px-3 sm:py-3 sm:px-6">
+                            {user.id}
+                          </td>
+                          <td className="py-2 px-3 sm:py-3 sm:px-6">
+                            {user.email}
+                          </td>
+                          <td className="py-2 px-3 sm:py-3 sm:px-6">
+                            {user.username}
+                          </td>
                           <td className="py-2 px-3 sm:py-3 sm:px-6">
                             <span
                               className={`px-2 py-1 rounded text-xs ${
@@ -388,12 +419,22 @@ const ChangeRole: React.FC = () => {
                             <select
                               className="border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm"
                               value={user.role}
-                              onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                              onChange={(e) =>
+                                handleRoleChange(user.id, e.target.value)
+                              }
                             >
                               <option value="USER">USER</option>
                               <option value="STAFF">STAFF</option>
                               <option value="ADMIN">ADMIN</option>
                             </select>
+                          </td>
+                          <td className="py-2 px-3 sm:py-3 sm:px-6">
+                            <button
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs sm:text-sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              Usuń
+                            </button>
                           </td>
                         </tr>
                       ))}

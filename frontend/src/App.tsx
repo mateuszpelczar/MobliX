@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainPanel from "./components/MainPanel";
 import AdminPanel from "./components/AdminPanel";
 import UserPanel from "./components/UserPanel";
@@ -6,6 +6,7 @@ import Login from "./auth/Login";
 import Register from "./auth/Register";
 import PrivateRoute from "./routes/PrivateRoutes";
 import ChangeRole from "./components/admin/ChangeRole";
+import AddAdvertisement from "./components/user/AddAdvertisement";
 
 const App: React.FC = () => {
   return (
@@ -44,6 +45,8 @@ const App: React.FC = () => {
         />
 
         <Route path="/userpanel" element={<UserPanel />} />
+        <Route path="/user/addadvertisement" element={<AddAdvertisement />} />
+        <Route path="/user/addadvertisements" element={<AddAdvertisement />} />
         <Route path="/unauthorized" element={<h2>Brak dostępu</h2>} />
       </Routes>
     </BrowserRouter>

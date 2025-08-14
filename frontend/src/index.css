@@ -90,7 +90,7 @@ button:focus-visible {
 }
 
 .panel-search-bar {
-  @apply absolute top-20 left-0 right-0 h-16 bg-black z-40;
+  @apply absolute top-20 left-0 right-0 h-24 bg-black z-40;
 }
 
 .panel-content {
@@ -99,7 +99,7 @@ button:focus-visible {
 }
 
 .panel-content-with-search {
-  @apply flex flex-col justify-center items-center h-full w-full pt-36 pb-32;
+  @apply flex flex-col justify-center items-center h-full w-full pt-48 pb-32;
   background: linear-gradient(90deg, #8b5cf6 0%, #0f172a 100%);
 }
 
@@ -130,7 +130,18 @@ button:focus-visible {
 
 /* Search bar styles */
 .search-bar-container {
-  @apply flex items-center justify-between h-full px-6;
+  @apply flex items-end justify-between h-full px-6 py-3;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+  appearance: textfield; /* Standard */
 }
 
 .search-icons {

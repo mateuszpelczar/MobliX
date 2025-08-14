@@ -2,6 +2,8 @@ C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LoginRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java

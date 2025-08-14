@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/MobileResponsive.css";
 
 const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   // No dropdown logic needed for UserPanel header
   return (
@@ -83,7 +85,10 @@ const UserPanel: React.FC = () => {
             <button className="user-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
               Historia transakcji
             </button>
-            <button className="user-btn bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+            <button
+              onClick={() => navigate("/user/addadvertisement")}
+              className="user-btn bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
               Dodaj ogłoszenie
             </button>
             <button className="user-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
@@ -102,26 +107,26 @@ const UserPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* White footer bar at bottom */}
+      {/* White footer bar at bottom (same as MainPanel) */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Zasady
+            Zasady bezpieczeństwa
           </a>
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Wyszukiwania
+            Popularne wyszukiwania
           </a>
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Jak działa
+            Jak działa MobliX
           </a>
           <a
             href="#"
@@ -133,13 +138,13 @@ const UserPanel: React.FC = () => {
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Cookies
+            Polityka cookies
           </a>
           <a
             href="#"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
-            Ustawienia
+            Ustawienia plików cookies
           </a>
         </div>
       </div>

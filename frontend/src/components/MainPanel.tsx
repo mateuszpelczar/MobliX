@@ -19,6 +19,13 @@ const MainPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const voivodeshipRef = React.useRef<HTMLDivElement>(null);
+  const conditionRef = React.useRef<HTMLDivElement>(null);
+  const [priceFrom, setPriceFrom] = useState<string>("");
+  const [priceTo, setPriceTo] = useState<string>("");
+  const [isConditionOpen, setIsConditionOpen] = useState(false);
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([
+    "Wszystkie",
+  ]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -28,6 +35,12 @@ const MainPanel: React.FC = () => {
         !voivodeshipRef.current.contains(event.target as Node)
       ) {
         setIsVoivodeshipOpen(false);
+      }
+      if (
+        conditionRef.current &&
+        !conditionRef.current.contains(event.target as Node)
+      ) {
+        setIsConditionOpen(false);
       }
     };
 
@@ -60,7 +73,18 @@ const MainPanel: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement search functionality
-    console.log("Searching for:", searchQuery, "in", selectedVoivodeship);
+    console.log(
+      "Searching for:",
+      searchQuery,
+      "in",
+      selectedVoivodeship,
+      "price:",
+      priceFrom,
+      "-",
+      priceTo,
+      "conditions:",
+      selectedConditions
+    );
   };
 
   const handleMessengerClick = () => {
@@ -112,6 +136,32 @@ const MainPanel: React.FC = () => {
     "Wielkopolskie",
     "Zachodniopomorskie",
   ];
+
+  // Condition dropdown helpers
+  const conditionLabel = (() => {
+    if (
+      selectedConditions.includes("Wszystkie") ||
+      selectedConditions.length === 0
+    )
+      return "Wszystkie";
+    if (selectedConditions.length === 1) return selectedConditions[0];
+    return `${selectedConditions[0]} +${selectedConditions.length - 1}`;
+  })();
+
+  const toggleCondition = (name: string) => {
+    if (name === "Wszystkie") {
+      setSelectedConditions(["Wszystkie"]);
+      return;
+    }
+    setSelectedConditions((prev) => {
+      const withoutAll = prev.filter((v) => v !== "Wszystkie");
+      const exists = withoutAll.includes(name);
+      const next = exists
+        ? withoutAll.filter((v) => v !== name)
+        : [...withoutAll, name];
+      return next.length === 0 ? ["Wszystkie"] : next;
+    });
+  };
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -218,37 +268,114 @@ const MainPanel: React.FC = () => {
 
       {/* Black search bar */}
       <div className="panel-search-bar w-full">
-        <div className="search-bar-container flex items-center justify-between px-2 sm:px-6 h-full">
-          {/* Icons on the left */}
-          <div className="search-icons flex items-center gap-4">
-            <img
-              src={messengerIcon}
-              alt="Messenger"
-              className="search-icon cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handleMessengerClick}
-            />
-            <img
-              src={starIcon}
-              alt="Star"
-              className="search-icon cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handleStarClick}
-            />
-          </div>
-
-          {/* Search input in the center */}
-          <div className="search-input-container flex-1 max-w-md mx-auto">
-            <form onSubmit={handleSearch}>
-              <input
-                type="text"
-                placeholder="Wyszukaj smartfony..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
+        <div className="search-bar-container flex items-center justify-between px-2 sm:px-6 h-full gap-3 sm:gap-4">
+          {/* Icons and search on the left */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-1">
+            <div className="search-icons flex items-center gap-3 sm:gap-4">
+              <img
+                src={messengerIcon}
+                alt="Messenger"
+                className="search-icon cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleMessengerClick}
               />
-            </form>
+              <img
+                src={starIcon}
+                alt="Star"
+                className="search-icon cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleStarClick}
+              />
+            </div>
+            {/* Search input left-aligned */}
+            <div className="search-input-container w-full max-w-md">
+              <form onSubmit={handleSearch}>
+                <input
+                  type="text"
+                  placeholder="Wyszukaj smartfony..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </form>
+            </div>
           </div>
 
-          {/* Voivodeship button on the right */}
+          {/* Cena filter (middle-right) */}
+          <div className="hidden xs:flex flex-col text-white mr-1 sm:mr-2">
+            <span className="text-xxs xs:text-xs sm:text-sm mb-1">Cena</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="Od"
+                value={priceFrom}
+                onChange={(e) => setPriceFrom(e.target.value)}
+                className="search-input w-16 xs:w-20 sm:w-24 appearance-none h-10"
+              />
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="Do"
+                value={priceTo}
+                onChange={(e) => setPriceTo(e.target.value)}
+                className="search-input w-16 xs:w-20 sm:w-24 appearance-none h-10"
+              />
+            </div>
+          </div>
+
+          {/* Stan dropdown (right, before voivodeship) */}
+          <div
+            className="relative hidden xs:flex flex-col text-white"
+            ref={conditionRef}
+          >
+            <span className="text-xxs xs:text-xs sm:text-sm mb-1">Stan</span>
+            <button
+              type="button"
+              onClick={() => setIsConditionOpen((v) => !v)}
+              className="voivodeship-button flex items-center justify-between min-w-[130px]"
+            >
+              <span className="truncate">{conditionLabel}</span>
+              <svg
+                className={`w-4 h-4 transition-transform ${
+                  isConditionOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {isConditionOpen && (
+              <div className="voivodeship-dropdown z-50 w-56">
+                <div className="py-1 max-h-64 overflow-auto">
+                  {["Wszystkie", "Używane", "Nowe", "Uszkodzone"].map((opt) => (
+                    <label
+                      key={opt}
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer text-black"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedConditions.includes("Wszystkie")
+                            ? opt === "Wszystkie"
+                            : selectedConditions.includes(opt)
+                        }
+                        onChange={() => toggleCondition(opt)}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Voivodeship button on the far right */}
           <div className="relative" ref={voivodeshipRef}>
             <button
               onClick={handleVoivodeshipClick}
