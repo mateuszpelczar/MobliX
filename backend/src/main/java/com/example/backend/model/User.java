@@ -1,7 +1,10 @@
 package com.example.backend.model;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -37,6 +40,42 @@ public class User {
 
   @Enumerated(EnumType.STRING)
   private Role role;
+
+  // Dane osobowe / Personal data
+  private String firstName;
+  private String lastName;
+  private String phoneNumber;
+  private LocalDate dateOfBirth;
+  
+  // Dane adresowe / Address data  
+  private String street;
+  private String city;
+  private String postalCode;
+  private String country;
+  
+  // Dane firmowe (opcjonalne) / Company data (optional)
+  private String companyName;
+  private String taxId;
+  
+  // Ustawienia prywatności i preferencji / Privacy and preference settings
+  @Column(name = "profile_public")
+  private Boolean profilePublic = false;
+  
+  @Column(name = "show_contact_in_ads")
+  private Boolean showContactInAds = true;
+  
+  @Column(name = "preferred_contact_method")
+  private String preferredContactMethod = "email"; // "email" lub "phone"
+  
+  @Column(name = "newsletter_subscription")
+  private Boolean newsletterSubscription = false;
+  
+  // Znaczniki czasowe / Timestamps
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
+  
+  @Column(name = "updated_at") 
+  private LocalDateTime updatedAt;
 
   @OneToMany(mappedBy = "receiver")
   private List<Message> receivedMessages;

@@ -1,0 +1,25 @@
+# Backend build artifacts
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend build artifacts
+frontend/dist/
+frontend/node_modules/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Environment files
+.env.local
+.env.production
+.env.development
+
+# OS files
+.DS_Store
+Thumbs.db

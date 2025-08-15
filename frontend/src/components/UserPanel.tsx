@@ -94,7 +94,9 @@ const UserPanel: React.FC = () => {
             <button className="user-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
               Edytuj ogłoszenie
             </button>
-            <button className="user-btn bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+            <button 
+              onClick={() => navigate("/user/profile")}
+              className="user-btn bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
               Dane profilowe
             </button>
             <button className="user-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">

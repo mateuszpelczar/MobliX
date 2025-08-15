@@ -1,4 +1,5 @@
 com/example/backend/service/UserService.class
+com/example/backend/dto/UserProfileDto$UserProfileDtoBuilder.class
 com/example/backend/repository/ConversationRepository.class
 com/example/backend/repository/ReportSummaryRepository.class
 com/example/backend/model/Image.class
@@ -10,6 +11,7 @@ com/example/backend/config/SecurityConfig.class
 com/example/backend/repository/FavoriteAdRepository.class
 com/example/backend/repository/ReviewRepository.class
 com/example/backend/model/Regulation.class
+com/example/backend/dto/UserProfileDto.class
 com/example/backend/dto/AdvertisementRequest.class
 com/example/backend/dto/UserDto$UserDtoBuilder.class
 com/example/backend/model/Transaction.class
@@ -32,6 +34,7 @@ com/example/backend/controller/AdminController.class
 com/example/backend/repository/UserRepository.class
 com/example/backend/model/Location.class
 com/example/backend/service/CustomUserDetailsService.class
+com/example/backend/dto/UserProfileRequest.class
 com/example/backend/model/ReportSummary.class
 com/example/backend/model/Role.class
 com/example/backend/dto/RegisterRequest.class

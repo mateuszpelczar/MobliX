@@ -7,6 +7,8 @@
 /home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/dto/LoginRequest.java
 /home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/dto/RegisterRequest.java
 /home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/dto/UserDto.java
+/home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/dto/UserProfileDto.java
+/home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/dto/UserProfileRequest.java
 /home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/dto/UserRoleChangeRequest.java
 /home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/model/Advertisement.java
 /home/runner/work/MobliX/MobliX/backend/src/main/java/com/example/backend/model/Category.java
