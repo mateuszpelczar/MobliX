@@ -34,14 +34,7 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/main"
-          element={
-            <PrivateRoute>
-              <MainPanel />
-            </PrivateRoute>
-          }
-        />
+        <Route path="/main" element={<MainPanel />} />
 
         <Route
           path="/admin"
@@ -104,6 +97,7 @@ const App: React.FC = () => {
         <Route path="/user/watched-ads" element={<WatchedAds />} />
         <Route path="/user/your-ads" element={<YourAds />} />
         <Route path="/user/ratings" element={<Ratings />} />
+        <Route path="/user/mainpanel" element={<MainPanel />} />
         <Route
           path="/popularne-wyszukiwania"
           element={<PopularneWyszukiwania />}

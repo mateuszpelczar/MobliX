@@ -1,8 +1,15 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import "../../styles/MobileResponsive.css";
 
 type AdItem = { id: number; title: string; owner: "me" | "user" };
+
+type JwtPayLoad = {
+  sub: string;
+  role: string;
+  exp: number;
+};
 
 const EditAd: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +34,23 @@ const EditAd: React.FC = () => {
     navigate("/");
     setIsDropdownOpen(false);
   };
+
+  // Check user role from JWT token
+  const token = localStorage.getItem("token");
+  let isAdmin = false;
+  let isUser = false;
+  let isStaff = false;
+
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayLoad>(token);
+      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
+      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
+      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+    } catch (error) {
+      console.error("Error decoding token:", error);
+    }
+  }
 
   const handleEdit = (id: number) => {
     alert(`Edytuj ogłoszenie ID: ${id}`);
@@ -69,15 +93,33 @@ const EditAd: React.FC = () => {
             {isDropdownOpen && (
               <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
                 <div className="py-1">
-                  <a href="#" className="dropdown-item">
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-ads");
+                    }}
+                  >
                     Ogłoszenia
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/message");
+                    }}
+                  >
                     Czat
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/ratings");
+                    }}
+                  >
                     Oceny
-                  </a>
+                  </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black"
                     onClick={() => {
@@ -87,6 +129,39 @@ const EditAd: React.FC = () => {
                   >
                     Profil
                   </button>
+                  {isAdmin && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/admin");
+                      }}
+                    >
+                      Panel administratora
+                    </button>
+                  )}
+                  {isUser && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
+                    </button>
+                  )}
+                  {isStaff && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/staffpanel");
+                      }}
+                    >
+                      Panel pracownika
+                    </button>
+                  )}
                   <button onClick={handleLogout} className="dropdown-logout">
                     Wyloguj
                   </button>

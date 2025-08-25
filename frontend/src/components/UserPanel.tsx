@@ -11,7 +11,11 @@ const UserPanel: React.FC = () => {
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
       {/* White header bar at top */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          onClick={() => navigate("/main")}
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
         <div className="panel-buttons">
@@ -40,15 +44,33 @@ const UserPanel: React.FC = () => {
             {isDropdownOpen && (
               <div className="dropdown-menu">
                 <div className="py-1">
-                  <a href="#" className="dropdown-item">
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-ads");
+                    }}
+                  >
                     Ogłoszenia
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/message");
+                    }}
+                  >
                     Czat
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/ratings");
+                    }}
+                  >
                     Oceny
-                  </a>
+                  </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black"
                     onClick={() => {

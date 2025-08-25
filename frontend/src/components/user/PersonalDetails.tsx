@@ -96,15 +96,33 @@ const PersonalDetails: React.FC = () => {
                 <div className="py-1">
                   {token ? (
                     <>
-                      <a href="#" className="dropdown-item">
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
                         Ogłoszenia
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
                         Czat
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/ratings");
+                        }}
+                      >
                         Oceny
-                      </a>
+                      </button>
                       <button
                         className="dropdown-item w-full text-left bg-white text-black"
                         onClick={() => {
