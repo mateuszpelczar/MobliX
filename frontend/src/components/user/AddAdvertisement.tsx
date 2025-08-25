@@ -189,10 +189,15 @@ const AddAdvertisement: React.FC = () => {
                         Oceny
                       </a>
                       <a href="#" className="dropdown-item">
-                        Profil
-                      </a>
-                      <a href="#" className="dropdown-item">
-                        Ustawienia
+                        <button
+                          className="dropdown-item w-full text-left bg-white text-black"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/user/personaldetails");
+                          }}
+                        >
+                          Profil
+                        </button>
                       </a>
                       {isAdmin && (
                         <button
@@ -805,41 +810,41 @@ const AddAdvertisement: React.FC = () => {
         </div>
       </div>
 
-      {/* White footer bar at bottom (same as MainPanel) */}
+      {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
           <a
-            href="#"
+            href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Zasady bezpieczeństwa
           </a>
           <a
-            href="#"
+            href="/popularne-wyszukiwania"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Popularne wyszukiwania
           </a>
           <a
-            href="#"
+            href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Jak działa MobliX
           </a>
           <a
-            href="#"
+            href="/regulamin"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Regulamin
           </a>
           <a
-            href="#"
+            href="/polityka-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
           </a>
           <a
-            href="#"
+            href="/ustawienia-plikow-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Ustawienia plików cookies

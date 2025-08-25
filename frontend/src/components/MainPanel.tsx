@@ -88,19 +88,26 @@ const MainPanel: React.FC = () => {
   };
 
   const handleMessengerClick = () => {
-    // TODO: Implement messenger functionality
-    console.log("Messenger icon clicked");
+    if (isAuthenticated) {
+      navigate("/user/message");
+    } else {
+      navigate("/login");
+    }
   };
 
   const handleStarClick = () => {
-    // TODO: Implement star/favorites functionality
-    console.log("Star icon clicked");
+    if (isAuthenticated) {
+      navigate("/user/watched-ads");
+    } else {
+      navigate("/login");
+    }
   };
 
   const token = localStorage.getItem("token");
   let isAdmin = false;
   let isUser = false;
   let isStaff = false;
+  let isAuthenticated = false;
 
   if (token) {
     try {
@@ -112,10 +119,22 @@ const MainPanel: React.FC = () => {
 
       // Logowanie informacji o tokenie dla celów diagnostycznych
       console.log("Rola użytkownika:", decoded.role);
+      // Sprawdzenie ważności tokena
+      if (decoded.exp && Date.now() / 1000 < decoded.exp) {
+        isAuthenticated = true;
+      }
     } catch (err) {
       console.error("Nieprawidłowy token JWT", err);
     }
   }
+
+  const handleAddAdClick = () => {
+    if (isAuthenticated) {
+      navigate("/user/addadvertisement");
+    } else {
+      navigate("/login");
+    }
+  };
 
   const voivodeships = [
     "Cała Polska",
@@ -201,21 +220,42 @@ const MainPanel: React.FC = () => {
                 <div className="py-1">
                   {token ? (
                     <>
-                      <a href="#" className="dropdown-item">
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
                         Ogłoszenia
-                      </a>
-                      <a href="#" className="dropdown-item">
-                        Czat
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
+                        Chat
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/ratings");
+                        }}
+                      >
                         Oceny
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
                         Profil
-                      </a>
-                      <a href="#" className="dropdown-item">
-                        Ustawienia
-                      </a>
+                      </button>
                       {isAdmin && (
                         <button
                           onClick={handleGoToAdminPanel}
@@ -426,7 +466,10 @@ const MainPanel: React.FC = () => {
           <div className="sticky top-2 xs:top-4 sm:top-5 md:top-6 w-full flex justify-center sm:justify-start mb-0 mt-1 xs:mt-2 z-10">
             <div className="w-full max-w-4xl mx-auto relative">
               <div className="absolute right-0 left-0 sm:left-auto sm:right-full mr-[-20px] xs:mr-[-25px] sm:mr-[-30px] md:mr-[-40px]">
-                <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 xs:px-5 sm:px-6 md:px-8 py-1.5 xs:py-2 sm:py-2.5 md:py-3 rounded-md sm:rounded-lg font-medium text-xs xs:text-sm sm:text-base md:text-lg shadow-lg sm:shadow-xl transition-colors animate-pulse-subtle w-auto min-w-[120px] xs:min-w-[140px] sm:min-w-[180px] md:min-w-[200px]">
+                <button
+                  onClick={handleAddAdClick}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 xs:px-5 sm:px-6 md:px-8 py-1.5 xs:py-2 sm:py-2.5 md:py-3 rounded-md sm:rounded-lg font-medium text-xs xs:text-sm sm:text-base md:text-lg shadow-lg sm:shadow-xl transition-colors animate-pulse-subtle w-auto min-w-[120px] xs:min-w-[140px] sm:min-w-[180px] md:min-w-[200px]"
+                >
                   Dodaj ogłoszenie
                 </button>
               </div>
@@ -474,37 +517,37 @@ const MainPanel: React.FC = () => {
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
           <a
-            href="#"
+            href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Zasady bezpieczeństwa
           </a>
           <a
-            href="#"
+            href="/popularne-wyszukiwania"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Popularne wyszukiwania
           </a>
           <a
-            href="#"
+            href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Jak działa MobliX
           </a>
           <a
-            href="#"
+            href="/regulamin"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Regulamin
           </a>
           <a
-            href="#"
+            href="/polityka-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
           </a>
           <a
-            href="#"
+            href="/ustawienia-plikow-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Ustawienia plików cookies

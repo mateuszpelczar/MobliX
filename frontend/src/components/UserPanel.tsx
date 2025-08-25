@@ -49,12 +49,15 @@ const UserPanel: React.FC = () => {
                   <a href="#" className="dropdown-item">
                     Oceny
                   </a>
-                  <a href="#" className="dropdown-item">
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/personaldetails");
+                    }}
+                  >
                     Profil
-                  </a>
-                  <a href="#" className="dropdown-item">
-                    Ustawienia
-                  </a>
+                  </button>
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {
@@ -76,72 +79,85 @@ const UserPanel: React.FC = () => {
       <div className="panel-content flex-grow w-full overflow-y-auto flex justify-center items-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 md:p-12 lg:p-16 w-full max-w-5xl flex flex-col gap-4 sm:gap-8 md:gap-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
-            <button className="user-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+            <button
+              onClick={() => navigate("/user/message")}
+              className="user-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
               Wiadomości
             </button>
-            <button className="user-btn bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
-              Zarządzaj ogłoszeniem
-            </button>
-            <button className="user-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+
+            {/* <button className="user-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
               Historia transakcji
-            </button>
+            </button> */}
             <button
               onClick={() => navigate("/user/addadvertisement")}
               className="user-btn bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
             >
               Dodaj ogłoszenie
             </button>
-            <button className="user-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
-              Edytuj ogłoszenie
+            <button
+              onClick={() => navigate("/user/editAd")}
+              className="user-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
+              Zarządzaj ogłoszeniem
             </button>
-            <button className="user-btn bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+            <button
+              onClick={() => navigate("/user/personaldetails")}
+              className="user-btn bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
               Dane profilowe
             </button>
-            <button className="user-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+            <button
+              onClick={() => navigate("/user/notifications")}
+              className="user-btn bg-red-500 hover:bg-red-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
               Powiadomienia
             </button>
-            <button className="user-btn bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg">
+            <button
+              onClick={() => navigate("/user/watched-ads")}
+              className="user-btn bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
               Obserwowane
             </button>
           </div>
         </div>
       </div>
 
-      {/* White footer bar at bottom (same as MainPanel) */}
+      {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
           <a
-            href="#"
+            href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Zasady bezpieczeństwa
           </a>
           <a
-            href="#"
+            href="/popularne-wyszukiwania"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Popularne wyszukiwania
           </a>
           <a
-            href="#"
+            href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Jak działa MobliX
           </a>
           <a
-            href="#"
+            href="/regulamin"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Regulamin
           </a>
           <a
-            href="#"
+            href="/polityka-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
           </a>
           <a
-            href="#"
+            href="/ustawienia-plikow-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Ustawienia plików cookies

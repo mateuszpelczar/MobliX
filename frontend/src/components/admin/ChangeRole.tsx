@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../../styles/MobileResponsive.css";
 import { jwtDecode } from "jwt-decode";
 
@@ -25,7 +25,6 @@ const ChangeRole: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     fetchUsers();
@@ -280,23 +279,17 @@ const ChangeRole: React.FC = () => {
                       <a href="#" className="dropdown-item">
                         Profil
                       </a>
-                      <a href="#" className="dropdown-item">
-                        Ustawienia
-                      </a>
-                      {isAdmin &&
-                        location.pathname !== "/admin/change-role" && (
-                          <a
-                            href="/admin"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setIsDropdownOpen(false);
-                              navigate("/admin");
-                            }}
-                            className="dropdown-item"
-                          >
-                            Panel admina
-                          </a>
-                        )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/admin");
+                          }}
+                          className="dropdown-button"
+                        >
+                          Panel administratora
+                        </button>
+                      )}
                       {isStaff && (
                         <a href="#" className="dropdown-item">
                           Panel pracownika
@@ -456,37 +449,37 @@ const ChangeRole: React.FC = () => {
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
           <a
-            href="#"
+            href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Zasady bezpieczeństwa
           </a>
           <a
-            href="#"
+            href="/popularne-wyszukiwania"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Popularne wyszukiwania
           </a>
           <a
-            href="#"
+            href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Jak działa MobliX
           </a>
           <a
-            href="#"
+            href="/regulamin"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Regulamin
           </a>
           <a
-            href="#"
+            href="/polityka-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
           </a>
           <a
-            href="#"
+            href="/ustawienia-plikow-cookies"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Ustawienia plików cookies

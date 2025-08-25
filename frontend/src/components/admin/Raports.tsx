@@ -1,0 +1,134 @@
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import "../../styles/MobileResponsive.css";
+
+const Raports: React.FC = () => {
+  const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+    setIsDropdownOpen(false);
+  };
+
+  return (
+    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
+      {/* Header: same style as AdminPanel */}
+      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
+        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+          MobliX
+        </div>
+        <div className="panel-buttons">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="account-dropdown-button"
+            >
+              Twoje konto
+              <svg
+                className={`w-4 h-4 transition-transform ${
+                  isDropdownOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {isDropdownOpen && (
+              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
+                <div className="py-1">
+                  <a href="#" className="dropdown-item">
+                    Ogłoszenia
+                  </a>
+                  <a href="#" className="dropdown-item">
+                    Czat
+                  </a>
+                  <a href="#" className="dropdown-item">
+                    Oceny
+                  </a>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/personaldetails");
+                    }}
+                  >
+                    Profil
+                  </button>
+                  <button onClick={handleLogout} className="dropdown-logout">
+                    Wyloguj
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Content: purple background with white card */}
+      <div className="panel-content flex-grow w-full overflow-y-auto">
+        <div className="container mx-auto px-4 relative pt-12 pb-12 max-w-5xl">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 min-h-[300px]">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Raporty
+            </h2>
+            <p className="text-gray-600">Tutaj pojawią się raporty systemu.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* White footer bar at bottom */}
+      <div className="panel-footer w-full py-2 mt-auto">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+          <a
+            href="/zasady-bezpieczenstwa"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Zasady bezpieczeństwa
+          </a>
+          <a
+            href="/popularne-wyszukiwania"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Popularne wyszukiwania
+          </a>
+          <a
+            href="/jak-dziala-moblix"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Jak działa MobliX
+          </a>
+          <a
+            href="/regulamin"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Regulamin
+          </a>
+          <a
+            href="/polityka-cookies"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Polityka cookies
+          </a>
+          <a
+            href="/ustawienia-plikow-cookies"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Ustawienia plików cookies
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Raports;
