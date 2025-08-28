@@ -24,7 +24,12 @@ import Notifications from "./components/user/Notifications";
 import WatchedAds from "./components/user/WatchedAds";
 import YourAds from "./components/user/YourAds";
 import Ratings from "./components/user/Ratings";
-
+import StaffPanel from "./components/StaffPanel";
+import ModeracjaOgloszen from "./components/staff/ModeracjaOgloszen";
+import ModeracjaOpinii from "./components/staff/ModeracjaOpinii";
+import ObslugaZamowien from "./components/staff/ObslugaZamowien";
+import StatystkiSprzedazy from "./components/staff/StatystykiSprzedazy";
+import ZarzadzanieStanemMagazynowym from "./components/staff/ZarzadzanieStanemMagazynowym";
 const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -87,6 +92,7 @@ const App: React.FC = () => {
         />
 
         <Route path="/userpanel" element={<UserPanel />} />
+        <Route path="/staffpanel" element={<StaffPanel />} />
         <Route path="/user/addadvertisement" element={<AddAdvertisement />} />
         <Route path="/user/addadvertisements" element={<AddAdvertisement />} />
         <Route path="/user/personaldetails" element={<PersonalDetails />} />
@@ -98,6 +104,20 @@ const App: React.FC = () => {
         <Route path="/user/your-ads" element={<YourAds />} />
         <Route path="/user/ratings" element={<Ratings />} />
         <Route path="/user/mainpanel" element={<MainPanel />} />
+        <Route path="/staff/moderacja-opinii" element={<ModeracjaOpinii />} />
+        <Route path="/staff/obsluga-zamowien" element={<ObslugaZamowien />} />
+        <Route
+          path="/staff/zarzadzanie-stanem-magazynowym"
+          element={<ZarzadzanieStanemMagazynowym />}
+        />
+        <Route
+          path="/staff/statystyki-sprzedazy"
+          element={<StatystkiSprzedazy />}
+        />
+        <Route
+          path="/staff/moderacja-ogloszen"
+          element={<ModeracjaOgloszen />}
+        />
         <Route
           path="/popularne-wyszukiwania"
           element={<PopularneWyszukiwania />}

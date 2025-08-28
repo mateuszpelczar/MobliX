@@ -206,6 +206,7 @@ const ChangeRole: React.FC = () => {
   const token = localStorage.getItem("token");
   let isAdmin = false;
   let isStaff = false;
+  let isUser = false;
 
   if (token) {
     try {
@@ -213,6 +214,7 @@ const ChangeRole: React.FC = () => {
       // Poprawiona weryfikacja ról
       isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
       isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
     } catch (err) {
       console.error("Nieprawidłowy token JWT", err);
     }
@@ -234,7 +236,11 @@ const ChangeRole: React.FC = () => {
       {/* White header bar at top */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         {/* Logo in top left */}
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          onClick={() => navigate("/main")}
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
 
@@ -267,18 +273,42 @@ const ChangeRole: React.FC = () => {
                 <div className="py-1">
                   {token ? (
                     <>
-                      <a href="#" className="dropdown-item">
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
                         Ogłoszenia
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
                         Czat
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/ratings");
+                        }}
+                      >
                         Oceny
-                      </a>
-                      <a href="#" className="dropdown-item">
+                      </button>
+                      <button
+                        className="dropdown-item w-full text-left bg-white text-black"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
                         Profil
-                      </a>
+                      </button>
                       {isAdmin && (
                         <button
                           onClick={() => {
@@ -290,10 +320,27 @@ const ChangeRole: React.FC = () => {
                           Panel administratora
                         </button>
                       )}
-                      {isStaff && (
-                        <a href="#" className="dropdown-item">
+                      {(isAdmin || isStaff) && (
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                          className="dropdown-button"
+                        >
                           Panel pracownika
-                        </a>
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                          className="dropdown-button"
+                        >
+                          Panel użytkownika
+                        </button>
                       )}
                       <div className="border-t border-gray-200 my-1"></div>
                       <button

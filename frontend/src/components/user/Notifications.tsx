@@ -144,18 +144,7 @@ const EditAd: React.FC = () => {
                       Panel administratora
                     </button>
                   )}
-                  {isUser && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      Panel użytkownika
-                    </button>
-                  )}
-                  {isStaff && (
+                  {(isAdmin || isStaff) && (
                     <button
                       className="dropdown-item w-full text-left bg-white text-black"
                       onClick={() => {
@@ -164,6 +153,17 @@ const EditAd: React.FC = () => {
                       }}
                     >
                       Panel pracownika
+                    </button>
+                  )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
                     </button>
                   )}
                   <button onClick={handleLogout} className="dropdown-logout">

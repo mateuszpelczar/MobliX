@@ -1,11 +1,31 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import "../styles/MobileResponsive.css";
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const getUserRole = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decodedToken: any = jwtDecode(token);
+        return decodedToken.role;
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "ADMIN";
+  const isStaff = userRole === "STAFF";
+  const isUser = userRole === "USER";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -18,7 +38,11 @@ const AdminPanel: React.FC = () => {
       {/* White header bar at top */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         {/* Logo in top left */}
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          onClick={() => navigate("/main")}
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
         {/* Account dropdown in top right corner */}
@@ -66,6 +90,39 @@ const AdminPanel: React.FC = () => {
                   >
                     Profil
                   </button>
+                  {isAdmin && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/admin");
+                      }}
+                    >
+                      Panel administratora
+                    </button>
+                  )}
+                  {(isAdmin || isStaff) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/staffpanel");
+                      }}
+                    >
+                      Panel pracownika
+                    </button>
+                  )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
+                    </button>
+                  )}
                   <button onClick={handleLogout} className="dropdown-logout">
                     Wyloguj
                   </button>

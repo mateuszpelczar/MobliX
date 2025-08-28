@@ -1,11 +1,31 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import "../../styles/MobileResponsive.css";
 
 const Raports: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const getUserRole = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decodedToken: any = jwtDecode(token);
+        return decodedToken.role;
+      } catch (error) {
+        console.error("Error decoding token:", error);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "ADMIN";
+  const isStaff = userRole === "STAFF";
+  const isUser = userRole === "USER";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -17,7 +37,11 @@ const Raports: React.FC = () => {
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
       {/* Header: same style as AdminPanel */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          onClick={() => navigate("/main")}
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
         <div className="panel-buttons">
@@ -46,15 +70,33 @@ const Raports: React.FC = () => {
             {isDropdownOpen && (
               <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
                 <div className="py-1">
-                  <a href="#" className="dropdown-item">
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-ads");
+                    }}
+                  >
                     Ogłoszenia
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/message");
+                    }}
+                  >
                     Czat
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/ratings");
+                    }}
+                  >
                     Oceny
-                  </a>
+                  </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black"
                     onClick={() => {
@@ -64,6 +106,39 @@ const Raports: React.FC = () => {
                   >
                     Profil
                   </button>
+                  {isAdmin && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/admin");
+                      }}
+                    >
+                      Panel administratora
+                    </button>
+                  )}
+                  {(isAdmin || isStaff) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/staffpanel");
+                      }}
+                    >
+                      Panel pracownika
+                    </button>
+                  )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
+                    </button>
+                  )}
                   <button onClick={handleLogout} className="dropdown-logout">
                     Wyloguj
                   </button>

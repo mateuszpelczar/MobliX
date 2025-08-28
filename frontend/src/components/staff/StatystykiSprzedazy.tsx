@@ -3,25 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import "../../styles/MobileResponsive.css";
 
-type AdItem = { id: number; title: string; owner: "me" | "user" };
+type JwtPayLoad = {
+  sub: string;
+  role: string;
+  exp: number;
+};
 
-const EditAd: React.FC = () => {
+const StatystkiSprzedazy: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Mock data; replace later with API
-  const [filter, setFilter] = useState<"me" | "user" | "all">("all");
-  const [ads] = useState<AdItem[]>([
-    // { id: 1, title: "iPhone 13 128GB", owner: "me" },
-    // { id: 2, title: "Samsung S22 Ultra", owner: "user" },
-    // { id: 3, title: "Pixel 7 Pro", owner: "me" },
-  ]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  const visibleAds = ads.filter((a) =>
-    filter === "all" ? true : a.owner === filter
-  );
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -29,32 +20,22 @@ const EditAd: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const getUserRole = () => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decodedToken: any = jwtDecode(token);
-        return decodedToken.role;
-      } catch (error) {
-        console.error("Error decoding token:", error);
-        return null;
-      }
+  // Check user role from JWT token
+  const token = localStorage.getItem("token");
+  let isAdmin = false;
+  let isUser = false;
+  let isStaff = false;
+
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayLoad>(token);
+      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
+      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
+      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+    } catch (error) {
+      console.error("Error decoding token:", error);
     }
-    return null;
-  };
-
-  const userRole = getUserRole();
-  const isAdmin = userRole === "ADMIN";
-  const isStaff = userRole === "STAFF";
-  const isUser = userRole === "USER";
-
-  const handleEdit = (id: number) => {
-    alert(`Edytuj ogłoszenie ID: ${id}`);
-  };
-  const handleDelete = (id: number) => {
-    const confirmed = confirm("Na pewno usunąć ogłoszenie?");
-    if (confirmed) alert(`Usunięto ogłoszenie ID: ${id}`);
-  };
+  }
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -171,73 +152,16 @@ const EditAd: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
+      {/* Main content area */}
+      <main className="panel-content flex-grow w-full overflow-y-auto">
         <div className="container mx-auto px-4 relative pt-12 pb-12 max-w-5xl">
           <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 min-h-[300px]">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Edytuj ogłoszenie
+              Statystyki sprzedaży
             </h2>
-
-            {/* Filter: own vs users */}
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-700">Filtr:</label>
-              <select
-                className="px-3 py-2 rounded border border-gray-300"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
-              >
-                <option value="all">Wszystkie</option>
-                <option value="me">Moje</option>
-                <option value="user">Użytkowników</option>
-              </select>
-            </div>
-
-            {/* List + actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Dostępne ogłoszenia
-                </label>
-                <select
-                  className="w-full h-40 border rounded p-2"
-                  size={8}
-                  value={selectedId ?? ""}
-                  onChange={(e) => setSelectedId(Number(e.target.value))}
-                >
-                  {visibleAds.map((ad) => (
-                    <option key={ad.id} value={ad.id}>
-                      {ad.title}{" "}
-                      {ad.owner === "me" ? "(moje)" : "(użytkownika)"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => {
-                    const id = selectedId ?? visibleAds[0]?.id;
-                    if (id != null) handleEdit(id);
-                  }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded"
-                >
-                  Edytuj
-                </button>
-                <button
-                  onClick={() => {
-                    const id = selectedId ?? visibleAds[0]?.id;
-                    if (id != null) handleDelete(id);
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                >
-                  Usuń
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
@@ -284,4 +208,4 @@ const EditAd: React.FC = () => {
   );
 };
 
-export default EditAd;
+export default StatystkiSprzedazy;

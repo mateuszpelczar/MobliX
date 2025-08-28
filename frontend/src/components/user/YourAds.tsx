@@ -1,34 +1,81 @@
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../../styles/MobileResponsive.css";
 import { jwtDecode } from "jwt-decode";
+import "../../styles/MobileResponsive.css";
 
-interface User {
+type Ad = {
   id: number;
-  email: string;
-  username: string;
-  role: string;
-}
+  title: string;
+  price: number;
+  category: string;
+  date: string;
+  status: "active" | "sold" | "paused";
+  views: number;
+  images: string[];
+};
 
-interface JwtPayLoad {
-  sub: string;
-  role: string;
-  exp: number;
-}
+const mockAds: Ad[] = [
+  {
+    id: 1,
+    title: "iPhone 13 128GB",
+    price: 2500,
+    category: "Telefony",
+    date: "2025-08-20",
+    status: "active",
+    views: 45,
+    images: ["/api/placeholder/400/300"],
+  },
+  {
+    id: 2,
+    title: "Samsung S22 Ultra",
+    price: 3200,
+    category: "Telefony",
+    date: "2025-08-18",
+    status: "sold",
+    views: 67,
+    images: ["/api/placeholder/400/300"],
+  },
+  {
+    id: 3,
+    title: "Laptop Dell XPS 13",
+    price: 4500,
+    category: "Komputery",
+    date: "2025-08-15",
+    status: "paused",
+    views: 23,
+    images: ["/api/placeholder/400/300"],
+  },
+];
 
-const ChangeRole: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+const tabLabels = [
+  { key: "active", label: "Aktywne" },
+  { key: "sold", label: "Sprzedane" },
+  { key: "paused", label: "Wstrzymane" },
+];
+
+const YourAds: React.FC = () => {
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"active" | "sold" | "paused">(
+    "active"
+  );
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const getUserRole = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const decoded: any = jwtDecode(token);
+      return decoded.role;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "ADMIN";
+  const isUser = userRole === "USER";
+  const isStaff = userRole === "STAFF";
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -47,207 +94,28 @@ const ChangeRole: React.FC = () => {
     };
   }, []);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/");
-        return;
-      }
-
-      // Wyświetlenie informacji o tokenie w konsoli
-      const tokenPreview = token.substring(0, 15) + "...";
-      console.log("Używany token (fragment):", tokenPreview);
-
-      try {
-        const decoded = jwtDecode<JwtPayLoad>(token);
-        console.log("Zdekodowany token:", {
-          sub: decoded.sub,
-          role: decoded.role,
-          expDate: new Date(decoded.exp * 1000).toLocaleString(),
-        });
-
-        // Sprawdzamy czy rola użytkownika to ADMIN
-        if (!(decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN")) {
-          setError(
-            "Brak uprawnień do wyświetlania listy użytkowników. Wymagana rola ADMIN."
-          );
-          setLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.error("Błąd dekodowania tokenu:", error);
-        setError("Błąd weryfikacji tokenu. Proszę zalogować się ponownie.");
-        setLoading(false);
-        return;
-      }
-
-      // Pomijamy sprawdzanie dostępności serwera przez HEAD request,
-      // który powoduje błąd 403 i od razu wykonujemy właściwe zapytanie
-      console.log("Próba pobrania listy użytkowników...");
-
-      try {
-        // Dodanie timeoutu dla zapytania
-        const response = await axios.get<User[]>(
-          "http://localhost:8088/api/admin/users",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            timeout: 10000, // 10 sekund timeoutu
-          }
-        );
-
-        console.log("Odpowiedź z serwera:", response.data);
-        setUsers(response.data);
-      } catch (err) {
-        console.error("Błąd podczas pobierania użytkowników:", err);
-        const e = err as any;
-        const statusCode = e?.response?.status as number | undefined;
-        const errorMessage = e?.response?.data?.message || e?.message || "";
-
-        if (statusCode === 403) {
-          setError(
-            "Brak uprawnień do pobrania listy użytkowników. Sprawdź czy masz rolę ADMIN."
-          );
-        } else if (e?.code === "ECONNABORTED") {
-          setError("Upłynął limit czasu połączenia. Spróbuj ponownie później.");
-        } else if (!e?.response) {
-          setError(
-            "Błąd sieci. Sprawdź czy backend jest uruchomiony na porcie 8088 i spróbuj ponownie."
-          );
-
-          // Spróbuj ponownie za 5 sekund
-          setTimeout(() => {
-            fetchUsers();
-          }, 5000);
-        } else {
-          setError(
-            `Nie udało się pobrać listy użytkowników. Błąd: ${statusCode} - ${errorMessage}`
-          );
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  //zmiana roli uzytkownika
-  const handleRoleChange = async (userId: number, newRole: string) => {
-    try {
-      setSuccessMessage(null);
-      setError(null);
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/");
-        return;
-      }
-
-      await axios.put(
-        `http://localhost:8088/api/admin/users/${userId}/role`,
-        { role: newRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Update user role in the local state
-      setUsers(
-        users.map((user) =>
-          user.id === userId ? { ...user, role: newRole } : user
-        )
-      );
-
-      setSuccessMessage(`Pomyślnie zmieniono rolę użytkownika ID: ${userId}`);
-    } catch (err) {
-      setError("Nie udało się zmienić roli użytkownika. Spróbuj ponownie.");
-    }
-  };
-  // Usuwanie użytkownika
-  const handleDeleteUser = async (userId: number) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/");
-        return;
-      }
-      await axios.delete(`http://localhost:8088/api/admin/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      // Odśwież listę użytkowników po usunięciu
-      fetchUsers();
-    } catch (error) {
-      setError("Błąd podczas usuwania użytkownika");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-    setIsDropdownOpen(false);
-  };
-
-  const goBack = () => {
-    navigate("/admin");
-  };
-
-  // Sprawdzanie roli użytkownika
-  const token = localStorage.getItem("token");
-  let isAdmin = false;
-  let isStaff = false;
-
-  if (token) {
-    try {
-      const decoded = jwtDecode<JwtPayLoad>(token);
-      // Poprawiona weryfikacja ról
-      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
-      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
-    } catch (err) {
-      console.error("Nieprawidłowy token JWT", err);
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex justify-center items-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4">Ładowanie użytkowników...</p>
-        </div>
-      </div>
-    );
-  }
+  const filtered = mockAds.filter((ad) => ad.status === activeTab);
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* White header bar at top */}
+      {/* Header */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        {/* Logo in top left */}
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          onClick={() => navigate("/main")}
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
-
-        {/* Account dropdown in top right corner */}
         <div className="panel-buttons">
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4"
+              className="account-dropdown-button"
             >
               Twoje konto
               <svg
-                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ml-1 ${
+                className={`w-4 h-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -265,52 +133,85 @@ const ChangeRole: React.FC = () => {
             {isDropdownOpen && (
               <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
                 <div className="py-1">
-                  {token ? (
-                    <>
-                      <a href="#" className="dropdown-item">
-                        Czat
-                      </a>
-                      <a href="#" className="dropdown-item">
-                        Oceny
-                      </a>
-                      <a href="#" className="dropdown-item">
-                        Profil
-                      </a>
-                      {isAdmin && (
-                        <button
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/admin");
-                          }}
-                          className="dropdown-button"
-                        >
-                          Panel administratora
-                        </button>
-                      )}
-                      {isStaff && (
-                        <a href="#" className="dropdown-item">
-                          Panel pracownika
-                        </a>
-                      )}
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <button
-                        onClick={handleLogout}
-                        className="dropdown-logout"
-                      >
-                        Wyloguj
-                      </button>
-                    </>
-                  ) : (
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-ads");
+                    }}
+                  >
+                    Ogłoszenia
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/message");
+                    }}
+                  >
+                    Czat
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/ratings");
+                    }}
+                  >
+                    Oceny
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/personaldetails");
+                    }}
+                  >
+                    Profil
+                  </button>
+                  {isAdmin && (
                     <button
-                      className="dropdown-logout w-full text-left"
+                      className="dropdown-item w-full text-left bg-white text-black"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        navigate("/login");
+                        navigate("/admin");
                       }}
                     >
-                      Zaloguj się
+                      Panel administratora
                     </button>
                   )}
+                  {(isAdmin || isStaff) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/staffpanel");
+                      }}
+                    >
+                      Panel pracownika
+                    </button>
+                  )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
+                    </button>
+                  )}
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("token");
+                      window.location.href = "/";
+                    }}
+                    className="dropdown-logout"
+                  >
+                    Wyloguj
+                  </button>
                 </div>
               </div>
             )}
@@ -318,17 +219,108 @@ const ChangeRole: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content with dark gradient background */}
+      {/* Content */}
       <div className="panel-content flex-grow w-full overflow-y-auto">
         <div className="container mx-auto px-4 relative pt-12 pb-12 max-w-5xl">
           <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 min-h-[300px]">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Twoje ogłoszenia
-            </h2>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center">
+              Twoje Ogłoszenia
+            </h1>
+
+            {/* Tabs */}
+            <div className="flex flex-wrap justify-center border-b border-gray-200">
+              {tabLabels.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as any)}
+                  className={`px-4 py-2 mx-1 mb-2 text-sm font-medium rounded-t-lg transition-colors ${
+                    activeTab === tab.key
+                      ? "bg-blue-500 text-white border-b-2 border-blue-500"
+                      : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Add new ad button */}
+            <div className="flex justify-center mb-4">
+              <button
+                onClick={() => navigate("/user/addadvertisement")}
+                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                + Dodaj nowe ogłoszenie
+              </button>
+            </div>
+
+            {/* Ads List */}
+            <div className="space-y-4">
+              {filtered.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Brak ogłoszeń w tej kategorii
+                </div>
+              ) : (
+                filtered.map((ad) => (
+                  <div
+                    key={ad.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="flex-shrink-0">
+                        <img
+                          src={ad.images[0]}
+                          alt={ad.title}
+                          className="w-full sm:w-32 h-32 object-cover rounded-lg bg-gray-200"
+                        />
+                      </div>
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          {ad.title}
+                        </h3>
+                        <p className="text-xl font-bold text-blue-600 mb-2">
+                          {ad.price.toLocaleString()} zł
+                        </p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Kategoria: {ad.category}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Data: {ad.date}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Wyświetlenia: {ad.views}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => navigate(`/user/edit-ad/${ad.id}`)}
+                            className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                          >
+                            Edytuj
+                          </button>
+                          {ad.status === "active" && (
+                            <button className="px-4 py-2 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors">
+                              Wstrzymaj
+                            </button>
+                          )}
+                          {ad.status === "paused" && (
+                            <button className="px-4 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors">
+                              Aktywuj
+                            </button>
+                          )}
+                          <button className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors">
+                            Usuń
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
-      {/* White footer bar at bottom */}
+      {/* Footer */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
           <a
@@ -373,4 +365,4 @@ const ChangeRole: React.FC = () => {
   );
 };
 
-export default ChangeRole;
+export default YourAds;

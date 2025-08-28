@@ -187,7 +187,11 @@ const MainPanel: React.FC = () => {
       {/* White header bar at top */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         {/* Logo in top left */}
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          onClick={() => navigate("/main")}
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
 
@@ -264,7 +268,18 @@ const MainPanel: React.FC = () => {
                           Panel administratora
                         </button>
                       )}
-                      {isUser && (
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="dropdown-item w-full text-left bg-white text-black"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
                         <button
                           className="dropdown-item w-full text-left bg-white text-black"
                           onClick={() => {
@@ -274,11 +289,6 @@ const MainPanel: React.FC = () => {
                         >
                           Panel użytkownika
                         </button>
-                      )}
-                      {isStaff && (
-                        <a href="#" className="dropdown-item">
-                          Panel pracownika
-                        </a>
                       )}
                       <div className="border-t border-gray-200 my-1"></div>
                       <button

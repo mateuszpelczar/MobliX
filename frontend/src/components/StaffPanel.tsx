@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/MobileResponsive.css";
+import { jwtDecode } from "jwt-decode";
 
-const AdminPanel: React.FC = () => {
+const StaffPanel: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -13,12 +14,32 @@ const AdminPanel: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
+  const getUserRole = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const decoded: any = jwtDecode(token);
+      return decoded.role;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "ADMIN";
+  const isUser = userRole === "USER";
+  const isStaff = userRole === "STAFF";
+
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
       {/* White header bar at top */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         {/* Logo in top left */}
-        <div className="panel-logo text-lg sm:text-xl md:text-2xl font-bold">
+        <div
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
+          onClick={() => navigate("/main")}
+          style={{ userSelect: "none" }}
+        >
           MobliX
         </div>
         {/* Account dropdown in top right corner */}
@@ -48,15 +69,33 @@ const AdminPanel: React.FC = () => {
             {isDropdownOpen && (
               <div className="dropdown-menu">
                 <div className="py-1">
-                  <a href="#" className="dropdown-item">
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-ads");
+                    }}
+                  >
                     Ogłoszenia
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/message");
+                    }}
+                  >
                     Czat
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/ratings");
+                    }}
+                  >
                     Oceny
-                  </a>
+                  </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black"
                     onClick={() => {
@@ -66,7 +105,47 @@ const AdminPanel: React.FC = () => {
                   >
                     Profil
                   </button>
-                  <button onClick={handleLogout} className="dropdown-logout">
+                  {isAdmin && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/admin");
+                      }}
+                    >
+                      Panel administratora
+                    </button>
+                  )}
+                  {(isAdmin || isStaff) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/staffpanel");
+                      }}
+                    >
+                      Panel pracownika
+                    </button>
+                  )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
+                    </button>
+                  )}
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem("token");
+                      window.location.href = "/";
+                    }}
+                    className="dropdown-logout"
+                  >
                     Wyloguj
                   </button>
                 </div>
@@ -75,10 +154,46 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* Main content with large white box and admin buttons */}
+      {/* Main content with large white box and staff buttons */}
       <div className="panel-content flex-grow w-full overflow-y-auto flex justify-center items-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 md:p-12 lg:p-16 w-full max-w-5xl flex flex-col gap-4 sm:gap-8 md:gap-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 md:gap-8"></div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">
+            Panel Pracownika
+          </h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
+            <button
+              onClick={() => navigate("/staff/moderacja-ogloszen")}
+              className="staff-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
+              Moderacja ogłoszeń
+            </button>
+
+            <button
+              onClick={() => navigate("/staff/moderacja-opinii")}
+              className="staff-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
+              Moderacja opinii
+            </button>
+
+            <button
+              onClick={() => navigate("/staff/zarzadzanie-stanem-magazynowym")}
+              className="staff-btn bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
+              Zarządzanie stanem magazynowym
+            </button>
+            <button
+              onClick={() => navigate("/staff/obsluga-zamowien")}
+              className="staff-btn bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
+            >
+              Obsługa zamówień
+            </button>
+            <button
+              onClick={() => navigate("/staff/statystyki-sprzedazy")}
+              className="staff-btn bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg sm:col-span-2"
+            >
+              Statystyki sprzedaży
+            </button>
+          </div>
         </div>
       </div>
       {/* White footer bar at bottom */}
@@ -126,4 +241,4 @@ const AdminPanel: React.FC = () => {
   );
 };
 
-export default AdminPanel;
+export default StaffPanel;

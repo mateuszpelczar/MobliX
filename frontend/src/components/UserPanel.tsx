@@ -1,12 +1,29 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import "../styles/MobileResponsive.css";
 
 const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = React.useRef<HTMLDivElement>(null);
-  // No dropdown logic needed for UserPanel header
+
+  const getUserRole = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const decoded: any = jwtDecode(token);
+      return decoded.role;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "ADMIN";
+  const isUser = userRole === "USER";
+  const isStaff = userRole === "STAFF";
+
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
       {/* White header bar at top */}
@@ -80,6 +97,39 @@ const UserPanel: React.FC = () => {
                   >
                     Profil
                   </button>
+                  {isAdmin && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/admin");
+                      }}
+                    >
+                      Panel administratora
+                    </button>
+                  )}
+                  {(isAdmin || isStaff) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/staffpanel");
+                      }}
+                    >
+                      Panel pracownika
+                    </button>
+                  )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      Panel użytkownika
+                    </button>
+                  )}
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {
