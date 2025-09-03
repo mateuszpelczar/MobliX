@@ -94,7 +94,7 @@ const App: React.FC = () => {
         <Route path="/userpanel" element={<UserPanel />} />
         <Route path="/staffpanel" element={<StaffPanel />} />
         <Route path="/user/addadvertisement" element={<AddAdvertisement />} />
-        <Route path="/user/addadvertisements" element={<AddAdvertisement />} />
+
         <Route path="/user/personaldetails" element={<PersonalDetails />} />
         <Route path="/user/editAd" element={<UserEditAd />} />
         <Route path="/user/message" element={<Message />} />

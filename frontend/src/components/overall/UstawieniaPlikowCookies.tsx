@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import {
+  User,
+  ChevronDown,
+  LogOut,
+  ShoppingBag,
+  MessageSquare,
+  Star,
+  Shield,
+  Users,
+} from "lucide-react";
 import "../../styles/MobileResponsive.css";
 
 type Consent = {
@@ -100,78 +110,98 @@ const UstawieniaPlikowCookies: React.FC = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="account-dropdown-button"
             >
+              <User className="w-4 h-4 text-blue-600" />
               Twoje konto
-              <svg
+              <ChevronDown
                 className={`w-4 h-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              />
             </button>
             {isDropdownOpen && (
               <div className="dropdown-menu right-0">
                 <div className="py-1">
-                  <a href="#" className="dropdown-item">
-                    Ogłoszenia
-                  </a>
-                  <a href="#" className="dropdown-item">
-                    Czat
-                  </a>
-                  <a href="#" className="dropdown-item">
-                    Oceny
-                  </a>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-ads");
+                    }}
+                  >
+                    <ShoppingBag className="w-4 h-4 text-blue-600" />
+                    Ogłoszenia
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/message");
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4 text-green-600" />
+                    Czat
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/ratings");
+                    }}
+                  >
+                    <Star className="w-4 h-4 text-yellow-500" />
+                    Oceny
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/personaldetails");
                     }}
                   >
+                    <User className="w-4 h-4 text-purple-600" />
                     Profil
                   </button>
                   {isAdmin && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/admin");
                       }}
                     >
+                      <Shield className="w-4 h-4 text-red-600" />
                       Panel administratora
                     </button>
                   )}
                   {(isAdmin || isStaff) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/staffpanel");
                       }}
                     >
+                      <Users className="w-4 h-4 text-orange-600" />
                       Panel pracownika
                     </button>
                   )}
                   {(isAdmin || isStaff || isUser) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/userpanel");
                       }}
                     >
+                      <User className="w-4 h-4 text-blue-600" />
                       Panel użytkownika
                     </button>
                   )}
-                  <button onClick={handleLogout} className="dropdown-logout">
+                  <button
+                    onClick={handleLogout}
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                  >
+                    <LogOut className="w-4 h-4 text-red-600" />
                     Wyloguj
                   </button>
                 </div>

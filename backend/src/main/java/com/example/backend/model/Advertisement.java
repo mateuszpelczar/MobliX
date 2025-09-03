@@ -39,5 +39,8 @@ public class Advertisement {
 
     @OneToMany(mappedBy = "advertisement")
     private List<Moderation> moderations;
+
+    @OneToOne(mappedBy = "advertisement", cascade = CascadeType.ALL)
+    private SmartphoneSpecification smartphoneSpecification;
   
 }

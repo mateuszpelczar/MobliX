@@ -1,9 +1,11 @@
 C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\AdvertisementController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementRequest.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LoginRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java
@@ -22,6 +24,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\model\Report.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\ReportSummary.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Review.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Role.java
+C:\MobliX\backend\src\main\java\com\example\backend\model\SmartphoneSpecification.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Transaction.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\User.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\AdvertisementRepository.java
@@ -37,11 +40,13 @@ C:\MobliX\backend\src\main\java\com\example\backend\repository\RegulationReposit
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportSummaryRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReviewRepository.java
+C:\MobliX\backend\src\main\java\com\example\backend\repository\SmartphoneSpecificationRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\TransactionRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\UserRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\security\CustomUserDetails.java
 C:\MobliX\backend\src\main\java\com\example\backend\security\JwtAuthenticationFilter.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdminService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java

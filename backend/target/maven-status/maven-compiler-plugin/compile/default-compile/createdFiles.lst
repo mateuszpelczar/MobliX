@@ -1,10 +1,13 @@
+com\example\backend\service\AdvertisementService.class
 com\example\backend\dto\UserDto.class
+com\example\backend\dto\AdvertisementResponseDTO$SmartphoneSpecificationDTO.class
 com\example\backend\dto\UserDto$UserDtoBuilder.class
 com\example\backend\security\CustomUserDetails.class
 com\example\backend\dto\LoginRequest.class
 com\example\backend\controller\AuthController.class
 com\example\backend\model\Category.class
 com\example\backend\service\AdminService.class
+com\example\backend\dto\CreateAdvertisementDTO.class
 com\example\backend\model\Log.class
 com\example\backend\model\Message.class
 com\example\backend\repository\LogRepository.class
@@ -25,6 +28,7 @@ com\example\backend\repository\ImageRepository.class
 com\example\backend\dto\UserRoleChangeRequest.class
 com\example\backend\repository\RegulationRepository.class
 com\example\backend\controller\UserController.class
+com\example\backend\dto\AdvertisementResponseDTO.class
 com\example\backend\repository\CategoryRepository.class
 com\example\backend\model\FavoriteAd.class
 com\example\backend\repository\ReviewRepository.class
@@ -33,6 +37,7 @@ com\example\backend\model\Location.class
 com\example\backend\repository\UserRepository.class
 com\example\backend\model\Advertisement.class
 com\example\backend\repository\ConversationRepository.class
+com\example\backend\model\SmartphoneSpecification.class
 com\example\backend\dto\RegisterRequest.class
 com\example\backend\dto\UserRoleChangeRequest$UserRoleChangeRequestBuilder.class
 com\example\backend\model\Image.class
@@ -45,4 +50,5 @@ com\example\backend\security\JwtAuthenticationFilter.class
 com\example\backend\repository\ReportRepository.class
 com\example\backend\model\Regulation.class
 com\example\backend\model\ReportSummary.class
+com\example\backend\repository\SmartphoneSpecificationRepository.class
 com\example\backend\model\Role.class

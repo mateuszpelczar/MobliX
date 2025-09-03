@@ -1,6 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import {
+  MessageSquare,
+  ShoppingBag,
+  Star,
+  User,
+  Shield,
+  Users,
+  LogOut,
+  ChevronDown,
+  Plus,
+  Edit3,
+  Pause,
+  Play,
+  Trash2,
+  Eye,
+  Calendar,
+  Tag,
+} from "lucide-react";
 import "../../styles/MobileResponsive.css";
 
 type Ad = {
@@ -113,92 +131,90 @@ const YourAds: React.FC = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="account-dropdown-button"
             >
+              <User className="w-4 h-4" />
               Twoje konto
-              <svg
+              <ChevronDown
                 className={`w-4 h-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              />
             </button>
             {isDropdownOpen && (
               <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
                 <div className="py-1">
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/your-ads");
                     }}
                   >
+                    <ShoppingBag className="w-4 h-4 text-blue-600" />
                     Ogłoszenia
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/message");
                     }}
                   >
+                    <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/ratings");
                     }}
                   >
+                    <Star className="w-4 h-4 text-yellow-500" />
                     Oceny
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/personaldetails");
                     }}
                   >
+                    <User className="w-4 h-4 text-purple-600" />
                     Profil
                   </button>
                   {isAdmin && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/admin");
                       }}
                     >
+                      <Shield className="w-4 h-4 text-red-600" />
                       Panel administratora
                     </button>
                   )}
                   {(isAdmin || isStaff) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/staffpanel");
                       }}
                     >
+                      <Users className="w-4 h-4 text-orange-600" />
                       Panel pracownika
                     </button>
                   )}
                   {(isAdmin || isStaff || isUser) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/userpanel");
                       }}
                     >
+                      <User className="w-4 h-4 text-blue-600" />
                       Panel użytkownika
                     </button>
                   )}
@@ -208,8 +224,9 @@ const YourAds: React.FC = () => {
                       localStorage.removeItem("token");
                       window.location.href = "/";
                     }}
-                    className="dropdown-logout"
+                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
                   >
+                    <LogOut className="w-4 h-4 text-red-500" />
                     Wyloguj
                   </button>
                 </div>
@@ -222,21 +239,25 @@ const YourAds: React.FC = () => {
       {/* Content */}
       <div className="panel-content flex-grow w-full overflow-y-auto">
         <div className="container mx-auto px-4 relative pt-12 pb-12 max-w-5xl">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 min-h-[300px]">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center">
-              Twoje Ogłoszenia
-            </h1>
+          <div className="bg-white rounded-xl shadow-xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-8 min-h-[300px] border-t-4 border-blue-500">
+            {/* Header with gradient background */}
+            <div className="text-center relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg -z-10"></div>
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent py-6">
+                Twoje Ogłoszenia
+              </h1>
+            </div>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap justify-center border-b border-gray-200">
+            {/* Tabs with modern design */}
+            <div className="flex flex-wrap justify-center gap-2 bg-gray-50 p-2 rounded-xl">
               {tabLabels.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`px-4 py-2 mx-1 mb-2 text-sm font-medium rounded-t-lg transition-colors ${
+                  className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
                     activeTab === tab.key
-                      ? "bg-blue-500 text-white border-b-2 border-blue-500"
-                      : "text-gray-600 hover:text-blue-500 hover:bg-gray-50"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-md"
                   }`}
                 >
                   {tab.label}
@@ -244,70 +265,111 @@ const YourAds: React.FC = () => {
               ))}
             </div>
 
-            {/* Add new ad button */}
-            <div className="flex justify-center mb-4">
+            {/* Add new ad button with icon */}
+            <div className="flex justify-center">
               <button
                 onClick={() => navigate("/user/addadvertisement")}
-                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                className="group px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-3 font-semibold"
               >
-                + Dodaj nowe ogłoszenie
+                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                Dodaj nowe ogłoszenie
               </button>
             </div>
 
-            {/* Ads List */}
-            <div className="space-y-4">
+            {/* Ads List with modern cards */}
+            <div className="grid gap-6">
               {filtered.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  Brak ogłoszeń w tej kategorii
+                <div className="text-center py-12">
+                  <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <ShoppingBag className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-lg">
+                    Brak ogłoszeń w tej kategorii
+                  </p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Dodaj swoje pierwsze ogłoszenie
+                  </p>
                 </div>
               ) : (
                 filtered.map((ad) => (
                   <div
                     key={ad.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:border-blue-300 group"
                   >
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col lg:flex-row gap-6">
                       <div className="flex-shrink-0">
-                        <img
-                          src={ad.images[0]}
-                          alt={ad.title}
-                          className="w-full sm:w-32 h-32 object-cover rounded-lg bg-gray-200"
-                        />
+                        <div className="relative overflow-hidden rounded-xl">
+                          <img
+                            src={ad.images[0]}
+                            alt={ad.title}
+                            className="w-full lg:w-40 h-40 object-cover bg-gray-200 group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-3 left-3">
+                            <span
+                              className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                                ad.status === "active"
+                                  ? "bg-green-100 text-green-700"
+                                  : ad.status === "sold"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                              }`}
+                            >
+                              {ad.status === "active"
+                                ? "Aktywne"
+                                : ad.status === "sold"
+                                ? "Sprzedane"
+                                : "Wstrzymane"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-grow">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                          {ad.title}
-                        </h3>
-                        <p className="text-xl font-bold text-blue-600 mb-2">
-                          {ad.price.toLocaleString()} zł
-                        </p>
-                        <p className="text-sm text-gray-600 mb-2">
-                          Kategoria: {ad.category}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-2">
-                          Data: {ad.date}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Wyświetlenia: {ad.views}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="flex-grow space-y-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                            {ad.title}
+                          </h3>
+                          <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            {ad.price.toLocaleString()} zł
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Tag className="w-4 h-4 text-blue-500" />
+                            <span>{ad.category}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Calendar className="w-4 h-4 text-green-500" />
+                            <span>{ad.date}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Eye className="w-4 h-4 text-purple-500" />
+                            <span>{ad.views} wyświetleń</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 pt-2">
                           <button
                             onClick={() => navigate(`/user/edit-ad/${ad.id}`)}
-                            className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-all duration-200 hover:shadow-md"
                           >
+                            <Edit3 className="w-4 h-4" />
                             Edytuj
                           </button>
                           {ad.status === "active" && (
-                            <button className="px-4 py-2 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors">
+                            <button className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 transition-all duration-200 hover:shadow-md">
+                              <Pause className="w-4 h-4" />
                               Wstrzymaj
                             </button>
                           )}
                           {ad.status === "paused" && (
-                            <button className="px-4 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors">
+                            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 transition-all duration-200 hover:shadow-md">
+                              <Play className="w-4 h-4" />
                               Aktywuj
                             </button>
                           )}
-                          <button className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors">
+                          <button className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-all duration-200 hover:shadow-md">
+                            <Trash2 className="w-4 h-4" />
                             Usuń
                           </button>
                         </div>

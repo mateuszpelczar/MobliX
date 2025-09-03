@@ -3,6 +3,16 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../../styles/MobileResponsive.css";
 import { jwtDecode } from "jwt-decode";
+import {
+  MessageSquare,
+  ShoppingBag,
+  Star,
+  User,
+  Shield,
+  Users,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 
 interface User {
   id: number;
@@ -249,24 +259,15 @@ const ChangeRole: React.FC = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4"
+              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4 flex items-center gap-2"
             >
+              <User className="w-4 h-4" />
               Twoje konto
-              <svg
-                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ml-1 ${
+              <ChevronDown
+                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              />
             </button>
             {isDropdownOpen && (
               <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
@@ -274,39 +275,43 @@ const ChangeRole: React.FC = () => {
                   {token ? (
                     <>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black"
+                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/your-ads");
                         }}
                       >
+                        <ShoppingBag className="w-4 h-4 text-blue-600" />
                         Ogłoszenia
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black"
+                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/message");
                         }}
                       >
+                        <MessageSquare className="w-4 h-4 text-green-600" />
                         Czat
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black"
+                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/ratings");
                         }}
                       >
+                        <Star className="w-4 h-4 text-yellow-500" />
                         Oceny
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black"
+                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/personaldetails");
                         }}
                       >
+                        <User className="w-4 h-4 text-purple-600" />
                         Profil
                       </button>
                       {isAdmin && (
@@ -315,8 +320,9 @@ const ChangeRole: React.FC = () => {
                             setIsDropdownOpen(false);
                             navigate("/admin");
                           }}
-                          className="dropdown-button"
+                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         >
+                          <Shield className="w-4 h-4 text-red-600" />
                           Panel administratora
                         </button>
                       )}
@@ -326,8 +332,9 @@ const ChangeRole: React.FC = () => {
                             setIsDropdownOpen(false);
                             navigate("/staffpanel");
                           }}
-                          className="dropdown-button"
+                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         >
+                          <Users className="w-4 h-4 text-orange-600" />
                           Panel pracownika
                         </button>
                       )}
@@ -337,16 +344,18 @@ const ChangeRole: React.FC = () => {
                             setIsDropdownOpen(false);
                             navigate("/userpanel");
                           }}
-                          className="dropdown-button"
+                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         >
+                          <User className="w-4 h-4 text-blue-600" />
                           Panel użytkownika
                         </button>
                       )}
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
                         onClick={handleLogout}
-                        className="dropdown-logout"
+                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       >
+                        <LogOut className="w-4 h-4 text-red-600" />
                         Wyloguj
                       </button>
                     </>

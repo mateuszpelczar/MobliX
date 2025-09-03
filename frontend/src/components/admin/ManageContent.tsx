@@ -2,6 +2,16 @@ import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import "../../styles/MobileResponsive.css";
+import {
+  MessageSquare,
+  ShoppingBag,
+  Star,
+  User,
+  Shield,
+  Users,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 
 type ContentItem = {
   key: string;
@@ -94,62 +104,57 @@ const ManageContent: React.FC = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button"
+              className="account-dropdown-button flex items-center gap-2"
             >
+              <User className="w-4 h-4" />
               Twoje konto
-              <svg
+              <ChevronDown
                 className={`w-4 h-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              />
             </button>
             {isDropdownOpen && (
               <div className="dropdown-menu right-0">
                 <div className="py-1">
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/your-ads");
                     }}
                   >
+                    <ShoppingBag className="w-4 h-4 text-blue-600" />
                     Ogłoszenia
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/message");
                     }}
                   >
+                    <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/ratings");
                     }}
                   >
+                    <Star className="w-4 h-4 text-yellow-500" />
                     Oceny
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/personaldetails");
                     }}
                   >
+                    <User className="w-4 h-4 text-purple-600" />
                     Profil
                   </button>
                   {isAdmin && (

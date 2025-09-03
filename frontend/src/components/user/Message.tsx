@@ -1,6 +1,23 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import {
+  MessageSquare,
+  ShoppingBag,
+  Star,
+  User,
+  Shield,
+  Users,
+  LogOut,
+  ChevronDown,
+  Send,
+  Clock,
+  UserCircle,
+  Inbox,
+  MessageCircle,
+  Search,
+  Filter,
+} from "lucide-react";
 import "../../styles/MobileResponsive.css";
 
 type AdItem = { id: number; title: string; owner: "me" | "user" };
@@ -93,10 +110,6 @@ const EditAd: React.FC = () => {
     ],
   };
 
-  const visibleAds = ads.filter((a) =>
-    filter === "all" ? true : a.owner === filter
-  );
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
@@ -120,14 +133,6 @@ const EditAd: React.FC = () => {
     }
   }
 
-  const handleEdit = (id: number) => {
-    alert(`Edytuj ogłoszenie ID: ${id}`);
-  };
-  const handleDelete = (id: number) => {
-    const confirmed = confirm("Na pewno usunąć ogłoszenie?");
-    if (confirmed) alert(`Usunięto ogłoszenie ID: ${id}`);
-  };
-
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
       {/* Header like AdminPanel */}
@@ -145,96 +150,98 @@ const EditAd: React.FC = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="account-dropdown-button"
             >
+              <User className="w-4 h-4" />
               Twoje konto
-              <svg
+              <ChevronDown
                 className={`w-4 h-4 transition-transform ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              />
             </button>
             {isDropdownOpen && (
               <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
                 <div className="py-1">
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/your-ads");
                     }}
                   >
+                    <ShoppingBag className="w-4 h-4 text-blue-600" />
                     Ogłoszenia
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/message");
                     }}
                   >
+                    <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/ratings");
                     }}
                   >
+                    <Star className="w-4 h-4 text-yellow-500" />
                     Oceny
                   </button>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-black"
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
                       navigate("/user/personaldetails");
                     }}
                   >
+                    <User className="w-4 h-4 text-purple-600" />
                     Profil
                   </button>
                   {isAdmin && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/admin");
                       }}
                     >
+                      <Shield className="w-4 h-4 text-red-600" />
                       Panel administratora
                     </button>
                   )}
                   {(isAdmin || isStaff) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/staffpanel");
                       }}
                     >
+                      <Users className="w-4 h-4 text-orange-600" />
                       Panel pracownika
                     </button>
                   )}
                   {(isAdmin || isStaff || isUser) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/userpanel");
                       }}
                     >
+                      <User className="w-4 h-4 text-blue-600" />
                       Panel użytkownika
                     </button>
                   )}
-                  <button onClick={handleLogout} className="dropdown-logout">
+                  <button
+                    onClick={handleLogout}
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                  >
+                    <LogOut className="w-4 h-4 text-red-600" />
                     Wyloguj
                   </button>
                 </div>
@@ -246,101 +253,200 @@ const EditAd: React.FC = () => {
 
       {/* Content */}
       <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-12 pb-12 max-w-5xl">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 min-h-[300px]">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Wiadomości
-            </h2>
-            {/* Tabs for message type */}
-            <div className="flex justify-center mt-4 mb-6">
-              <button
-                className={`px-6 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${
-                  filter === "me"
-                    ? "border-blue-500 text-blue-600 bg-blue-50"
-                    : "border-transparent text-gray-600 bg-gray-100 hover:bg-gray-200"
-                }`}
-                onClick={() => setFilter("me")}
-              >
-                Moje ogłoszenia
-              </button>
-              <button
-                className={`px-6 py-2 rounded-t-lg font-semibold border-b-2 transition-colors ${
-                  filter === "user"
-                    ? "border-blue-500 text-blue-600 bg-blue-50"
-                    : "border-transparent text-gray-600 bg-gray-100 hover:bg-gray-200"
-                }`}
-                onClick={() => setFilter("user")}
-              >
-                Ogłoszenia
-              </button>
+        <div className="container mx-auto px-4 relative pt-40 pb-12 max-w-5xl">
+          <div className="bg-white rounded-xl shadow-xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-8 min-h-[300px] border-t-4 border-blue-500">
+            {/* Header with gradient background and icon */}
+            <div className="text-center relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg -z-10"></div>
+              <div className="flex items-center justify-center gap-3 py-6">
+                <MessageCircle className="w-8 h-8 text-blue-600" />
+                <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Wiadomości
+                </h2>
+              </div>
             </div>
-            {/* Tab content - two-column layout */}
-            <div className="mt-2 flex flex-col md:flex-row gap-4 min-h-[300px]">
-              {/* Left: list of conversations */}
-              <div className="w-full md:w-1/3 border-r border-gray-200 pr-0 md:pr-4">
-                <p className="mb-2 font-medium text-center md:text-left">
-                  {filter === "me"
-                    ? "Rozmowy dotyczące Twoich ogłoszeń:"
-                    : "Wiadomości wysłane do sprzedawców:"}
-                </p>
-                {ads.filter((a) => a.owner === filter).length === 0 ? (
-                  <p className="text-gray-400 text-center md:text-left">
-                    Brak rozmów.
+            {/* Modern tabs with icons */}
+            <div className="flex justify-center">
+              <div className="bg-gray-50 p-2 rounded-xl flex gap-2">
+                <button
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    filter === "me"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-md"
+                  }`}
+                  onClick={() => setFilter("me")}
+                >
+                  <Inbox className="w-4 h-4" />
+                  Moje ogłoszenia
+                </button>
+                <button
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    filter === "user"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-md"
+                  }`}
+                  onClick={() => setFilter("user")}
+                >
+                  <Search className="w-4 h-4" />
+                  Ogłoszenia
+                </button>
+              </div>
+            </div>
+            {/* Modern two-column layout with enhanced styling */}
+            <div className="flex flex-col lg:flex-row gap-6 min-h-[400px]">
+              {/* Left: Enhanced conversations list */}
+              <div className="w-full lg:w-2/5 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="w-5 h-5 text-blue-600" />
+                  <p className="font-semibold text-gray-800">
+                    {filter === "me"
+                      ? "Rozmowy dotyczące Twoich ogłoszeń"
+                      : "Wiadomości wysłane do sprzedawców"}
                   </p>
+                </div>
+
+                {ads.filter((a) => a.owner === filter).length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                      <MessageSquare className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-lg">Brak rozmów</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Rozpocznij pierwszą konwersację
+                    </p>
+                  </div>
                 ) : (
-                  <ul className="divide-y divide-gray-200">
+                  <div className="space-y-2">
                     {ads
                       .filter((a) => a.owner === filter)
                       .map((a) => (
-                        <li
+                        <div
                           key={a.id}
-                          className={`py-2 px-2 cursor-pointer rounded transition-colors flex items-center justify-between ${
+                          className={`p-4 cursor-pointer rounded-xl transition-all duration-200 border ${
                             selectedId === a.id
-                              ? "bg-blue-100"
-                              : "hover:bg-gray-100"
+                              ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white border-blue-300 shadow-lg transform scale-102"
+                              : "hover:bg-white hover:shadow-md border-gray-100 bg-gray-50"
                           }`}
                           onClick={() => setSelectedId(a.id)}
                         >
-                          <span className="truncate max-w-[140px] md:max-w-[180px] text-gray-800">
-                            {a.title}
-                          </span>
-                          {selectedId === a.id && (
-                            <span className="ml-2 text-xs text-blue-500">
-                              Wybrane
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                  </ul>
-                )}
-              </div>
-              {/* Right: conversation details */}
-              <div className="w-full md:w-2/3 flex flex-col items-center justify-center min-h-[200px]">
-                {selectedId && conversations[selectedId] ? (
-                  <div className="w-full max-w-xl mx-auto">
-                    <div className="mb-2 font-semibold text-lg text-center md:text-left">
-                      Szczegóły rozmowy
-                    </div>
-                    <div className="bg-gray-50 rounded p-4 shadow-inner min-h-[120px]">
-                      {conversations[selectedId].map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className="mb-2 flex flex-col items-start"
-                        >
-                          <span className="text-xs text-gray-500">
-                            {msg.sender}{" "}
-                            <span className="ml-2">{msg.time}</span>
-                          </span>
-                          <span className="text-base text-gray-800 ml-2">
-                            {msg.text}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <UserCircle
+                              className={`w-8 h-8 flex-shrink-0 ${
+                                selectedId === a.id
+                                  ? "text-white"
+                                  : "text-gray-400"
+                              }`}
+                            />
+                            <div className="flex-grow min-w-0">
+                              <p
+                                className={`font-medium truncate ${
+                                  selectedId === a.id
+                                    ? "text-white"
+                                    : "text-gray-800"
+                                }`}
+                              >
+                                {a.title.split(" - ")[0]}
+                              </p>
+                              <p
+                                className={`text-sm truncate ${
+                                  selectedId === a.id
+                                    ? "text-blue-100"
+                                    : "text-gray-500"
+                                }`}
+                              >
+                                {a.title.split(" - ")[1] || "Nowa rozmowa"}
+                              </p>
+                            </div>
+                            {selectedId === a.id && (
+                              <div className="w-3 h-3 bg-white rounded-full flex-shrink-0"></div>
+                            )}
+                          </div>
                         </div>
                       ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Enhanced conversation details */}
+              <div className="w-full lg:w-3/5 bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 shadow-sm flex flex-col">
+                {selectedId && conversations[selectedId] ? (
+                  <div className="flex flex-col h-full">
+                    {/* Chat header */}
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-4 rounded-t-xl">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="w-6 h-6" />
+                        <div>
+                          <h3 className="font-semibold">Szczegóły rozmowy</h3>
+                          <p className="text-blue-100 text-sm">
+                            Aktywna konwersacja
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Messages area */}
+                    <div className="flex-grow p-6 overflow-y-auto">
+                      <div className="space-y-4">
+                        {conversations[selectedId].map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex ${
+                              msg.sender === "Ty"
+                                ? "justify-end"
+                                : "justify-start"
+                            }`}
+                          >
+                            <div
+                              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                                msg.sender === "Ty"
+                                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              <p className="text-sm">{msg.text}</p>
+                              <div
+                                className={`flex items-center gap-1 mt-2 text-xs ${
+                                  msg.sender === "Ty"
+                                    ? "text-blue-100"
+                                    : "text-gray-500"
+                                }`}
+                              >
+                                <Clock className="w-3 h-3" />
+                                <span>{msg.time}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Message input */}
+                    <div className="p-4 border-t border-gray-200">
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          placeholder="Napisz wiadomość..."
+                          className="flex-grow px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <button className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full hover:shadow-lg transition-all duration-200">
+                          <Send className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-gray-400 text-center">
-                    Wybierz rozmowę z listy po lewej stronie.
+                  <div className="flex items-center justify-center h-full p-12">
+                    <div className="text-center">
+                      <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                        <MessageSquare className="w-10 h-10 text-blue-500" />
+                      </div>
+                      <p className="text-gray-500 text-lg font-medium">
+                        Wybierz rozmowę
+                      </p>
+                      <p className="text-gray-400 text-sm mt-2">
+                        Kliknij na konwersację z listy po lewej stronie
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
