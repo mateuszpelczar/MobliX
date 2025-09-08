@@ -14,10 +14,9 @@ import {
   ChevronDown,
   Eye,
   CheckCircle,
-  Package,
-  ShoppingCart,
   BarChart3,
   UserCheck,
+  Flag,
 } from "lucide-react";
 
 const StaffPanel: React.FC = () => {
@@ -169,7 +168,7 @@ const StaffPanel: React.FC = () => {
         <div className="container mx-auto px-4 relative pt-[220px] pb-16 max-w-6xl">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 text-white">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6 text-white">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-3 rounded-full">
                   <Users className="w-8 h-8" />
@@ -239,11 +238,9 @@ const StaffPanel: React.FC = () => {
                   </div>
                 </button>
 
-                {/* Zarządzanie stanem magazynowym */}
+                {/* Moderacja użytkowników */}
                 <button
-                  onClick={() =>
-                    navigate("/staff/zarzadzanie-stanem-magazynowym")
-                  }
+                  onClick={() => navigate("/staff/moderacja-uzytkownikow")}
                   className="staff-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
                   style={
                     {
@@ -254,40 +251,40 @@ const StaffPanel: React.FC = () => {
                 >
                   <div className="flex flex-col items-center gap-4">
                     <div className="staff-card-icon bg-white/20 p-4 rounded-full">
-                      <Package className="w-8 h-8" />
+                      <Users className="w-8 h-8" />
                     </div>
                     <div className="text-center">
                       <h3 className="text-lg font-bold mb-2">
-                        Stan magazynowy
+                        Moderacja użytkowników
                       </h3>
                       <p className="text-purple-100 text-sm">
-                        Monitoruj dostępność produktów
+                        Zarządzaj kontami użytkowników
                       </p>
                     </div>
                   </div>
                 </button>
 
-                {/* Obsługa zamówień */}
+                {/* Moderacja zgłoszeń */}
                 <button
-                  onClick={() => navigate("/staff/obsluga-zamowien")}
+                  onClick={() => navigate("/staff/moderacja-zgloszen")}
                   className="staff-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
                   style={
                     {
-                      "--card-color-1": "#14b8a6",
-                      "--card-color-2": "#0d9488",
+                      "--card-color-1": "#dc2626",
+                      "--card-color-2": "#b91c1c",
                     } as React.CSSProperties
                   }
                 >
                   <div className="flex flex-col items-center gap-4">
                     <div className="staff-card-icon bg-white/20 p-4 rounded-full">
-                      <ShoppingCart className="w-8 h-8" />
+                      <Flag className="w-8 h-8" />
                     </div>
                     <div className="text-center">
                       <h3 className="text-lg font-bold mb-2">
-                        Obsługa zamówień
+                        Moderacja zgłoszeń
                       </h3>
-                      <p className="text-teal-100 text-sm">
-                        Przetwarzaj i realizuj zamówienia
+                      <p className="text-red-100 text-sm">
+                        Rozpatruj zgłoszenia użytkowników
                       </p>
                     </div>
                   </div>
@@ -327,7 +324,7 @@ const StaffPanel: React.FC = () => {
                     <Eye className="w-6 h-6 text-blue-600" />
                     <div>
                       <div className="text-sm text-blue-600 font-medium">
-                        Oczekujące
+                        Oczekujące ogłoszenia
                       </div>
                       <div className="text-xl font-bold text-blue-800">12</div>
                     </div>
@@ -348,14 +345,25 @@ const StaffPanel: React.FC = () => {
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
                   <div className="flex items-center gap-3">
-                    <Package className="w-6 h-6 text-purple-600" />
+                    <Users className="w-6 h-6 text-purple-600" />
                     <div>
                       <div className="text-sm text-purple-600 font-medium">
-                        Produkty
+                        Aktywni użytkownicy
                       </div>
                       <div className="text-xl font-bold text-purple-800">
                         1,234
                       </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
+                  <div className="flex items-center gap-3">
+                    <Flag className="w-6 h-6 text-red-600" />
+                    <div>
+                      <div className="text-sm text-red-600 font-medium">
+                        Zgłoszenia
+                      </div>
+                      <div className="text-xl font-bold text-red-800">3</div>
                     </div>
                   </div>
                 </div>

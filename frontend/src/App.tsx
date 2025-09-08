@@ -27,9 +27,10 @@ import Ratings from "./components/user/Ratings";
 import StaffPanel from "./components/StaffPanel";
 import ModeracjaOgloszen from "./components/staff/ModeracjaOgloszen";
 import ModeracjaOpinii from "./components/staff/ModeracjaOpinii";
-import ObslugaZamowien from "./components/staff/ObslugaZamowien";
 import StatystkiSprzedazy from "./components/staff/StatystykiSprzedazy";
-import ZarzadzanieStanemMagazynowym from "./components/staff/ZarzadzanieStanemMagazynowym";
+import ModeracjaUzytkownikow from "./components/staff/ModeracjaUzytkownikow";
+import ModeracjaZgloszen from "./components/staff/ModeracjaZgloszen";
+
 const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -105,11 +106,16 @@ const App: React.FC = () => {
         <Route path="/user/ratings" element={<Ratings />} />
         <Route path="/user/mainpanel" element={<MainPanel />} />
         <Route path="/staff/moderacja-opinii" element={<ModeracjaOpinii />} />
-        <Route path="/staff/obsluga-zamowien" element={<ObslugaZamowien />} />
         <Route
-          path="/staff/zarzadzanie-stanem-magazynowym"
-          element={<ZarzadzanieStanemMagazynowym />}
+          path="/staff/moderacja-zgloszen"
+          element={<ModeracjaZgloszen />}
         />
+
+        <Route
+          path="/staff/moderacja-uzytkownikow"
+          element={<ModeracjaUzytkownikow />}
+        />
+
         <Route
           path="/staff/statystyki-sprzedazy"
           element={<StatystkiSprzedazy />}

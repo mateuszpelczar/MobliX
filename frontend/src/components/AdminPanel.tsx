@@ -10,8 +10,15 @@ import {
   Users,
   LogOut,
   ChevronDown,
+  FileEdit,
+  BarChart3,
+  UserCheck,
+  Edit3,
+  Activity,
+  Crown,
 } from "lucide-react";
 import "../styles/MobileResponsive.css";
+import "../styles/AdminPanel.css";
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
@@ -162,40 +169,192 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* Main content with large white box and admin buttons */}
-      <div className="panel-content flex-grow w-full overflow-y-auto flex justify-center items-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 md:p-12 lg:p-16 w-full max-w-5xl flex flex-col gap-4 sm:gap-8 md:gap-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 md:gap-8">
-            <button
-              onClick={() => navigate("/admin/change-role")}
-              className="admin-btn bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
-            >
-              Zarządzaj kontami
-            </button>
-            <button
-              onClick={() => navigate("/admin/edit-ad")}
-              className="admin-btn bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
-            >
-              Edytuj ogłoszenie
-            </button>
-            <button
-              onClick={() => navigate("/admin/system-logs")}
-              className="admin-btn bg-green-500 hover:bg-green-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
-            >
-              Logi systemowe
-            </button>
-            <button
-              onClick={() => navigate("/admin/manage-content")}
-              className="admin-btn bg-pink-500 hover:bg-pink-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg"
-            >
-              Zarządzaj treściami
-            </button>
-            <button
-              onClick={() => navigate("/admin/raports")}
-              className="admin-btn bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 sm:py-4 md:py-6 px-4 sm:px-6 md:px-8 rounded-xl shadow-md transition-colors text-sm sm:text-base md:text-lg sm:col-span-2"
-            >
-              Raporty
-            </button>
+      {/* Main content with modern design */}
+      <div className="panel-content flex-grow w-full overflow-y-auto">
+        <div className="container mx-auto px-4 relative pt-[220px] pb-16 max-w-6xl">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <Crown className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold">
+                    Panel Administratora
+                  </h1>
+                  <p className="text-purple-100">
+                    Pełna kontrola nad platformą MobliX
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8 admin-content max-h-[calc(100vh-320px)] overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Zarządzaj kontami */}
+                <button
+                  onClick={() => navigate("/admin/change-role")}
+                  className="admin-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#3b82f6",
+                      "--card-color-2": "#1d4ed8",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="admin-card-icon bg-white/20 p-4 rounded-full">
+                      <UserCheck className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">
+                        Zarządzaj kontami
+                      </h3>
+                      <p className="text-blue-100 text-sm">
+                        Kontrola ról użytkowników i uprawnień
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Edytuj ogłoszenie */}
+                <button
+                  onClick={() => navigate("/admin/edit-ad")}
+                  className="admin-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#8b5cf6",
+                      "--card-color-2": "#7c3aed",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="admin-card-icon bg-white/20 p-4 rounded-full">
+                      <Edit3 className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">
+                        Edytuj ogłoszenia
+                      </h3>
+                      <p className="text-purple-100 text-sm">
+                        Moderacja i edycja treści ogłoszeń
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Logi systemowe */}
+                <button
+                  onClick={() => navigate("/admin/system-logs")}
+                  className="admin-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#10b981",
+                      "--card-color-2": "#059669",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="admin-card-icon bg-white/20 p-4 rounded-full">
+                      <Activity className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Logi systemowe</h3>
+                      <p className="text-green-100 text-sm">
+                        Monitorowanie aktywności systemu
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Zarządzaj treściami */}
+                <button
+                  onClick={() => navigate("/admin/manage-content")}
+                  className="admin-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#ec4899",
+                      "--card-color-2": "#db2777",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="admin-card-icon bg-white/20 p-4 rounded-full">
+                      <FileEdit className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">
+                        Zarządzaj treściami
+                      </h3>
+                      <p className="text-pink-100 text-sm">
+                        Edycja stron i zawartości witryny
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Raporty */}
+                <button
+                  onClick={() => navigate("/admin/raports")}
+                  className="admin-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#f59e0b",
+                      "--card-color-2": "#d97706",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="admin-card-icon bg-white/20 p-4 rounded-full">
+                      <BarChart3 className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Raporty</h3>
+                      <p className="text-amber-100 text-sm">
+                        Analityka i szczegółowe raporty
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Admin Dashboard Stats */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-purple-600" />
+                  Statystyki systemu
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <div className="text-sm text-blue-600 font-medium">
+                          Użytkownicy
+                        </div>
+                        <div className="text-xl font-bold text-blue-800">
+                          2,547
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                    <div className="flex items-center gap-3">
+                      <ShoppingBag className="w-6 h-6 text-green-600" />
+                      <div>
+                        <div className="text-sm text-green-600 font-medium">
+                          Ogłoszenia
+                        </div>
+                        <div className="text-xl font-bold text-green-800">
+                          12,431
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

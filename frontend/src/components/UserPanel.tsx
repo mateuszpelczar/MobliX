@@ -19,6 +19,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import "../styles/MobileResponsive.css";
+import "../styles/UserPanel.css";
 
 const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -163,145 +164,220 @@ const UserPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content with large white box and user dashboard */}
-      <div className="user-panel-content flex-grow w-full overflow-y-auto flex justify-center items-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8 md:p-12 lg:p-16 w-full max-w-6xl flex flex-col gap-6 sm:gap-8 md:gap-10">
-          {/* Welcome Section */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-              Panel Użytkownika
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base md:text-lg">
-              Zarządzaj swoimi ogłoszeniami i profilem w jednym miejscu
-            </p>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl text-center">
-              <div className="flex items-center justify-center mb-2">
-                <ShoppingBag className="h-6 w-6 text-blue-600" />
+      {/* Main content with modern design */}
+      <div className="panel-content flex-grow w-full overflow-y-auto">
+        <div className="container mx-auto px-4 relative pt-[220px] pb-16 max-w-6xl">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <User className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold">
+                    Panel Użytkownika
+                  </h1>
+                  <p className="text-blue-100">
+                    Zarządzaj swoimi ogłoszeniami i profilem
+                  </p>
+                </div>
               </div>
-              <div className="text-xl font-bold text-blue-600">0</div>
-              <div className="text-xs text-blue-500">Aktywne ogłoszenia</div>
             </div>
-            <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl text-center">
-              <div className="flex items-center justify-center mb-2">
-                <BarChart3 className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="text-xl font-bold text-green-600">0</div>
-              <div className="text-xs text-green-500">Wyświetlenia</div>
-            </div>
-            <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Heart className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="text-xl font-bold text-purple-600">0</div>
-              <div className="text-xs text-purple-500">Obserwowane</div>
-            </div>
-            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-xl text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Star className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="text-xl font-bold text-orange-600">5.0</div>
-              <div className="text-xs text-orange-500">Ocena</div>
-            </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Primary Actions */}
-            <button
-              onClick={() => navigate("/user/addadvertisement")}
-              className="group bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-4 sm:py-6 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <Plus className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-base sm:text-lg">Dodaj ogłoszenie</span>
+            <div className="p-6 sm:p-8 user-content max-h-[calc(100vh-320px)] overflow-y-auto">
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl text-center border border-blue-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <ShoppingBag className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="text-xl font-bold text-blue-600">0</div>
+                  <div className="text-xs text-blue-500">
+                    Aktywne ogłoszenia
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl text-center border border-green-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <BarChart3 className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="text-xl font-bold text-green-600">0</div>
+                  <div className="text-xs text-green-500">Wyświetlenia</div>
+                </div>
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl text-center border border-purple-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <Heart className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="text-xl font-bold text-purple-600">0</div>
+                  <div className="text-xs text-purple-500">Obserwowane</div>
+                </div>
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-xl text-center border border-orange-200">
+                  <div className="flex items-center justify-center mb-2">
+                    <Star className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="text-xl font-bold text-orange-600">5.0</div>
+                  <div className="text-xs text-orange-500">Ocena</div>
+                </div>
               </div>
-              <p className="text-pink-100 text-xs sm:text-sm">
-                Sprzedaj swój telefon
-              </p>
-            </button>
 
-            <button
-              onClick={() => navigate("/user/your-ads")}
-              className="group bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-4 sm:py-6 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <Edit3 className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-base sm:text-lg">Twoje ogłoszenia</span>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Primary Actions */}
+                <button
+                  onClick={() => navigate("/user/addadvertisement")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#ec4899",
+                      "--card-color-2": "#db2777",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <Plus className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">
+                        Dodaj ogłoszenie
+                      </h3>
+                      <p className="text-pink-100 text-sm">
+                        Sprzedaj swój telefon
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate("/user/your-ads")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#f59e0b",
+                      "--card-color-2": "#d97706",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <Edit3 className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">
+                        Twoje ogłoszenia
+                      </h3>
+                      <p className="text-amber-100 text-sm">
+                        Zarządzaj ofertami
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate("/user/message")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#3b82f6",
+                      "--card-color-2": "#1d4ed8",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <MessageSquare className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Wiadomości</h3>
+                      <p className="text-blue-100 text-sm">
+                        Komunikacja z kupującymi
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Secondary Actions */}
+                <button
+                  onClick={() => navigate("/user/watched-ads")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#10b981",
+                      "--card-color-2": "#059669",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <Eye className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Obserwowane</h3>
+                      <p className="text-emerald-100 text-sm">
+                        Ulubione oferty
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate("/user/notifications")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#dc2626",
+                      "--card-color-2": "#b91c1c",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <Bell className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Powiadomienia</h3>
+                      <p className="text-red-100 text-sm">Ważne informacje</p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate("/user/personaldetails")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#8b5cf6",
+                      "--card-color-2": "#7c3aed",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <User className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Profil</h3>
+                      <p className="text-purple-100 text-sm">Dane osobowe</p>
+                    </div>
+                  </div>
+                </button>
               </div>
-              <p className="text-yellow-100 text-xs sm:text-sm">
-                Zarządzaj ofertami
-              </p>
-            </button>
 
-            <button
-              onClick={() => navigate("/user/message")}
-              className="group bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-4 sm:py-6 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <MessageSquare className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-base sm:text-lg">Wiadomości</span>
+              {/* Recent Activity Section */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  Ostatnia aktywność
+                </h3>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
+                  <div className="text-gray-600 text-center py-8">
+                    <p>Brak ostatniej aktywności</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Dodaj swoje pierwsze ogłoszenie!
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-blue-100 text-xs sm:text-sm">
-                Komunikacja z kupującymi
-              </p>
-            </button>
-
-            {/* Secondary Actions */}
-            <button
-              onClick={() => navigate("/user/watched-ads")}
-              className="group bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold py-4 sm:py-6 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <Eye className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-base sm:text-lg">Obserwowane</span>
-              </div>
-              <p className="text-teal-100 text-xs sm:text-sm">
-                Ulubione oferty
-              </p>
-            </button>
-
-            <button
-              onClick={() => navigate("/user/notifications")}
-              className="group bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-4 sm:py-6 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <Bell className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-base sm:text-lg">Powiadomienia</span>
-              </div>
-              <p className="text-red-100 text-xs sm:text-sm">
-                Ważne informacje
-              </p>
-            </button>
-
-            <button
-              onClick={() => navigate("/user/personaldetails")}
-              className="group bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-4 sm:py-6 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <User className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                <span className="text-base sm:text-lg">Profil</span>
-              </div>
-              <p className="text-indigo-100 text-xs sm:text-sm">Dane osobowe</p>
-            </button>
-          </div>
-
-          {/* Recent Activity Section */}
-          <div className="mt-8 p-6 bg-gray-50 rounded-xl">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-gray-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Ostatnia aktywność
-              </h3>
-            </div>
-            <div className="text-gray-600 text-center py-8">
-              <p>Brak ostatniej aktywności</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Dodaj swoje pierwsze ogłoszenie!
-              </p>
             </div>
           </div>
         </div>
