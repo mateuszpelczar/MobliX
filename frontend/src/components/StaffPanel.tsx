@@ -290,9 +290,9 @@ const StaffPanel: React.FC = () => {
                   </div>
                 </button>
 
-                {/* Statystyki sprzedaży */}
+                {/* Statystyki */}
                 <button
-                  onClick={() => navigate("/staff/statystyki-sprzedazy")}
+                  onClick={() => navigate("/staff/statystyki")}
                   className="staff-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl md:col-span-2 lg:col-span-1"
                   style={
                     {
@@ -306,11 +306,9 @@ const StaffPanel: React.FC = () => {
                       <BarChart3 className="w-8 h-8" />
                     </div>
                     <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">
-                        Statystyki sprzedaży
-                      </h3>
+                      <h3 className="text-lg font-bold mb-2">Statystyki</h3>
                       <p className="text-indigo-100 text-sm">
-                        Analizuj wyniki i trendy sprzedażowe
+                        Analizuj wyniki i trendy
                       </p>
                     </div>
                   </div>

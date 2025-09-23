@@ -1,4 +1,3 @@
-com\example\backend\service\AdvertisementService.class
 com\example\backend\dto\UserDto.class
 com\example\backend\dto\AdvertisementResponseDTO$SmartphoneSpecificationDTO.class
 com\example\backend\dto\UserDto$UserDtoBuilder.class

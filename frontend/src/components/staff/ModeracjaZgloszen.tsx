@@ -30,7 +30,6 @@ import {
   AlertCircle,
   UserX,
   Trash2,
-  MoreHorizontal,
   ExternalLink,
 } from "lucide-react";
 
@@ -535,54 +534,6 @@ const ModeracjaZgloszen: React.FC = () => {
               </div>
             </div>
 
-            {/* Statystyki */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-800">
-                    Oczekujące
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-yellow-900 mt-1">
-                  {mockReports.filter((r) => r.status === "oczekujace").length}
-                </div>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">
-                    W trakcie
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-blue-900 mt-1">
-                  {mockReports.filter((r) => r.status === "w_trakcie").length}
-                </div>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">
-                    Rozwiązane
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-green-900 mt-1">
-                  {mockReports.filter((r) => r.status === "rozwiazane").length}
-                </div>
-              </div>
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
-                  <span className="text-sm font-medium text-red-800">
-                    Priorytetowe
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-red-900 mt-1">
-                  {mockReports.filter((r) => r.priority === "wysoki").length}
-                </div>
-              </div>
-            </div>
-
             {/* Lista zgłoszeń */}
             <div className="flex flex-col gap-4">
               {filteredReports.length === 0 && (
@@ -726,14 +677,6 @@ const ModeracjaZgloszen: React.FC = () => {
                           </button>
                         </>
                       )}
-
-                      <button
-                        onClick={() => handleReportAction(report.id, "more")}
-                        className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 lg:flex-none justify-center"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                        Więcej
-                      </button>
                     </div>
                   </div>
                 </div>

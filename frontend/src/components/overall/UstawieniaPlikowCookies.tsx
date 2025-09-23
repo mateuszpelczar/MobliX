@@ -17,6 +17,7 @@ type Consent = {
   essential: boolean;
   analytics: boolean;
   functional: boolean;
+  communication: boolean;
   advertising: boolean;
   updatedAt?: string;
 };
@@ -26,6 +27,7 @@ const defaultConsent: Consent = {
   essential: true,
   analytics: false,
   functional: false,
+  communication: false,
   advertising: false,
 };
 
@@ -221,7 +223,8 @@ const UstawieniaPlikowCookies: React.FC = () => {
                   Ustawienia plików cookies
                 </h1>
                 <p className="text-sm text-gray-600">
-                  Zarządzaj zgodami na poszczególne kategorie plików cookies.
+                  Zarządzaj zgodami na poszczególne kategorie plików cookies w
+                  platformie MobliX - ogłoszenia smartfonów.
                 </p>
               </div>
               {saved && (
@@ -251,8 +254,9 @@ const UstawieniaPlikowCookies: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Niezbędne</h3>
                     <p className="text-gray-600 text-sm">
-                      Wymagane do działania serwisu (sesja, bezpieczeństwo). Nie
-                      można ich wyłączyć.
+                      Wymagane do działania MobliX - logowanie, sesja
+                      użytkownika, bezpieczeństwo transakcji i ochrona przed
+                      atakami. Nie można ich wyłączyć.
                     </p>
                   </div>
                   <label className="inline-flex items-center gap-2 text-gray-400 cursor-not-allowed">
@@ -274,8 +278,9 @@ const UstawieniaPlikowCookies: React.FC = () => {
                   <div>
                     <h3 className="font-semibold text-gray-900">Analityczne</h3>
                     <p className="text-gray-600 text-sm">
-                      Pomagają zrozumieć, jak użytkownicy korzystają z serwisu
-                      (statystyki, wydajność).
+                      Analiza popularności marek smartfonów, statystyki
+                      wyszukiwań, trendy cenowe i raporty wydajności platformy
+                      MobliX.
                     </p>
                   </div>
                   <label className="inline-flex items-center gap-2">
@@ -303,8 +308,10 @@ const UstawieniaPlikowCookies: React.FC = () => {
                       Funkcjonalne
                     </h3>
                     <p className="text-gray-600 text-sm">
-                      Zapamiętują ustawienia i preferencje (np. filtry, układ
-                      listy).
+                      Zapamiętywanie filtrów wyszukiwania (marka, cena,
+                      lokalizacja), ulubione ogłoszenia, preferencje
+                      wyświetlania i ustawienia powiadomień o nowych
+                      smartfonach.
                     </p>
                   </div>
                   <label className="inline-flex items-center gap-2">
@@ -324,13 +331,43 @@ const UstawieniaPlikowCookies: React.FC = () => {
                 </div>
               </div>
 
+              {/* Komunikacja */}
+              <div className="border rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Komunikacja</h3>
+                    <p className="text-gray-600 text-sm">
+                      Wsparcie dla czatu w czasie rzeczywistym, powiadomienia o
+                      nowych wiadomościach, historie konwersacji ze sprzedawcami
+                      i automatyczne tłumaczenia.
+                    </p>
+                  </div>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5"
+                      checked={consent.communication}
+                      onChange={(e) =>
+                        setConsent((c) => ({
+                          ...c,
+                          communication: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span className="text-sm">Włącz</span>
+                  </label>
+                </div>
+              </div>
+
               {/* Reklamowe */}
               <div className="border rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-900">Reklamowe</h3>
                     <p className="text-gray-600 text-sm">
-                      Personalizacja reklam i pomiar ich skuteczności.
+                      Spersonalizowane reklamy smartfonów na podstawie Twoich
+                      wyszukiwań, promowane ogłoszenia dopasowane do
+                      zainteresowań i partnerskie oferty akcesoriów.
                     </p>
                   </div>
                   <label className="inline-flex items-center gap-2">
@@ -355,7 +392,7 @@ const UstawieniaPlikowCookies: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-end pt-2">
               <button
                 onClick={handleReset}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
               >
                 Przywróć domyślne
               </button>

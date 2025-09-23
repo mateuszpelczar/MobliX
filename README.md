@@ -1,2 +1,3 @@
 # MobliX
-MobliX is an electronic store, selling only smartphones.
+
+MobliX is an online marketplace where you can list your smartphone for sale.

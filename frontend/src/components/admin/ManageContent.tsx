@@ -11,6 +11,13 @@ import {
   Users,
   LogOut,
   ChevronDown,
+  FileText,
+  Search,
+  Settings,
+  BookOpen,
+  Cookie,
+  HelpCircle,
+  Edit3,
 } from "lucide-react";
 
 type ContentItem = {
@@ -18,6 +25,7 @@ type ContentItem = {
   title: string;
   path: string;
   description: string;
+  icon: React.ComponentType<{ className?: string }>;
 };
 
 const ITEMS: ContentItem[] = [
@@ -26,36 +34,42 @@ const ITEMS: ContentItem[] = [
     title: "Zasady bezpieczeństwa",
     path: "/zasady-bezpieczenstwa",
     description: "Wskazówki jak bezpiecznie kupować i sprzedawać w MobliX.",
+    icon: Shield,
   },
   {
     key: "popular",
     title: "Popularne wyszukiwania",
     path: "/popularne-wyszukiwania",
     description: "Najczęściej wyszukiwane frazy i kategorie.",
+    icon: Search,
   },
   {
     key: "how",
     title: "Jak działa MobliX",
     path: "/jak-dziala-moblix",
     description: "Opis działania platformy, kontaktu i moderacji.",
+    icon: HelpCircle,
   },
   {
     key: "terms",
     title: "Regulamin",
     path: "/regulamin",
     description: "Zasady korzystania z serwisu.",
+    icon: BookOpen,
   },
   {
     key: "cookies",
     title: "Polityka cookies",
     path: "/polityka-cookies",
     description: "Informacje o plikach cookies i preferencjach.",
+    icon: Cookie,
   },
   {
     key: "cookies-settings",
     title: "Ustawienia plików cookies",
     path: "/ustawienia-plikow-cookies",
     description: "Konfiguracja zgód na poszczególne kategorie cookies.",
+    icon: Settings,
   },
 ];
 
@@ -201,48 +215,80 @@ const ManageContent: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-16 pb-12 max-w-5xl">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Zarządzaj treściami
-              </h1>
+      <div
+        className="panel-content pt-20 px-4 pb-6 flex-1 flex"
+        style={{ paddingTop: "100px" }}
+      >
+        <div
+          className="bg-white rounded-2xl shadow-lg p-6 max-w-6xl mx-auto w-full max-h-[80vh] overflow-y-auto"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "#a855f7 #f3f4f6",
+          }}
+        >
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-white/20 p-3 rounded-full">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                  System Zarządzania Treściami
+                </h1>
+                <p className="text-purple-100 text-lg">
+                  Kompleksowe narzędzie do administracji treści platformy
+                </p>
+              </div>
             </div>
-
-            <p className="text-gray-700">
-              Wybierz stronę z listy i kliknij „Edytuj”, aby przejść do jej
-              widoku i zmienić treść.
+            <p className="text-purple-100">
+              Zarządzaj wszystkimi stronami informacyjnymi, regulaminami i
+              ustawieniami platformy MobliX
             </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ITEMS.map((item) => (
+          <p className="text-gray-700 mb-6">
+            Wybierz stronę z listy i kliknij „Edytuj", aby przejść do jej widoku
+            i zmienić treść.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+            {ITEMS.map((item) => {
+              const IconComponent = item.icon;
+              return (
                 <div
                   key={item.key}
-                  className="border rounded-xl p-4 flex flex-col gap-2"
+                  className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-gradient-to-br from-white to-gray-50"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-purple-100 p-2 rounded-lg">
+                          <IconComponent className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {item.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
                         {item.description}
                       </p>
+                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-mono">
+                        {item.path}
+                      </div>
                     </div>
                     <button
                       onClick={() => navigate(item.path)}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors duration-200 flex-shrink-0"
                     >
+                      <Edit3 className="w-4 h-4" />
                       Edytuj
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 break-all">
-                    Ścieżka: {item.path}
-                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>

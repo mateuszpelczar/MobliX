@@ -2,8 +2,6 @@ package com.example.backend.service;
 
 import com.example.backend.dto.LoginRequest;
 import com.example.backend.dto.RegisterRequest;
-import com.example.backend.dto.CreateAdvertisementDTO;
-import com.example.backend.dto.AdvertisementResponseDTO;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.repository.UserRepository;
@@ -21,7 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AdvertisementService advertisementService;
+ 
 
     // === METODY AUTORYZACJI ===
     
@@ -56,26 +54,6 @@ public class UserService {
         return userRepository.findByEmail(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
     }
-
-    // === METODY OGŁOSZEŃ (delegacja do AdvertisementService) ===
-    
-    public AdvertisementResponseDTO createUserAdvertisement(CreateAdvertisementDTO dto, String userEmail) {
-        return advertisementService.createAdvertisement(dto, userEmail);
-    }
-
-    public List<AdvertisementResponseDTO> getAllUserAdvertisements() {
-        return advertisementService.getAllAdvertisements();
-    }
-
-    public AdvertisementResponseDTO getUserAdvertisementById(Long id) {
-        return advertisementService.getAdvertisementById(id);
-    }
-
-    public List<AdvertisementResponseDTO> getCurrentUserAdvertisements(String userEmail) {
-        return advertisementService.getUserAdvertisements(userEmail);
-    }
-
-    public void deleteUserAdvertisement(Long id, String userEmail) {
-        advertisementService.deleteAdvertisement(id, userEmail);
-    }
 }
+
+    

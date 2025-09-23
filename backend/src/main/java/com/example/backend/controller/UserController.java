@@ -24,49 +24,49 @@ public class UserController {
 
     // === ENDPOINTS OGŁOSZEŃ ===
     
-    @PostMapping("/advertisements")
-    public ResponseEntity<AdvertisementResponseDTO> createAdvertisement(
-            @Valid @RequestBody CreateAdvertisementDTO createAdvertisementDTO) {
+    // @PostMapping("/advertisements")
+    // public ResponseEntity<AdvertisementResponseDTO> createAdvertisement(
+    //         @Valid @RequestBody CreateAdvertisementDTO createAdvertisementDTO) {
         
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = authentication.getName();
+    //     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    //     String userEmail = authentication.getName();
         
-        AdvertisementResponseDTO createdAdvertisement = 
-            userService.createUserAdvertisement(createAdvertisementDTO, userEmail);
+    //     AdvertisementResponseDTO createdAdvertisement = 
+    //         userService.createUserAdvertisement(createAdvertisementDTO, userEmail);
         
-        return ResponseEntity.ok(createdAdvertisement);
-    }
+    //     return ResponseEntity.ok(createdAdvertisement);
+    // }
 
-    @GetMapping("/advertisements")
-    public ResponseEntity<List<AdvertisementResponseDTO>> getCurrentUserAdvertisements() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = authentication.getName();
+    // @GetMapping("/advertisements")
+    // public ResponseEntity<List<AdvertisementResponseDTO>> getCurrentUserAdvertisements() {
+    //     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    //     String userEmail = authentication.getName();
         
-        List<AdvertisementResponseDTO> advertisements = 
-            userService.getCurrentUserAdvertisements(userEmail);
+    //     List<AdvertisementResponseDTO> advertisements = 
+    //         userService.getCurrentUserAdvertisements(userEmail);
         
-        return ResponseEntity.ok(advertisements);
-    }
+    //     return ResponseEntity.ok(advertisements);
+    // }
 
-    @GetMapping("/advertisements/all")
-    public ResponseEntity<List<AdvertisementResponseDTO>> getAllAdvertisements() {
-        List<AdvertisementResponseDTO> advertisements = userService.getAllUserAdvertisements();
-        return ResponseEntity.ok(advertisements);
-    }
+    // @GetMapping("/advertisements/all")
+    // public ResponseEntity<List<AdvertisementResponseDTO>> getAllAdvertisements() {
+    //     List<AdvertisementResponseDTO> advertisements = userService.getAllUserAdvertisements();
+    //     return ResponseEntity.ok(advertisements);
+    // }
 
-    @GetMapping("/advertisements/{id}")
-    public ResponseEntity<AdvertisementResponseDTO> getAdvertisementById(@PathVariable Long id) {
-        AdvertisementResponseDTO advertisement = userService.getUserAdvertisementById(id);
-        return ResponseEntity.ok(advertisement);
-    }
+    // @GetMapping("/advertisements/{id}")
+    // public ResponseEntity<AdvertisementResponseDTO> getAdvertisementById(@PathVariable Long id) {
+    //     AdvertisementResponseDTO advertisement = userService.getUserAdvertisementById(id);
+    //     return ResponseEntity.ok(advertisement);
+    // }
 
-    @DeleteMapping("/advertisements/{id}")
-    public ResponseEntity<Void> deleteAdvertisement(@PathVariable Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = authentication.getName();
+    // @DeleteMapping("/advertisements/{id}")
+    // public ResponseEntity<Void> deleteAdvertisement(@PathVariable Long id) {
+    //     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    //     String userEmail = authentication.getName();
         
-        userService.deleteUserAdvertisement(id, userEmail);
-        return ResponseEntity.noContent().build();
-    }
+    //     userService.deleteUserAdvertisement(id, userEmail);
+    //     return ResponseEntity.noContent().build();
+   // }
 }
 

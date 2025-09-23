@@ -482,7 +482,7 @@ const MainPanel: React.FC = () => {
 
       {/* Main content with dark gradient background */}
       <div className="panel-content-with-search flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-12 pb-12">
+        <div className="container mx-auto px-4 relative pt-32 pb-12">
           {/* Add announcement button - fixed visibility and positioning */}
           <div className="sticky top-2 xs:top-4 sm:top-5 md:top-6 w-full flex justify-center sm:justify-start mb-0 mt-1 xs:mt-2 z-10">
             <div className="w-full max-w-4xl mx-auto relative">
@@ -498,7 +498,7 @@ const MainPanel: React.FC = () => {
           </div>
 
           {/* White content box - adjusted positioning with equal spacing */}
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-17 w-full max-w-4xl mx-auto min-h-[400px] sm:min-h-[500px] mt-10 mb-12 flex flex-col gap-6 sm:gap-8">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-17 w-full max-w-5xl mx-auto min-h-[400px] sm:min-h-[500px] mt-10 mb-12 flex flex-col gap-6 sm:gap-8">
             {/* Reklama */}
             <div className="w-full h-24 sm:h-32 md:h-40 flex items-center justify-center border border-dashed border-gray-400 mb-4 sm:mb-6 text-sm sm:text-base md:text-lg font-semibold text-gray-700">
               Reklama
@@ -513,7 +513,7 @@ const MainPanel: React.FC = () => {
                   <img
                     src="https://dummyimage.com/120x128/ddd/222"
                     alt="Smartfon"
-                    className="mb-1 sm:mb-2 w-16 h-20 sm:w-24 sm:h-28 md:w-28 md:h-32 object-cover"
+                    className="mb-2 sm:mb-3 w-20 h-24 sm:w-28 sm:h-32 md:w-32 md:h-36 lg:w-36 lg:h-44 xl:w-40 xl:h-48 object-cover rounded"
                   />
                   <div className="font-medium text-gray-800 mb-0.5 sm:mb-1 text-xs md:text-sm truncate w-full text-center">
                     Nazwa smartfona

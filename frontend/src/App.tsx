@@ -27,7 +27,7 @@ import Ratings from "./components/user/Ratings";
 import StaffPanel from "./components/StaffPanel";
 import ModeracjaOgloszen from "./components/staff/ModeracjaOgloszen";
 import ModeracjaOpinii from "./components/staff/ModeracjaOpinii";
-import StatystkiSprzedazy from "./components/staff/StatystykiSprzedazy";
+import Statystyki from "./components/staff/Statystyki";
 import ModeracjaUzytkownikow from "./components/staff/ModeracjaUzytkownikow";
 import ModeracjaZgloszen from "./components/staff/ModeracjaZgloszen";
 
@@ -116,10 +116,7 @@ const App: React.FC = () => {
           element={<ModeracjaUzytkownikow />}
         />
 
-        <Route
-          path="/staff/statystyki-sprzedazy"
-          element={<StatystkiSprzedazy />}
-        />
+        <Route path="/staff/statystyki" element={<Statystyki />} />
         <Route
           path="/staff/moderacja-ogloszen"
           element={<ModeracjaOgloszen />}

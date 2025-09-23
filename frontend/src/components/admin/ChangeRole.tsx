@@ -435,15 +435,15 @@ const ChangeRole: React.FC = () => {
         <div className="container mx-auto px-4 relative pt-64 pb-12">
           {/* White content box - adjusted positioning with equal spacing */}
           <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full max-w-4xl mx-auto min-h-[400px] sm:min-h-[500px] mt-10 mb-12 flex flex-col gap-6 sm:gap-8">
-            {/* System Zarządzania Użytkownikami - moved to top */}
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 mb-6 border border-purple-100">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <UserCog className="w-6 h-6 text-purple-600" />
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-lg shadow-md mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <UserCog className="w-8 h-8" />
+                <h2 className="text-2xl sm:text-3xl font-bold">
                   System Zarządzania Użytkownikami
-                </h1>
+                </h2>
               </div>
-              <p className="text-center text-gray-600 text-sm">
+              <p className="text-purple-100 text-sm sm:text-base">
                 Kompleksowe narzędzie do administracji kontami użytkowników i
                 zarządzania uprawnieniami
               </p>
@@ -717,13 +717,6 @@ const ChangeRole: React.FC = () => {
                 </div>
               )}
             </div>
-            <button
-              onClick={goBack}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg self-start flex items-center gap-2 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Powrót do panelu
-            </button>
           </div>
         </div>
       </div>
