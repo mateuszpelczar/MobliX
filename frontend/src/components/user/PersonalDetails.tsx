@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import "../../styles/UserPanel.css";
 import {
@@ -29,6 +30,22 @@ import {
 } from "lucide-react";
 
 type JwtPayLoad = { sub: string; role: string; exp: number };
+
+type UserData = {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  accountType?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  companyName?: string;
+  nip?: string;
+  regon?: string;
+  address?: string;
+  website?: string;
+};
 
 const PersonalDetails: React.FC = () => {
   const navigate = useNavigate();
@@ -73,6 +90,63 @@ const PersonalDetails: React.FC = () => {
   const [address, setAddress] = useState("");
   const [website, setWebsite] = useState("");
 
+  // Loading state
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await axios.get<UserData>(
+          "http://localhost:8080/api/auth/me",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const userData = response.data;
+
+        // Ustawienie danych użytkownika
+        setAccountType(
+          (userData.accountType as "personal" | "business") || "personal"
+        );
+        setFirstName(userData.firstName || "");
+        setLastName(userData.lastName || "");
+        setEmail(userData.email || "");
+        setPhone(userData.phone || "");
+
+        // Dane firmowe
+        if (userData.accountType === "business") {
+          setCompanyName(userData.companyName || "");
+          setNip(userData.nip || "");
+          setRegon(userData.regon || "");
+          setAddress(userData.address || "");
+          setWebsite(userData.website || "");
+        }
+      } catch (error) {
+        console.error("Błąd podczas pobierania danych użytkownika:", error);
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as { response?: { status: number } };
+          if (axiosError.response?.status === 401) {
+            localStorage.removeItem("token");
+            navigate("/login");
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [token, navigate]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
@@ -87,29 +161,52 @@ const PersonalDetails: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const profileData = {
-      accountType,
-      firstName,
-      lastName,
-      email,
-      password: password ? "***" : "",
-      phone,
-      ...(accountType === "business" && {
-        companyName,
-        nip,
-        regon,
-        address,
-        website,
-      }),
-    };
+    if (!token) {
+      alert("Brak autoryzacji");
+      return;
+    }
 
-    console.log("Zapis danych profilowych (mock)", profileData);
-    alert(
-      `Dane ${
-        accountType === "business" ? "firmowe" : "osobiste"
-      } zaktualizowane (mock)`
-    );
+    try {
+      const updateData = {
+        accountType,
+        firstName,
+        lastName,
+        phone,
+        password: password || undefined, // Tylko jeśli użytkownik chce zmienić hasło
+        ...(accountType === "business" && {
+          companyName,
+          nip,
+          regon,
+          address,
+          website,
+        }),
+      };
+
+      await axios.put("http://localhost:8080/api/auth/me", updateData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      alert(
+        `Dane ${
+          accountType === "business" ? "firmowe" : "osobiste"
+        } zostały zaktualizowane!`
+      );
+      setPassword(""); // Wyczyść pole hasła po zapisie
+    } catch (error) {
+      console.error("Błąd podczas aktualizacji danych:", error);
+      alert("Wystąpił błąd podczas zapisywania danych");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Ładowanie...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -552,7 +649,7 @@ const PersonalDetails: React.FC = () => {
 
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"

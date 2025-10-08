@@ -25,12 +25,20 @@ public class AdminService {
 
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> UserDto.builder()
-                        .id(user.getId())
-                        .email(user.getEmail())
-                        .username(user.getUsername())
-                        .role(user.getRole().toString())
-                        .build())
+                .map(user -> new UserDto(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getUsername(),
+                        user.getRole().toString(),
+                        user.getAccountType(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getPhone(),
+                        user.getCompanyName(),
+                        user.getNip(),
+                        user.getRegon(),
+                        user.getAddress(),
+                        user.getWebsite()))
                 .collect(Collectors.toList());
     }
 

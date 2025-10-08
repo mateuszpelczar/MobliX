@@ -18,6 +18,8 @@ import {
   Eye,
   Calendar,
   Tag,
+  MoreVertical,
+  CheckCircle,
 } from "lucide-react";
 import "../../styles/MobileResponsive.css";
 
@@ -27,57 +29,34 @@ type Ad = {
   price: number;
   category: string;
   date: string;
-  status: "active" | "sold" | "paused";
+  status: "active" | "sold" | "paused" | "pending" | "rejected";
   views: number;
   images: string[];
 };
 
-const mockAds: Ad[] = [
-  {
-    id: 1,
-    title: "iPhone 13 128GB",
-    price: 2500,
-    category: "Telefony",
-    date: "2025-08-20",
-    status: "active",
-    views: 45,
-    images: ["/api/placeholder/400/300"],
-  },
-  {
-    id: 2,
-    title: "Samsung S22 Ultra",
-    price: 3200,
-    category: "Telefony",
-    date: "2025-08-18",
-    status: "sold",
-    views: 67,
-    images: ["/api/placeholder/400/300"],
-  },
-  {
-    id: 3,
-    title: "Laptop Dell XPS 13",
-    price: 4500,
-    category: "Komputery",
-    date: "2025-08-15",
-    status: "paused",
-    views: 23,
-    images: ["/api/placeholder/400/300"],
-  },
-];
-
 const tabLabels = [
+  { key: "pending", label: "Oczekujące" },
   { key: "active", label: "Aktywne" },
   { key: "sold", label: "Sprzedane" },
   { key: "paused", label: "Wstrzymane" },
+  { key: "rejected", label: "Odrzucone" },
 ];
 
 const YourAds: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<"active" | "sold" | "paused">(
-    "active"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "pending" | "active" | "sold" | "paused" | "rejected"
+  >("pending");
+  const [adDropdownOpen, setAdDropdownOpen] = useState<number | null>(null);
+
+  // Debug adDropdownOpen changes
+  useEffect(() => {
+    console.log("adDropdownOpen state changed to:", adDropdownOpen);
+  }, [adDropdownOpen]);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -95,6 +74,100 @@ const YourAds: React.FC = () => {
   const isUser = userRole === "USER";
   const isStaff = userRole === "STAFF";
 
+  // Funkcje do obsługi akcji na ogłoszeniach
+  const handleDeleteAd = async (adId: number) => {
+    console.log("handleDeleteAd called with ID:", adId);
+
+    if (!confirm("Czy na pewno chcesz usunąć to ogłoszenie?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      console.log("Token:", token ? "exists" : "missing");
+
+      const response = await fetch(
+        `http://localhost:8080/api/advertisements/${adId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Delete response status:", response.status);
+
+      if (response.ok) {
+        setAds(ads.filter((ad) => ad.id !== adId));
+        alert("Ogłoszenie zostało usunięte");
+      } else {
+        const errorText = await response.text();
+        console.error("Delete error:", errorText);
+        alert("Błąd podczas usuwania ogłoszenia");
+      }
+    } catch (error) {
+      console.error("Delete exception:", error);
+      alert("Wystąpił błąd podczas usuwania");
+    }
+  };
+
+  const handleChangeStatus = async (adId: number, newStatus: string) => {
+    console.log(
+      "handleChangeStatus called with ID:",
+      adId,
+      "Status:",
+      newStatus
+    );
+
+    try {
+      const token = localStorage.getItem("token");
+      console.log("Token:", token ? "exists" : "missing");
+
+      const response = await fetch(
+        `http://localhost:8080/api/advertisements/${adId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      console.log("Status change response:", response.status);
+
+      if (response.ok) {
+        setAds(
+          ads.map((ad) =>
+            ad.id === adId
+              ? {
+                  ...ad,
+                  status: newStatus.toLowerCase() as
+                    | "active"
+                    | "sold"
+                    | "paused",
+                }
+              : ad
+          )
+        );
+        const statusText =
+          newStatus === "SOLD"
+            ? "sprzedane"
+            : newStatus === "PAUSED"
+            ? "wstrzymane"
+            : "aktywne";
+        alert(`Ogłoszenie zostało oznaczone jako ${statusText}`);
+      } else {
+        const errorText = await response.text();
+        console.error("Status change error:", errorText);
+        alert("Błąd podczas zmiany statusu ogłoszenia");
+      }
+    } catch (error) {
+      console.error("Status change exception:", error);
+      alert("Wystąpił błąd podczas zmiany statusu");
+    }
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,6 +177,22 @@ const YourAds: React.FC = () => {
       ) {
         setIsDropdownOpen(false);
       }
+
+      // Zamknij dropdown ogłoszeń tylko jeśli kliknięto poza nim
+      const adDropdownElements =
+        document.querySelectorAll("[data-ad-dropdown]");
+      let clickedOutsideAdDropdown = true;
+
+      adDropdownElements.forEach((element) => {
+        if (element.contains(event.target as Node)) {
+          clickedOutsideAdDropdown = false;
+        }
+      });
+
+      if (clickedOutsideAdDropdown) {
+        console.log("Closing adDropdown due to outside click");
+        setAdDropdownOpen(null);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -112,7 +201,80 @@ const YourAds: React.FC = () => {
     };
   }, []);
 
-  const filtered = mockAds.filter((ad) => ad.status === activeTab);
+  // Pobieranie ogłoszeń użytkownika
+  useEffect(() => {
+    const fetchUserAds = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        const response = await fetch(
+          "http://localhost:8080/api/advertisements/user",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched user ads data:", data);
+
+          // Mapowanie danych z backendu na format frontend
+          const mappedAds: Ad[] = data.map((ad: any) => ({
+            id: ad.id,
+            title: ad.title,
+            price: ad.price,
+            category: ad.categoryName || "Smartfony",
+            date: new Date(ad.createdAt).toLocaleDateString(),
+            status: (ad.status?.toLowerCase() === "active"
+              ? "active"
+              : ad.status?.toLowerCase() === "sold"
+              ? "sold"
+              : ad.status?.toLowerCase() === "pending"
+              ? "pending"
+              : ad.status?.toLowerCase() === "rejected"
+              ? "rejected"
+              : "paused") as
+              | "pending"
+              | "active"
+              | "sold"
+              | "paused"
+              | "rejected",
+            views: 0, // Backend nie ma jeszcze tego pola
+            images:
+              ad.imageUrls && ad.imageUrls.length > 0
+                ? ad.imageUrls
+                : ["/api/placeholder/400/300"],
+          }));
+          console.log("Mapped ads:", mappedAds);
+          setAds(mappedAds);
+        } else if (response.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login");
+        } else {
+          console.error(
+            "Błąd podczas pobierania ogłoszeń użytkownika:",
+            response.statusText
+          );
+        }
+      } catch (error) {
+        console.error("Błąd podczas pobierania ogłoszeń użytkownika:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserAds();
+  }, [navigate]);
+
+  const filtered = ads.filter((ad) => ad.status === activeTab);
+  console.log("Filtered ads for tab", activeTab, ":", filtered);
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -238,8 +400,14 @@ const YourAds: React.FC = () => {
 
       {/* Content */}
       <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-12 pb-12 max-w-5xl">
-          <div className="bg-white rounded-xl shadow-xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-8 min-h-[300px] border-t-4 border-blue-500">
+        <div className="container mx-auto px-4 relative pt-32 pb-12 max-w-5xl">
+          <div
+            className="bg-white rounded-xl shadow-xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-8 min-h-[300px] max-h-[80vh] overflow-y-auto border-t-4 border-blue-500"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#8B5CF6 #F3F4F6",
+            }}
+          >
             {/* Header with gradient background */}
             <div className="text-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg -z-10"></div>
@@ -278,7 +446,14 @@ const YourAds: React.FC = () => {
 
             {/* Ads List with modern cards */}
             <div className="grid gap-6">
-              {filtered.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <p className="mt-4 text-gray-600 text-lg">
+                    Ładowanie Twoich ogłoszeń...
+                  </p>
+                </div>
+              ) : filtered.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <ShoppingBag className="w-12 h-12 text-gray-400" />
@@ -294,7 +469,8 @@ const YourAds: React.FC = () => {
                 filtered.map((ad) => (
                   <div
                     key={ad.id}
-                    className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:border-blue-300 group"
+                    className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:border-blue-300 group cursor-pointer"
+                    onClick={() => navigate(`/smartfon/${ad.id}`)}
                   >
                     <div className="flex flex-col lg:flex-row gap-6">
                       <div className="flex-shrink-0">
@@ -311,6 +487,10 @@ const YourAds: React.FC = () => {
                                   ? "bg-green-100 text-green-700"
                                   : ad.status === "sold"
                                   ? "bg-red-100 text-red-700"
+                                  : ad.status === "pending"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : ad.status === "rejected"
+                                  ? "bg-gray-100 text-gray-700"
                                   : "bg-yellow-100 text-yellow-700"
                               }`}
                             >
@@ -318,6 +498,10 @@ const YourAds: React.FC = () => {
                                 ? "Aktywne"
                                 : ad.status === "sold"
                                 ? "Sprzedane"
+                                : ad.status === "pending"
+                                ? "Oczekuje"
+                                : ad.status === "rejected"
+                                ? "Odrzucone"
                                 : "Wstrzymane"}
                             </span>
                           </div>
@@ -348,30 +532,155 @@ const YourAds: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-3 pt-2">
-                          <button
-                            onClick={() => navigate(`/user/edit-ad/${ad.id}`)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-all duration-200 hover:shadow-md"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            Edytuj
-                          </button>
-                          {ad.status === "active" && (
-                            <button className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 transition-all duration-200 hover:shadow-md">
-                              <Pause className="w-4 h-4" />
-                              Wstrzymaj
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>ID: {ad.id}</span>
+                          </div>
+
+                          {/* Dropdown Menu z kropkami */}
+                          <div className="relative" data-ad-dropdown>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("=== DROPDOWN CLICK DEBUG ===");
+                                console.log("Ad ID:", ad.id);
+                                console.log(
+                                  "Current adDropdownOpen:",
+                                  adDropdownOpen
+                                );
+                                console.log(
+                                  "Comparison adDropdownOpen === ad.id:",
+                                  adDropdownOpen === ad.id
+                                );
+
+                                const newValue =
+                                  adDropdownOpen === ad.id ? null : ad.id;
+                                console.log(
+                                  "Setting adDropdownOpen to:",
+                                  newValue
+                                );
+
+                                setAdDropdownOpen(newValue);
+
+                                console.log("=== END DROPDOWN CLICK DEBUG ===");
+                              }}
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                            >
+                              <MoreVertical className="w-5 h-5 text-gray-500" />
                             </button>
-                          )}
-                          {ad.status === "paused" && (
-                            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 transition-all duration-200 hover:shadow-md">
-                              <Play className="w-4 h-4" />
-                              Aktywuj
-                            </button>
-                          )}
-                          <button className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-all duration-200 hover:shadow-md">
-                            <Trash2 className="w-4 h-4" />
-                            Usuń
-                          </button>
+
+                            {adDropdownOpen === ad.id && (
+                              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 pointer-events-auto">
+                                <div className="py-1">
+                                  {/* Edytuj */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      console.log(
+                                        "Edit button clicked for ad ID:",
+                                        ad.id
+                                      );
+                                      navigate(`/user/edit-ad/${ad.id}`);
+                                      setAdDropdownOpen(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-black bg-white hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Edit3 className="w-4 h-4 text-blue-500" />
+                                    Edytuj
+                                  </button>
+
+                                  {/* Wstrzymaj/Aktywuj */}
+                                  {ad.status === "active" ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        console.log(
+                                          "Pause button clicked for ad ID:",
+                                          ad.id
+                                        );
+                                        handleChangeStatus(ad.id, "PAUSED");
+                                        setAdDropdownOpen(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-black bg-white hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                      <Pause className="w-4 h-4 text-yellow-500" />
+                                      Wstrzymaj
+                                    </button>
+                                  ) : ad.status === "paused" ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        console.log(
+                                          "Activate button clicked for ad ID:",
+                                          ad.id
+                                        );
+                                        handleChangeStatus(ad.id, "ACTIVE");
+                                        setAdDropdownOpen(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-black bg-white hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                      <Play className="w-4 h-4 text-green-500" />
+                                      Aktywuj
+                                    </button>
+                                  ) : ad.status === "pending" ? (
+                                    <div className="px-4 py-2 text-sm text-gray-500 italic">
+                                      Ogłoszenie oczekuje na moderację
+                                    </div>
+                                  ) : ad.status === "rejected" ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: Implementacja funkcji poprawy ogłoszenia
+                                        console.log("Edit rejected ad:", ad.id);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-black bg-white hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                      <Edit3 className="w-4 h-4 text-blue-500" />
+                                      Popraw i wyślij ponownie
+                                    </button>
+                                  ) : null}
+
+                                  {/* Sprzedane (tylko dla active i paused) */}
+                                  {ad.status !== "sold" &&
+                                    ad.status !== "pending" &&
+                                    ad.status !== "rejected" && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          console.log(
+                                            "Sold button clicked for ad ID:",
+                                            ad.id
+                                          );
+                                          handleChangeStatus(ad.id, "SOLD");
+                                          setAdDropdownOpen(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-black bg-white hover:bg-gray-50 flex items-center gap-2"
+                                      >
+                                        <CheckCircle className="w-4 h-4 text-green-500" />
+                                        Oznacz jako sprzedane
+                                      </button>
+                                    )}
+
+                                  {/* Usuń */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      console.log(
+                                        "Delete button clicked for ad ID:",
+                                        ad.id
+                                      );
+                                      handleDeleteAd(ad.id);
+                                      setAdDropdownOpen(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 bg-white hover:bg-red-50 flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                    Usuń
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -384,7 +693,7 @@ const YourAds: React.FC = () => {
       </div>
       {/* Footer */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"

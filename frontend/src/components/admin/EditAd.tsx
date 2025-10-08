@@ -27,7 +27,6 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  ArrowLeft,
   Settings,
   BarChart3,
 } from "lucide-react";
@@ -48,6 +47,23 @@ type AdItem = {
   condition: string;
   images: number;
   ownerName: string;
+  description: string;
+  color: string;
+  osType: "Android" | "iOS";
+  osVersion: string;
+  storage: string;
+  ram: string;
+  rearCameras: string;
+  frontCamera: string;
+  batteryCapacity: string;
+  displaySize: string;
+  displayTech: string;
+  wifi: string;
+  bluetooth: string;
+  ipRating: string;
+  fastCharging: string;
+  wirelessCharging: string;
+  imageUrls: string[];
 };
 
 const EditAd: React.FC = () => {
@@ -57,9 +73,63 @@ const EditAd: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Edit Modal States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingAd, setEditingAd] = useState<AdItem | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    price: 0,
+    location: "",
+    status: "active" as "active" | "pending" | "rejected",
+    condition: "",
+    category: "",
+    description: "",
+    brand: "",
+    model: "",
+    color: "",
+    osType: "Android" as "Android" | "iOS",
+    osVersion: "",
+    storage: "",
+    ram: "",
+    rearCameras: "",
+    frontCamera: "",
+    batteryCapacity: "",
+    displaySize: "",
+    displayTech: "",
+    wifi: "",
+    bluetooth: "",
+    ipRating: "",
+    fastCharging: "",
+    wirelessCharging: "",
+    imageUrls: [] as string[],
+  });
+
   // Mock data with more detailed information
   const [filter, setFilter] = useState<"me" | "user" | "all">("all");
-  const [ads] = useState<AdItem[]>([
+
+  const createMockAd = (baseAd: Partial<AdItem>): AdItem =>
+    ({
+      description: "Szczegółowy opis urządzenia...",
+      color: "Czarny",
+      osType: "Android",
+      osVersion: "14.0",
+      storage: "128GB",
+      ram: "8GB",
+      rearCameras: "50MP",
+      frontCamera: "12MP",
+      batteryCapacity: "4000mAh",
+      displaySize: '6.2"',
+      displayTech: "AMOLED",
+      wifi: "Wi-Fi 6",
+      bluetooth: "5.0",
+      ipRating: "IP68",
+      fastCharging: "25W",
+      wirelessCharging: "15W",
+      imageUrls: ["/api/placeholder/400/300"],
+      ...baseAd,
+    } as AdItem);
+
+  const [ads, setAds] = useState<AdItem[]>([
     {
       id: 1,
       title: "iPhone 15 Pro Max 256GB Titanium Blue",
@@ -76,8 +146,26 @@ const EditAd: React.FC = () => {
       images: 8,
       owner: "user",
       ownerName: "Jan Kowalski",
+      description:
+        "Sprzedam iPhone 15 Pro Max w doskonałym stanie. Telefon był używany z etui i folią ochronną od pierwszego dnia. Kompletny zestaw z ładowarką.",
+      color: "Titanium Blue",
+      osType: "iOS",
+      osVersion: "17.6",
+      storage: "256GB",
+      ram: "8GB",
+      rearCameras: "48MP + 12MP + 12MP",
+      frontCamera: "12MP",
+      batteryCapacity: "4441mAh",
+      displaySize: '6.7"',
+      displayTech: "Super Retina XDR OLED",
+      wifi: "Wi-Fi 6E",
+      bluetooth: "5.3",
+      ipRating: "IP68",
+      fastCharging: "27W",
+      wirelessCharging: "15W MagSafe",
+      imageUrls: ["/api/placeholder/400/300", "/api/placeholder/400/300"],
     },
-    {
+    createMockAd({
       id: 2,
       title: "Samsung Galaxy S24 Ultra 512GB Black",
       brand: "Samsung",
@@ -93,8 +181,17 @@ const EditAd: React.FC = () => {
       images: 6,
       owner: "me",
       ownerName: "Administrator",
-    },
-    {
+      description:
+        "Samsung Galaxy S24 Ultra w bardzo dobrym stanie. Używany przez 6 miesięcy, zawsze z etui i folią.",
+      color: "Czarny",
+      storage: "512GB",
+      ram: "12GB",
+      rearCameras: "200MP + 50MP + 10MP + 12MP",
+      batteryCapacity: "5000mAh",
+      displaySize: '6.8"',
+      displayTech: "Dynamic AMOLED 2X",
+    }),
+    createMockAd({
       id: 3,
       title: "Google Pixel 8 Pro 128GB Obsidian",
       brand: "Google",
@@ -110,8 +207,13 @@ const EditAd: React.FC = () => {
       images: 5,
       owner: "user",
       ownerName: "Anna Nowak",
-    },
-    {
+      description:
+        "Google Pixel 8 Pro z najlepszymi zdjęciami w klasie. Używany rok, drobne ślady użytkowania.",
+      color: "Obsidian",
+      storage: "128GB",
+      ram: "12GB",
+    }),
+    createMockAd({
       id: 4,
       title: "Xiaomi 14 Ultra 512GB Black",
       brand: "Xiaomi",
@@ -127,8 +229,12 @@ const EditAd: React.FC = () => {
       images: 3,
       owner: "user",
       ownerName: "Piotr Wiśniewski",
-    },
-    {
+      description:
+        "Xiaomi 14 Ultra z pękniętym ekranem. Reszta działa bez problemów. Do naprawy lub na części.",
+      color: "Czarny",
+      storage: "512GB",
+    }),
+    createMockAd({
       id: 5,
       title: "OnePlus 12 256GB Green",
       brand: "OnePlus",
@@ -144,7 +250,12 @@ const EditAd: React.FC = () => {
       images: 7,
       owner: "me",
       ownerName: "Administrator",
-    },
+      description:
+        "OnePlus 12 w zielonym kolorze. Bardzo szybki telefon z super szybkim ładowaniem.",
+      color: "Zielony",
+      storage: "256GB",
+      fastCharging: "100W",
+    }),
   ]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -222,12 +333,116 @@ const EditAd: React.FC = () => {
   const isStaff = userRole === "STAFF";
   const isUser = userRole === "USER";
 
-  const handleEdit = (id: number) => {
-    alert(`Edytuj ogłoszenie ID: ${id}`);
+  // Check permissions for editing ads
+  const canEditAd = (ad: AdItem) => {
+    if (isAdmin) return true; // Admin can edit everything
+    if (isStaff && ad.owner === "user") return true; // Staff can edit user ads
+    if (ad.owner === "me") return true; // Can edit own ads
+    return false;
   };
+
+  const handleEdit = (id: number) => {
+    const ad = ads.find((a) => a.id === id);
+    if (!ad) return;
+
+    if (!canEditAd(ad)) {
+      alert("Nie masz uprawnień do edycji tego ogłoszenia");
+      return;
+    }
+
+    setEditingAd(ad);
+    setEditForm({
+      title: ad.title,
+      price: ad.price,
+      location: ad.location,
+      status: ad.status,
+      condition: ad.condition,
+      category: ad.category,
+      description: ad.description,
+      brand: ad.brand,
+      model: ad.model,
+      color: ad.color,
+      osType: ad.osType,
+      osVersion: ad.osVersion,
+      storage: ad.storage,
+      ram: ad.ram,
+      rearCameras: ad.rearCameras,
+      frontCamera: ad.frontCamera,
+      batteryCapacity: ad.batteryCapacity,
+      displaySize: ad.displaySize,
+      displayTech: ad.displayTech,
+      wifi: ad.wifi,
+      bluetooth: ad.bluetooth,
+      ipRating: ad.ipRating,
+      fastCharging: ad.fastCharging,
+      wirelessCharging: ad.wirelessCharging,
+      imageUrls: ad.imageUrls,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingAd) return;
+
+    const updatedAds = ads.map((ad) =>
+      ad.id === editingAd.id
+        ? {
+            ...ad,
+            title: editForm.title,
+            price: editForm.price,
+            location: editForm.location,
+            status: editForm.status,
+            condition: editForm.condition,
+            category: editForm.category,
+            description: editForm.description,
+            brand: editForm.brand,
+            model: editForm.model,
+            color: editForm.color,
+            osType: editForm.osType,
+            osVersion: editForm.osVersion,
+            storage: editForm.storage,
+            ram: editForm.ram,
+            rearCameras: editForm.rearCameras,
+            frontCamera: editForm.frontCamera,
+            batteryCapacity: editForm.batteryCapacity,
+            displaySize: editForm.displaySize,
+            displayTech: editForm.displayTech,
+            wifi: editForm.wifi,
+            bluetooth: editForm.bluetooth,
+            ipRating: editForm.ipRating,
+            fastCharging: editForm.fastCharging,
+            wirelessCharging: editForm.wirelessCharging,
+            imageUrls: editForm.imageUrls,
+          }
+        : ad
+    );
+
+    setAds(updatedAds);
+    setIsEditModalOpen(false);
+    setEditingAd(null);
+    alert("Ogłoszenie zostało zaktualizowane!");
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
+    setEditingAd(null);
+  };
+
   const handleDelete = (id: number) => {
+    const ad = ads.find((a) => a.id === id);
+    if (!ad) return;
+
+    if (!canEditAd(ad)) {
+      alert("Nie masz uprawnień do usunięcia tego ogłoszenia");
+      return;
+    }
+
     const confirmed = confirm("Na pewno usunąć ogłoszenie?");
-    if (confirmed) alert(`Usunięto ogłoszenie ID: ${id}`);
+    if (confirmed) {
+      const updatedAds = ads.filter((a) => a.id !== id);
+      setAds(updatedAds);
+      alert(`Usunięto ogłoszenie "${ad.title}"`);
+    }
   };
 
   return (
@@ -509,7 +724,10 @@ const EditAd: React.FC = () => {
                             ? "border-purple-500 bg-purple-50"
                             : "border-gray-200 hover:border-purple-300"
                         }`}
-                        onClick={() => setSelectedId(ad.id)}
+                        onClick={() => {
+                          setSelectedId(ad.id);
+                          navigate(`/smartfon/${ad.id}`);
+                        }}
                       >
                         {/* Card Header */}
                         <div className="p-4 border-b border-gray-100">
@@ -578,28 +796,40 @@ const EditAd: React.FC = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="p-4 pt-0 flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(ad.id);
-                            }}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 justify-center"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                            Edytuj
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(ad.id);
-                            }}
-                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 justify-center"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Usuń
-                          </button>
-                        </div>
+                        {canEditAd(ad) && (
+                          <div className="p-4 pt-0 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(ad.id);
+                              }}
+                              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 justify-center"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Edytuj
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(ad.id);
+                              }}
+                              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 justify-center"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Usuń
+                            </button>
+                          </div>
+                        )}
+
+                        {/* No permissions message */}
+                        {!canEditAd(ad) && (
+                          <div className="p-4 pt-0">
+                            <div className="text-center text-gray-500 text-sm py-2">
+                              <Shield className="w-4 h-4 mx-auto mb-1" />
+                              Brak uprawnień do edycji
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -612,7 +842,7 @@ const EditAd: React.FC = () => {
 
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -651,6 +881,545 @@ const EditAd: React.FC = () => {
           </a>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && editingAd && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-purple-600 text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Edit3 className="w-6 h-6" />
+                  <h2 className="text-xl font-bold">Edytuj Ogłoszenie</h2>
+                </div>
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-white hover:text-gray-200 transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-purple-100 mt-2 text-sm">
+                ID: {editingAd.id} | Właściciel: {editingAd.ownerName}
+              </p>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Basic Information Section */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                  Podstawowe informacje
+                </h3>
+
+                {/* Title */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tytuł ogłoszenia
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, title: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Tytuł ogłoszenia..."
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Opis
+                  </label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, description: e.target.value })
+                    }
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Szczegółowy opis urządzenia..."
+                  />
+                </div>
+
+                {/* Price and Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cena (PLN)
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="number"
+                        value={editForm.price}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            price: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Lokalizacja
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        value={editForm.location}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, location: e.target.value })
+                        }
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Miasto, dzielnica..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status, Condition, and Category */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={editForm.status}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          status: e.target.value as
+                            | "active"
+                            | "pending"
+                            | "rejected",
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="active">Aktywne</option>
+                      <option value="pending">Oczekujące</option>
+                      <option value="rejected">Odrzucone</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Stan
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.condition}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, condition: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Nowy, Bardzo dobry, Dobry..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kategoria
+                    </label>
+                    <div className="relative">
+                      <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="text"
+                        value={editForm.category}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, category: e.target.value })
+                        }
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Kategoria..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Device Information Section */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                  Informacje o urządzeniu
+                </h3>
+
+                {/* Brand, Model, Color */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Marka
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.brand}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, brand: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Apple, Samsung, Huawei..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Model
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.model}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, model: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="iPhone 13, Galaxy S21..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kolor
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.color}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, color: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Biały, Czarny, Niebieski..."
+                    />
+                  </div>
+                </div>
+
+                {/* OS Type and Version */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      System operacyjny
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.osType}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          osType: e.target.value as "Android" | "iOS",
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="iOS, Android, HarmonyOS..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Wersja systemu
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.osVersion}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, osVersion: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="15.0, Android 12..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Technical Specifications Section */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                  Specyfikacja techniczna
+                </h3>
+
+                {/* Storage and RAM */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pamięć wewnętrzna (GB)
+                    </label>
+                    <input
+                      type="number"
+                      value={editForm.storage}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          storage: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="64, 128, 256, 512..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pamięć RAM (GB)
+                    </label>
+                    <input
+                      type="number"
+                      value={editForm.ram}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          ram: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="4, 6, 8, 12..."
+                    />
+                  </div>
+                </div>
+
+                {/* Cameras */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Aparaty tylne (MP)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.rearCameras}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          rearCameras: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="48 + 12 + 12"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Aparat przedni (MP)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.frontCamera}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          frontCamera: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="12"
+                    />
+                  </div>
+                </div>
+
+                {/* Battery and Display */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bateria (mAh)
+                    </label>
+                    <input
+                      type="number"
+                      value={editForm.batteryCapacity}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          batteryCapacity: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="3000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Wielkość wyświetlacza
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.displaySize}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          displaySize: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder='6.1"'
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Technologia wyświetlacza
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.displayTech}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          displayTech: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Super Retina XDR OLED"
+                    />
+                  </div>
+                </div>
+
+                {/* Connectivity */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Wi-Fi
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.wifi}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, wifi: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="802.11ax Wi-Fi 6"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bluetooth
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.bluetooth}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, bluetooth: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="5.0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Odporność IP
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.ipRating}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, ipRating: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="IP68"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Charging Section */}
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                  Ładowanie
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Szybkie ładowanie
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.fastCharging}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          fastCharging: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="20W"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ładowanie bezprzewodowe
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.wirelessCharging}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          wirelessCharging: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="15W MagSafe"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                  Zdjęcia (URL-e rozdzielone przecinkami)
+                </h3>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL-e zdjęć
+                  </label>
+                  <textarea
+                    value={editForm.imageUrls.join(", ")}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        imageUrls: e.target.value
+                          .split(",")
+                          .map((url) => url.trim())
+                          .filter((url) => url.length > 0),
+                      })
+                    }
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg..."
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex-1"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Zapisz zmiany
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex items-center justify-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex-1"
+                >
+                  <XCircle className="w-5 h-5" />
+                  Anuluj
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

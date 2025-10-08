@@ -8,15 +8,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
 //klasa reprezentujaca kategorie ogloszen
 @Entity
 @Table(name="categories")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Category {
 
   @Id
@@ -26,4 +21,23 @@ public class Category {
 
   @OneToMany(mappedBy = "category")
   private List<Advertisement> advertisements;
+
+  // Konstruktory
+  public Category() {}
+
+  public Category(Long id, String name, List<Advertisement> advertisements) {
+    this.id = id;
+    this.name = name;
+    this.advertisements = advertisements;
+  }
+
+  // Gettery i Settery
+  public Long getId() { return id; }
+  public void setId(Long id) { this.id = id; }
+
+  public String getName() { return name; }
+  public void setName(String name) { this.name = name; }
+
+  public List<Advertisement> getAdvertisements() { return advertisements; }
+  public void setAdvertisements(List<Advertisement> advertisements) { this.advertisements = advertisements; }
 }

@@ -1,6 +1,5 @@
 package com.example.backend.config;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,12 +23,15 @@ import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     // private final CustomUserDetailsService customUserDetailsService;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,7 +40,22 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/images/**").permitAll() // Zezwól na dostęp do obrazków
+                .requestMatchers("/uploads/**").permitAll() // Zezwól na dostęp do uploadów
+                .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-images").authenticated() // Upload zdjęć
+                .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-image").authenticated() // Upload zdjęcia
                 .requestMatchers(HttpMethod.GET, "/api/ogloszenia/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/advertisements/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/advertisements").authenticated()
+                .requestMatchers("/api/advertisements/user").authenticated()
+                .requestMatchers("/api/advertisements/all").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/api/advertisements/pending").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/advertisements/*/approve").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/advertisements/*/reject").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/advertisements/*/resubmit").authenticated()
+                .requestMatchers(HttpMethod.PATCH, "/api/advertisements/*/status").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/advertisements/latest").permitAll()
+                .requestMatchers("/api/messages/**").authenticated()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .sessionManagement(session -> session

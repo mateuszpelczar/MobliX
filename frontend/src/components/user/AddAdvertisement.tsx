@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   Smartphone,
   Camera,
@@ -27,8 +28,12 @@ import {
   LogOut,
   ChevronDown,
   LogIn,
+  Search,
+  Package,
+  Building2,
 } from "lucide-react";
 import { FaAndroid, FaApple } from "react-icons/fa";
+import { voivodeships } from "../../data/locations";
 
 type OsType = "Android" | "iOS";
 
@@ -47,7 +52,32 @@ const AddAdvertisement: React.FC = () => {
   const [price, setPrice] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [images, setImages] = useState<File[]>([]);
-  const [imageUrl, setImageUrl] = useState<string>("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState<string>("");
+
+  // Pola lokalizacji
+  const [selectedVoivodeship, setSelectedVoivodeship] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [citySearchTerm, setCitySearchTerm] = useState<string>("");
+  const [showCityDropdown, setShowCityDropdown] = useState<boolean>(false);
+
+  // Handle click outside to close dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest(".city-dropdown-container")) {
+        setShowCityDropdown(false);
+      }
+    };
+
+    if (showCityDropdown) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showCityDropdown]);
 
   // Obowiązkowe pola specyfikacji
   const [brand, setBrand] = useState<string>("");
@@ -69,6 +99,21 @@ const AddAdvertisement: React.FC = () => {
   const [ipRating, setIpRating] = useState<string>("");
   const [fastCharging, setFastCharging] = useState<string>("");
   const [wirelessCharging, setWirelessCharging] = useState<string>("");
+  const [processor, setProcessor] = useState<string>("");
+  const [gpu, setGpu] = useState<string>("");
+  const [screenResolution, setScreenResolution] = useState<string>("");
+  const [refreshRate, setRefreshRate] = useState<string>("");
+
+  // Dodatkowe informacje
+  const [includesCharger, setIncludesCharger] = useState<boolean>(false);
+  const [warranty, setWarranty] = useState<string>("");
+  const [condition, setCondition] = useState<string>("nowy");
+
+  // Typ sprzedawcy - czy dodajesz jako osoba prywatna czy firma
+  const [sellerType, setSellerType] = useState<"personal" | "business">(
+    "personal"
+  );
+  const [userAccountType, setUserAccountType] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,6 +139,34 @@ const AddAdvertisement: React.FC = () => {
     }
   }
 
+  // Pobierz dane użytkownika żeby sprawdzić czy ma konto firmowe
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!token) return;
+
+      try {
+        const response = await axios.get<{ accountType?: string }>(
+          "http://localhost:8080/api/auth/me",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const userData = response.data;
+        setUserAccountType(userData.accountType || null);
+
+        // Jeśli użytkownik ma tylko konto firmowe, ustaw sellerType na business
+        if (userData.accountType === "business") {
+          setSellerType("business");
+        }
+      } catch (error) {
+        console.error("Błąd podczas pobierania danych użytkownika:", error);
+      }
+    };
+
+    fetchUserData();
+  }, [token]);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
@@ -108,10 +181,10 @@ const AddAdvertisement: React.FC = () => {
   const onSelectImages = (fileList: FileList | null) => {
     if (fileList) {
       const newFiles = Array.from(fileList);
-      if (images.length + newFiles.length <= 3) {
+      if (images.length + newFiles.length <= 6) {
         setImages([...images, ...newFiles]);
       } else {
-        alert("Możesz dodać maksymalnie 3 zdjęcia");
+        alert("Możesz dodać maksymalnie 6 zdjęć");
       }
     }
   };
@@ -120,8 +193,83 @@ const AddAdvertisement: React.FC = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  const addImageUrl = () => {
+    if (newImageUrl.trim()) {
+      const isValidImageUrl =
+        /\.(jpg|jpeg|png|gif|webp)$/i.test(newImageUrl) ||
+        newImageUrl.includes("imgur.com") ||
+        newImageUrl.includes("i.imgur.com");
+
+      if (isValidImageUrl) {
+        if (images.length + imageUrls.length < 6) {
+          let processedUrl = newImageUrl;
+          if (newImageUrl.includes("imgur.com/a/")) {
+            alert(
+              "Link do albumu Imgur nie jest obsługiwany. Użyj bezpośredniego linku do obrazu"
+            );
+            return;
+          } else if (newImageUrl.match(/imgur\.com\/[a-zA-Z0-9]+$/)) {
+            const imageId = newImageUrl.split("/").pop();
+            processedUrl = `https://i.imgur.com/${imageId}.jpg`;
+          }
+          setImageUrls([...imageUrls, processedUrl]);
+          setNewImageUrl("");
+        } else {
+          alert("Możesz dodać maksymalnie 6 zdjęć łącznie");
+        }
+      } else {
+        alert(
+          "Podaj prawidłowy link do obrazu (jpg, png, gif, webp) lub Imgur"
+        );
+      }
+    }
+  };
+
+  const removeImageUrl = (index: number) => {
+    setImageUrls(imageUrls.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (images.length === 0) return [];
+
+    const formData = new FormData();
+    images.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:8080/api/advertisements/upload-images",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        return result.imageUrls;
+      } else {
+        throw new Error("Błąd podczas uploadu zdjęć");
+      }
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      return [];
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Walidacja lokalizacji
+    if (!selectedVoivodeship || !selectedCity) {
+      alert("Proszę wybierz województwo i miejscowość");
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
@@ -130,59 +278,98 @@ const AddAdvertisement: React.FC = () => {
         return;
       }
 
+      // Upload zdjęć najpierw (jeśli są)
+      // Połącz zdjęcia z plików i z linków
+      let finalImageUrls: string[] = [];
+      if (images.length > 0) {
+        const uploadedUrls = await uploadImages();
+        if (uploadedUrls.length === 0) {
+          alert("Błąd podczas uploadu zdjęć. Spróbuj ponownie.");
+          return;
+        }
+        finalImageUrls = [...finalImageUrls, ...uploadedUrls];
+      }
+
+      // Dodaj linki zewnętrzne
+      finalImageUrls = [...finalImageUrls, ...imageUrls];
+
       const advertisementData = {
         title,
         description,
         price: parseFloat(price),
         categoryId: 1, // Domyślna kategoria smartfonów
-        locationId: null, // Opcjonalne
-        imageUrls: imageUrl ? [imageUrl] : [],
+        region: selectedVoivodeship, // Województwo
+        city: selectedCity, // Miejscowość
+        imageUrls: finalImageUrls, // Wszystkie zdjęcia
 
-        // Obowiązkowe specyfikacje
+        // Obowiązkowe specyfikacje - zgodne z CreateAdvertisementDTO
         brand,
         model,
         color,
         osType,
-        osVersion,
         storage,
         ram,
-        rearCameras,
-        frontCamera,
-        batteryCapacity,
 
-        // Opcjonalne specyfikacje
-        displaySize,
-        displayTech,
-        wifi,
-        bluetooth,
-        ipRating,
-        fastCharging,
-        wirelessCharging,
+        // Opcjonalne specyfikacje - zgodne z CreateAdvertisementDTO
+        osVersion: osVersion || null,
+        rearCameras: rearCameras || null,
+        frontCamera: frontCamera || null,
+        batteryCapacity: batteryCapacity || null,
+        displaySize: displaySize || null,
+        displayTech: displayTech || null,
+        wifi: wifi || null,
+        bluetooth: bluetooth || null,
+        ipRating: ipRating || null,
+        fastCharging: fastCharging || null,
+        wirelessCharging: wirelessCharging || null,
+        processor: processor || null,
+        gpu: gpu || null,
+        screenResolution: screenResolution || null,
+        refreshRate: refreshRate || null,
+
+        // Dodatkowe informacje
+        includesCharger: includesCharger,
+        warranty: warranty || null,
+        condition: condition || "nowy",
+        sellerType: sellerType, // Typ sprzedawcy
       };
 
-      const response = await fetch(
-        "http://localhost:8088/api/user/advertisements",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(advertisementData),
-        }
+      console.log("Sending advertisement data:", advertisementData);
+      console.log("Token present:", !!token);
+      console.log("Token value:", token);
+      console.log("Is authenticated:", isAuthenticated);
+      console.log(
+        "User role:",
+        isUser ? "USER" : isAdmin ? "ADMIN" : isStaff ? "STAFF" : "unknown"
       );
+
+      const response = await fetch("http://localhost:8080/api/advertisements", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(advertisementData),
+      });
 
       if (response.ok) {
         const result = await response.json();
         alert("Ogłoszenie zostało dodane pomyślnie!");
         console.log("Created advertisement:", result);
 
+        // Przekierowanie do katalogu smartfonów
+        navigate("/smartfony");
+        return; // Wyjście z funkcji, żeby nie resetować formularza
+
         // Reset formularza
         setTitle("");
         setPrice("");
         setDescription("");
-        setImageUrl("");
         setImages([]);
+        setImageUrls([]);
+        setNewImageUrl("");
+        setSelectedVoivodeship("");
+        setSelectedCity("");
         setBrand("");
         setModel("");
         setColor("");
@@ -199,13 +386,29 @@ const AddAdvertisement: React.FC = () => {
         setIpRating("");
         setFastCharging("");
         setWirelessCharging("");
+        setProcessor("");
+        setGpu("");
+        setScreenResolution("");
+        setRefreshRate("");
+        setIncludesCharger(false);
+        setWarranty("");
+        setCondition("nowy");
       } else {
-        const error = await response.text();
-        alert("Błąd podczas dodawania ogłoszenia: " + error);
+        const errorText = await response.text();
+        console.error("Backend response:", response.status, errorText);
+        alert(
+          "Błąd podczas dodawania ogłoszenia: " +
+            response.status +
+            " - " +
+            errorText
+        );
       }
     } catch (error) {
-      console.error("Error creating advertisement:", error);
-      alert("Wystąpił błąd podczas dodawania ogłoszenia");
+      console.error("Network/fetch error:", error);
+      alert(
+        "Wystąpił błąd podczas dodawania ogłoszenia: " +
+          (error instanceof Error ? error.message : String(error))
+      );
     }
   };
 
@@ -380,6 +583,49 @@ const AddAdvertisement: React.FC = () => {
                   </h2>
                 </div>
 
+                {/* Wybór typu sprzedawcy - tylko jeśli użytkownik ma oba typy kont */}
+                {userAccountType && (
+                  <div className="mb-6 p-4 bg-white rounded-lg border border-purple-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Dodajesz ogłoszenie jako:
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSellerType("personal")}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                          sellerType === "personal"
+                            ? "border-purple-600 bg-purple-50 text-purple-700"
+                            : "border-gray-300 bg-white text-gray-700 hover:border-purple-300"
+                        }`}
+                      >
+                        <User className="h-5 w-5" />
+                        <span className="font-medium">Osoba prywatna</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSellerType("business")}
+                        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                          sellerType === "business"
+                            ? "border-purple-600 bg-purple-50 text-purple-700"
+                            : "border-gray-300 bg-white text-gray-700 hover:border-purple-300"
+                        }`}
+                        disabled={userAccountType !== "business"}
+                      >
+                        <Building2 className="h-5 w-5" />
+                        <span className="font-medium">Firma</span>
+                      </button>
+                    </div>
+                    {userAccountType !== "business" &&
+                      sellerType === "personal" && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Aby dodawać ogłoszenia jako firma, zmień typ konta w
+                          ustawieniach profilu
+                        </p>
+                      )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -416,14 +662,123 @@ const AddAdvertisement: React.FC = () => {
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <FileText className="h-4 w-4" />
                     Opis
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {description.length}/2000 znaków
+                    </span>
                   </label>
                   <textarea
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     rows={4}
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 2000) {
+                        setDescription(e.target.value);
+                      }
+                    }}
                     placeholder="Opisz stan urządzenia, co zawiera zestaw, dlaczego sprzedajesz..."
+                    maxLength={2000}
                   />
+                  {description.length > 1900 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Uwaga: Zbliżasz się do limitu znaków ({description.length}
+                      /2000)
+                    </p>
+                  )}
+                </div>
+
+                {/* Sekcja lokalizacji */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                      <span>📍</span>
+                      Województwo *
+                    </label>
+                    <select
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      value={selectedVoivodeship}
+                      onChange={(e) => {
+                        setSelectedVoivodeship(e.target.value);
+                        setSelectedCity(""); // Resetuj miasto przy zmianie województwa
+                      }}
+                      required
+                    >
+                      <option value="">Wybierz województwo</option>
+                      {voivodeships.map((voivodeship) => (
+                        <option key={voivodeship.name} value={voivodeship.name}>
+                          {voivodeship.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="city-dropdown-container relative">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                      <span>🏙️</span>
+                      Miejscowość *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 pr-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        placeholder="Wpisz nazwę miejscowości..."
+                        value={selectedCity || citySearchTerm}
+                        onChange={(e) => {
+                          setCitySearchTerm(e.target.value);
+                          setSelectedCity("");
+                          setShowCityDropdown(true);
+                        }}
+                        onFocus={() => setShowCityDropdown(true)}
+                        disabled={!selectedVoivodeship}
+                        required
+                      />
+                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+
+                      {showCityDropdown &&
+                        selectedVoivodeship &&
+                        (citySearchTerm || !selectedCity) && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {voivodeships
+                              .find((v) => v.name === selectedVoivodeship)
+                              ?.cities.filter((city) =>
+                                city
+                                  .toLowerCase()
+                                  .includes(
+                                    (citySearchTerm || "").toLowerCase()
+                                  )
+                              )
+                              .slice(0, 20) // Ograniczenie do 20 wyników
+                              .map((city) => (
+                                <button
+                                  key={city}
+                                  type="button"
+                                  className="w-full px-4 py-2 text-left hover:bg-purple-50 focus:bg-purple-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                                  onClick={() => {
+                                    setSelectedCity(city);
+                                    setCitySearchTerm("");
+                                    setShowCityDropdown(false);
+                                  }}
+                                >
+                                  {city}
+                                </button>
+                              ))}
+                            {voivodeships
+                              .find((v) => v.name === selectedVoivodeship)
+                              ?.cities.filter((city) =>
+                                city
+                                  .toLowerCase()
+                                  .includes(
+                                    (citySearchTerm || "").toLowerCase()
+                                  )
+                              ).length === 0 &&
+                              citySearchTerm && (
+                                <div className="px-4 py-2 text-gray-500 text-sm">
+                                  Nie znaleziono miejscowości "{citySearchTerm}"
+                                </div>
+                              )}
+                          </div>
+                        )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -440,7 +795,7 @@ const AddAdvertisement: React.FC = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                       <Upload className="h-4 w-4" />
-                      Dodaj zdjęcia (maksymalnie 3)
+                      Wybierz pliki ({images.length + imageUrls.length}/6)
                     </label>
                     <input
                       ref={fileInputRef}
@@ -448,7 +803,8 @@ const AddAdvertisement: React.FC = () => {
                       multiple
                       accept="image/*"
                       onChange={(e) => onSelectImages(e.target.files)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={images.length + imageUrls.length >= 6}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     />
                     {images.length > 0 && (
                       <div className="flex gap-2 mt-3">
@@ -475,14 +831,70 @@ const AddAdvertisement: React.FC = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                       <Upload className="h-4 w-4" />
-                      Lub podaj link do zdjęcia
+                      Dodaj linki do zdjęć ({images.length + imageUrls.length}
+                      /6)
                     </label>
-                    <input
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                    />
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="https://i.imgur.com/abc123.jpg lub https://example.com/image.png"
+                        disabled={images.length + imageUrls.length >= 6}
+                      />
+                      <button
+                        type="button"
+                        onClick={addImageUrl}
+                        disabled={
+                          !newImageUrl.trim() ||
+                          images.length + imageUrls.length >= 6
+                        }
+                        className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Dodaj
+                      </button>
+                    </div>
+
+                    {/* Wyświetlanie dodanych linków */}
+                    {imageUrls.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">Dodane linki:</p>
+                        <div className="space-y-2">
+                          {imageUrls.map((url, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg"
+                            >
+                              <img
+                                src={url}
+                                alt={`Link ${index + 1}`}
+                                className="w-12 h-12 object-cover rounded"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "https://dummyimage.com/48x48/ccc/fff&text=Error";
+                                }}
+                              />
+                              <span className="flex-1 text-sm text-gray-700 truncate">
+                                {url}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeImageUrl(index)}
+                                className="p-1 text-red-500 hover:bg-red-100 rounded"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      💡 Możesz dodać łącznie do 6 zdjęć (pliki + linki). Dla
+                      Imgur: użyj bezpośredniego linku do obrazu
+                    </p>
                   </div>
                 </div>
               </div>
@@ -642,7 +1054,7 @@ const AddAdvertisement: React.FC = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                       <Camera className="h-4 w-4" />
-                      Aparat główny *
+                      Aparat główny * (MP)
                     </label>
                     <input
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -656,7 +1068,7 @@ const AddAdvertisement: React.FC = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                       <Camera className="h-4 w-4" />
-                      Aparat przedni *
+                      Aparat przedni * (MP)
                     </label>
                     <input
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -672,7 +1084,7 @@ const AddAdvertisement: React.FC = () => {
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                     <Battery className="h-4 w-4" />
-                    Pojemność baterii *
+                    Pojemność baterii * (mAh)
                   </label>
                   <input
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -804,6 +1216,134 @@ const AddAdvertisement: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Procesor i grafika */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Cpu className="h-5 w-5" />
+                    Procesor i grafika
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Procesor
+                      </label>
+                      <input
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={processor}
+                        onChange={(e) => setProcessor(e.target.value)}
+                        placeholder="np. Apple A17 Pro"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Karta graficzna
+                      </label>
+                      <input
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={gpu}
+                        onChange={(e) => setGpu(e.target.value)}
+                        placeholder="np. Apple GPU 6-core"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Wyświetlacz - zaawansowane */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Monitor className="h-5 w-5" />
+                    Wyświetlacz - szczegóły
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Rozdzielczość
+                      </label>
+                      <input
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={screenResolution}
+                        onChange={(e) => setScreenResolution(e.target.value)}
+                        placeholder="np. 2556 x 1179"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Częstotliwość odświeżania (Hz)
+                      </label>
+                      <input
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={refreshRate}
+                        onChange={(e) => setRefreshRate(e.target.value)}
+                        placeholder="np. 120Hz"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dodatkowe informacje */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Dodatkowe informacje
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Stan urządzenia
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={condition}
+                        onChange={(e) => setCondition(e.target.value)}
+                      >
+                        <option value="nowy">Nowy</option>
+                        <option value="używany">Używany</option>
+                        <option value="uszkodzony">Uszkodzony</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Gwarancja
+                        <span className="text-xs text-gray-500 ml-2">
+                          {warranty.length}/500 znaków
+                        </span>
+                      </label>
+                      <input
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        value={warranty}
+                        onChange={(e) => {
+                          if (e.target.value.length <= 500) {
+                            setWarranty(e.target.value);
+                          }
+                        }}
+                        placeholder="np. 24 miesiące"
+                        maxLength={500}
+                      />
+                      {warranty.length > 450 && (
+                        <p className="text-xs text-orange-600 mt-1">
+                          Uwaga: Zbliżasz się do limitu znaków (
+                          {warranty.length}/500)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Checkbox dla ładowarki */}
+                  <div className="mt-4">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={includesCharger}
+                        onChange={(e) => setIncludesCharger(e.target.checked)}
+                        className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Ładowarka z kablem w zestawie
+                      </span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Przycisk publikacji */}
@@ -823,7 +1363,7 @@ const AddAdvertisement: React.FC = () => {
 
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"

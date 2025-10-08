@@ -44,6 +44,7 @@ const ModeracjaOpinii: React.FC = () => {
       reviewer: "Anna Kowalska",
       reviewee: "Jan Nowak",
       adTitle: "iPhone 14 Pro Max 256GB",
+      adId: 1,
       rating: 5,
       comment:
         "Bardzo dobra transakcja! Telefon zgodny z opisem, szybka wysyłka. Polecam tego sprzedawcę!",
@@ -57,6 +58,7 @@ const ModeracjaOpinii: React.FC = () => {
       reviewer: "Michał Wiśniewski",
       reviewee: "Maria Kowalczyk",
       adTitle: "Samsung Galaxy S23 Ultra",
+      adId: 2,
       rating: 1,
       comment:
         "OSZUST! Nie wysłał telefonu mimo otrzymania pieniędzy. Unikajcie tego sprzedawcy!",
@@ -70,6 +72,7 @@ const ModeracjaOpinii: React.FC = () => {
       reviewer: "Katarzyna Nowak",
       reviewee: "Piotr Jankowski",
       adTitle: "Google Pixel 8 Pro",
+      adId: 3,
       rating: 4,
       comment:
         "Telefon w dobrym stanie, drobne ślady użytkowania. Sprzedawca kulturalny i pomocny.",
@@ -83,6 +86,7 @@ const ModeracjaOpinii: React.FC = () => {
       reviewer: "Spam Bot",
       reviewee: "Andrzej Kowalski",
       adTitle: "iPhone 13 128GB",
+      adId: 4,
       rating: 5,
       comment:
         "Najlepszy sprzedawca! Kup teraz! Sprawdź mój profil na www.podejrzana-strona.com",
@@ -394,7 +398,10 @@ const ModeracjaOpinii: React.FC = () => {
               {filteredReviews.map((review) => (
                 <div
                   key={review.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() =>
+                    navigate(`/smartfon/${review.adId}?reviewId=${review.id}`)
+                  }
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                     {/* Review Info */}
@@ -471,11 +478,23 @@ const ModeracjaOpinii: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-2 lg:flex-col lg:w-32">
-                      <button className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add approve logic here
+                        }}
+                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-1"
+                      >
                         <CheckCircle className="w-4 h-4" />
                         Zatwierdź
                       </button>
-                      <button className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center justify-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add reject logic here
+                        }}
+                        className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center justify-center gap-1"
+                      >
                         <XCircle className="w-4 h-4" />
                         Odrzuć
                       </button>
@@ -502,7 +521,7 @@ const ModeracjaOpinii: React.FC = () => {
 
         {/* White footer bar at bottom */}
         <div className="panel-footer w-full py-2 mt-auto">
-          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
             <a
               href="/zasady-bezpieczenstwa"
               className="text-black hover:text-gray-600 transition-colors py-1 text-center"

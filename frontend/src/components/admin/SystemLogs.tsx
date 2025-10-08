@@ -394,13 +394,13 @@ const SystemLogs: React.FC = () => {
               <div className="flex flex-col xl:flex-row gap-4">
                 {/* Search Bar */}
                 <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="Szukaj w logach po wiadomości, źródle, użytkowniku..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent h-10"
                   />
                 </div>
 
@@ -595,7 +595,7 @@ const SystemLogs: React.FC = () => {
 
         {/* White footer bar at bottom */}
         <div className="panel-footer w-full py-2 mt-auto">
-          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
             <a
               href="/zasady-bezpieczenstwa"
               className="text-black hover:text-gray-600 transition-colors py-1 text-center"

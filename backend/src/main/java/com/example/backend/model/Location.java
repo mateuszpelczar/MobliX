@@ -8,15 +8,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
 //klasa reprezentujaca lokalizacje ogloszen
 @Entity
 @Table(name="lokalizacje")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Location {
 
   @Id
@@ -27,6 +22,27 @@ public class Location {
 
    @OneToMany(mappedBy = "location")
    private List<Advertisement> advertisements;
-  
-  
+
+   // Konstruktory
+   public Location() {}
+
+   public Location(Long id, String city, String region, List<Advertisement> advertisements) {
+     this.id = id;
+     this.city = city;
+     this.region = region;
+     this.advertisements = advertisements;
+   }
+
+   // Gettery i Settery
+   public Long getId() { return id; }
+   public void setId(Long id) { this.id = id; }
+
+   public String getCity() { return city; }
+   public void setCity(String city) { this.city = city; }
+
+   public String getRegion() { return region; }
+   public void setRegion(String region) { this.region = region; }
+
+   public List<Advertisement> getAdvertisements() { return advertisements; }
+   public void setAdvertisements(List<Advertisement> advertisements) { this.advertisements = advertisements; }
 }

@@ -18,6 +18,8 @@ import ZasadyBezpieczeństwa from "./components/overall/ZasadyBezpieczeństwa";
 import Regulamin from "./components/overall/Regulamin";
 import PolitykaCookies from "./components/overall/PolitykaCookies";
 import UstawieniaPlikowCookies from "./components/overall/UstawieniaPlikowCookies";
+import SmartphoneCatalog from "./components/overall/SmartphoneCatalog";
+import SmartphoneDetails from "./components/overall/SmartphoneDetails";
 import ManageContent from "./components/admin/ManageContent";
 import Message from "./components/user/Message";
 import Notifications from "./components/user/Notifications";
@@ -37,8 +39,25 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<MainPanel />} />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* Login i Register jako overlay na MainPanel */}
+        <Route
+          path="/login"
+          element={
+            <>
+              <MainPanel />
+              <Login />
+            </>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <>
+              <MainPanel />
+              <Register />
+            </>
+          }
+        />
 
         <Route path="/main" element={<MainPanel />} />
 
@@ -98,6 +117,7 @@ const App: React.FC = () => {
 
         <Route path="/user/personaldetails" element={<PersonalDetails />} />
         <Route path="/user/editAd" element={<UserEditAd />} />
+        <Route path="/user/edit-ad/:id" element={<UserEditAd />} />
         <Route path="/user/message" element={<Message />} />
         <Route path="/jak-dziala-moblix" element={<JakDzialaMoblix />} />
         <Route path="/user/notifications" element={<Notifications />} />
@@ -105,6 +125,11 @@ const App: React.FC = () => {
         <Route path="/user/your-ads" element={<YourAds />} />
         <Route path="/user/ratings" element={<Ratings />} />
         <Route path="/user/mainpanel" element={<MainPanel />} />
+
+        {/* Smartphone routes */}
+        <Route path="/smartfony" element={<SmartphoneCatalog />} />
+        <Route path="/smartfon/:id" element={<SmartphoneDetails />} />
+
         <Route path="/staff/moderacja-opinii" element={<ModeracjaOpinii />} />
         <Route
           path="/staff/moderacja-zgloszen"

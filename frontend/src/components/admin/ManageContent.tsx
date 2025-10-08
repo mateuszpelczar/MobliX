@@ -179,6 +179,7 @@ const ManageContent: React.FC = () => {
                         navigate("/admin");
                       }}
                     >
+                      <Shield className="w-4 h-4 text-red-600" />
                       Panel administratora
                     </button>
                   )}
@@ -190,6 +191,7 @@ const ManageContent: React.FC = () => {
                         navigate("/staffpanel");
                       }}
                     >
+                      <Users className="w-4 h-4 text-orange-600" />
                       Panel pracownika
                     </button>
                   )}
@@ -201,10 +203,12 @@ const ManageContent: React.FC = () => {
                         navigate("/userpanel");
                       }}
                     >
+                      <User className="w-4 h-4 text-blue-600" />
                       Panel użytkownika
                     </button>
                   )}
                   <button onClick={handleLogout} className="dropdown-logout">
+                    <LogOut className="w-4 h-4 text-red-600" />
                     Wyloguj
                   </button>
                 </div>
@@ -295,7 +299,7 @@ const ManageContent: React.FC = () => {
 
       {/* Footer */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"

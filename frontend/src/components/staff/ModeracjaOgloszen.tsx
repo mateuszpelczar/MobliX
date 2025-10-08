@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import "../../styles/MobileResponsive.css";
@@ -11,14 +11,11 @@ import {
   Users,
   LogOut,
   ChevronDown,
-  Eye,
   Clock,
-  AlertTriangle,
   CheckCircle,
   XCircle,
   Filter,
   Search,
-  Flag,
   Calendar,
   MapPin,
   DollarSign,
@@ -30,79 +27,177 @@ type JwtPayLoad = {
   exp: number;
 };
 
+type Advertisement = {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  location: string;
+  status: string;
+  createdAt: string;
+  userName: string; // Backend wysyła userName zamiast user object
+  imageUrls: string[]; // Backend wysyła imageUrls zamiast images array
+};
+
 const ModeracjaOgloszen: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("wszystkie");
   const [searchTerm, setSearchTerm] = useState("");
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectingAdId, setRejectingAdId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
 
-  // Przykładowe dane ogłoszeń
-  const mockAds = [
-    {
-      id: 1,
-      title: "iPhone 14 Pro Max 256GB",
-      user: "Jan Kowalski",
-      price: "4500 zł",
-      location: "Warszawa",
-      date: "2024-09-03",
-      status: "pending",
-      reports: 2,
-      views: 145,
-      description: "Sprzedam iPhone 14 Pro Max w idealnym stanie...",
-      category: "Telefony",
-    },
-    {
-      id: 2,
-      title: "Samsung Galaxy S23 Ultra",
-      user: "Anna Nowak",
-      price: "3800 zł",
-      location: "Kraków",
-      date: "2024-09-03",
-      status: "approved",
-      reports: 0,
-      views: 89,
-      description: "Samsung Galaxy S23 Ultra, używany 6 miesięcy...",
-      category: "Telefony",
-    },
-    {
-      id: 3,
-      title: "Podejrzane ogłoszenie - iPhone za 100zł",
-      user: "Podejrzany User",
-      price: "100 zł",
-      location: "Nieznane",
-      date: "2024-09-02",
-      status: "flagged",
-      reports: 15,
-      views: 234,
-      description: "Sprzedam iPhone 14 w super cenie...",
-      category: "Telefony",
-    },
-    {
-      id: 4,
-      title: "Google Pixel 8 Pro",
-      user: "Michał Wiśniewski",
-      price: "2900 zł",
-      location: "Gdańsk",
-      date: "2024-09-01",
-      status: "rejected",
-      reports: 1,
-      views: 67,
-      description: "Google Pixel 8 Pro, stan bardzo dobry...",
-      category: "Telefony",
-    },
+  const rejectReasons = [
+    "Spam lub nieautentyczne ogłoszenie",
+    "Nieodpowiednia treści lub wulgarny język",
+    "Niepoprawne dane kontaktowe",
+    "Naruszenie zasad serwisu",
+    "Zdjęcia niezgodne z ogłoszeniem",
+    "Inne (proszę podać powód)",
   ];
+
+  // Ładowanie ogłoszeń z API
+  useEffect(() => {
+    fetchAdvertisements();
+  }, []);
+
+  const fetchAdvertisements = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Brak tokenu autoryzacji");
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:8080/api/advertisements/all",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Błąd podczas ładowania ogłoszeń");
+      }
+
+      const data = await response.json();
+      console.log("Fetched advertisements data:", data);
+      // Sort by createdAt descending (newest first)
+      const sortedData = data.sort((a: Advertisement, b: Advertisement) => {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+      setAdvertisements(sortedData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Wystąpił błąd");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectWithReason = async () => {
+    if (!rejectingAdId || !rejectReason) {
+      alert("Wybierz powód odrzucenia");
+      return;
+    }
+
+    const finalReason =
+      rejectReason === "Inne (proszę podać powód)"
+        ? customReason
+        : rejectReason;
+
+    if (rejectReason === "Inne (proszę podać powód)" && !customReason.trim()) {
+      alert("Podaj własny powód odrzucenia");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:8080/api/advertisements/${rejectingAdId}/reject`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            rejectReason: finalReason,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Błąd podczas odrzucania ogłoszenia");
+      }
+
+      alert("Ogłoszenie zostało odrzucone i użytkownik otrzymał powiadomienie");
+      setShowRejectModal(false);
+      setRejectingAdId(null);
+      setRejectReason("");
+      setCustomReason("");
+      fetchAdvertisements();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Wystąpił błąd");
+    }
+  };
+
+  const updateAdvertisementStatus = async (id: number, status: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Brak tokenu autoryzacji");
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:8080/api/advertisements/${id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Błąd podczas aktualizacji statusu");
+      }
+
+      // Odśwież listę ogłoszeń
+      fetchAdvertisements();
+      alert(
+        `Ogłoszenie zostało ${
+          status === "ACTIVE" ? "zatwierdzone" : "odrzucone"
+        }`
+      );
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Wystąpił błąd");
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
+      case "PENDING":
         return "bg-yellow-100 text-yellow-800";
-      case "approved":
+      case "ACTIVE":
         return "bg-green-100 text-green-800";
-      case "flagged":
-        return "bg-red-100 text-red-800";
-      case "rejected":
+      case "REJECTED":
         return "bg-gray-100 text-gray-800";
+      case "SOLD":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -110,14 +205,14 @@ const ModeracjaOgloszen: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "pending":
+      case "PENDING":
         return <Clock className="w-4 h-4" />;
-      case "approved":
+      case "ACTIVE":
         return <CheckCircle className="w-4 h-4" />;
-      case "flagged":
-        return <AlertTriangle className="w-4 h-4" />;
-      case "rejected":
+      case "REJECTED":
         return <XCircle className="w-4 h-4" />;
+      case "SOLD":
+        return <CheckCircle className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -125,25 +220,29 @@ const ModeracjaOgloszen: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "pending":
+      case "PENDING":
         return "Oczekuje";
-      case "approved":
+      case "ACTIVE":
         return "Zatwierdzone";
-      case "flagged":
-        return "Zgłoszone";
-      case "rejected":
+      case "REJECTED":
         return "Odrzucone";
+      case "SOLD":
+        return "Sprzedane";
       default:
         return "Nieznany";
     }
   };
 
-  const filteredAds = mockAds.filter((ad) => {
+  const filteredAds = advertisements.filter((ad) => {
     const matchesFilter =
-      selectedFilter === "wszystkie" || ad.status === selectedFilter;
+      selectedFilter === "wszystkie" ||
+      (selectedFilter === "pending" && ad.status === "PENDING") ||
+      (selectedFilter === "approved" && ad.status === "ACTIVE") ||
+      (selectedFilter === "rejected" && ad.status === "REJECTED") ||
+      (selectedFilter === "sold" && ad.status === "SOLD");
     const matchesSearch =
       ad.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.user.toLowerCase().includes(searchTerm.toLowerCase());
+      ad.userName?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -292,11 +391,11 @@ const ModeracjaOgloszen: React.FC = () => {
       <div className="panel-content flex-grow w-full overflow-y-auto">
         <div
           className="container mx-auto px-4 relative pt-12 pb-12 max-w-6xl"
-          style={{ paddingTop: "450px" }}
+          style={{ paddingTop: "80px" }}
         >
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 h-full min-h-0">
             {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 flex-shrink-0">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
                   <ShoppingBag className="w-8 h-8 text-orange-600" />
@@ -310,26 +409,43 @@ const ModeracjaOgloszen: React.FC = () => {
               {/* Quick Stats */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-yellow-50 p-3 rounded-lg text-center border border-yellow-200">
-                  <div className="text-lg font-bold text-yellow-600">3</div>
+                  <div className="text-lg font-bold text-yellow-600">
+                    {
+                      advertisements.filter((ad) => ad.status === "PENDING")
+                        .length
+                    }
+                  </div>
                   <div className="text-xs text-yellow-500">Oczekujące</div>
                 </div>
-                <div className="bg-red-50 p-3 rounded-lg text-center border border-red-200">
-                  <div className="text-lg font-bold text-red-600">1</div>
-                  <div className="text-xs text-red-500">Zgłoszone</div>
-                </div>
                 <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
-                  <div className="text-lg font-bold text-green-600">15</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {
+                      advertisements.filter((ad) => ad.status === "ACTIVE")
+                        .length
+                    }
+                  </div>
                   <div className="text-xs text-green-500">Zatwierdzone</div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg text-center border border-gray-200">
-                  <div className="text-lg font-bold text-gray-600">2</div>
+                  <div className="text-lg font-bold text-gray-600">
+                    {
+                      advertisements.filter((ad) => ad.status === "REJECTED")
+                        .length
+                    }
+                  </div>
                   <div className="text-xs text-gray-500">Odrzucone</div>
                 </div>
+                {/* <div className="bg-blue-50 p-3 rounded-lg text-center border border-blue-200">
+                  <div className="text-lg font-bold text-blue-600">
+                    {advertisements.filter((ad) => ad.status === "SOLD").length}
+                  </div>
+                  <div className="text-xs text-blue-500">Sprzedane</div>
+                </div> */}
               </div>
             </div>
 
             {/* Filters and Search */}
-            <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Filter className="w-5 h-5 text-gray-500" />
                 <select
@@ -343,14 +459,14 @@ const ModeracjaOgloszen: React.FC = () => {
                   <option value="pending" className="text-black">
                     Oczekujące
                   </option>
-                  <option value="flagged" className="text-black">
-                    Zgłoszone
-                  </option>
                   <option value="approved" className="text-black">
                     Zatwierdzone
                   </option>
                   <option value="rejected" className="text-black">
                     Odrzucone
+                  </option>
+                  <option value="sold" className="text-black">
+                    Sprzedane
                   </option>
                 </select>
               </div>
@@ -367,92 +483,135 @@ const ModeracjaOgloszen: React.FC = () => {
               </div>
             </div>
 
-            {/* Ads List */}
-            <div className="space-y-4">
-              {filteredAds.map((ad) => (
-                <div
-                  key={ad.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    {/* Ad Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg text-gray-900">
-                            {ad.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm mt-1">
-                            {ad.description}
-                          </p>
-                        </div>
-                        <div
-                          className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(
-                            ad.status
-                          )}`}
-                        >
-                          {getStatusIcon(ad.status)}
-                          {getStatusText(ad.status)}
-                        </div>
-                      </div>
-
-                      {/* Ad Details */}
-                      <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          {ad.user}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
-                          {ad.price}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {ad.location}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {ad.date}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Eye className="w-4 h-4" />
-                          {ad.views} wyświetleń
-                        </div>
-                        {ad.reports > 0 && (
-                          <div className="flex items-center gap-1 text-red-500">
-                            <Flag className="w-4 h-4" />
-                            {ad.reports} zgłoszeń
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-2 lg:flex-col lg:w-32">
-                      <button className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-1">
-                        <CheckCircle className="w-4 h-4" />
-                        Zatwierdź
-                      </button>
-                      <button className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center justify-center gap-1">
-                        <XCircle className="w-4 h-4" />
-                        Odrzuć
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Empty State */}
-            {filteredAds.length === 0 && (
+            {/* Loading State */}
+            {loading && (
               <div className="text-center py-12">
-                <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                  Brak ogłoszeń
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                <p className="mt-4 text-gray-600">Ładowanie ogłoszeń...</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <div className="text-center py-12">
+                <XCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-red-600 mb-2">
+                  Błąd
                 </h3>
-                <p className="text-gray-500">
-                  Nie znaleziono ogłoszeń spełniających kryteria wyszukiwania.
-                </p>
+                <p className="text-red-500 mb-4">{error}</p>
+                <button
+                  onClick={fetchAdvertisements}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Spróbuj ponownie
+                </button>
+              </div>
+            )}
+
+            {/* Ads List */}
+            {!loading && !error && (
+              <div className="flex-1 overflow-y-auto min-h-0 max-h-96 border border-gray-100 rounded-lg">
+                <div className="space-y-4 p-4">
+                  {/* Scrollable advertisements container */}
+                  {filteredAds.map((ad) => (
+                    <div
+                      key={ad.id}
+                      className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-all duration-300 cursor-pointer bg-gradient-to-r from-white to-gray-50"
+                      onClick={() => navigate(`/smartfon/${ad.id}`)}
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                        {/* Ad Info */}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                {ad.title}
+                              </h3>
+                              <p className="text-gray-600 text-sm mt-1">
+                                {ad.description}
+                              </p>
+                            </div>
+                            <div
+                              className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(
+                                ad.status
+                              )}`}
+                            >
+                              {getStatusIcon(ad.status)}
+                              {getStatusText(ad.status)}
+                            </div>
+                          </div>
+
+                          {/* Ad Details */}
+                          <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <User className="w-4 h-4" />
+                              {ad.userName || "Brak użytkownika"}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-4 h-4" />
+                              {ad.price} zł
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {ad.location}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(ad.createdAt).toLocaleDateString(
+                                "pl-PL"
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col sm:flex-row gap-2 lg:flex-col lg:w-32">
+                          {/* Przycisk Zatwierdź - tylko dla ogłoszeń PENDING */}
+                          {ad.status === "PENDING" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateAdvertisementStatus(ad.id, "ACTIVE");
+                              }}
+                              className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-1"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Zatwierdź
+                            </button>
+                          )}
+
+                          {/* Przycisk Odrzuć - tylko dla ogłoszeń PENDING i ACTIVE */}
+                          {ad.status !== "REJECTED" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRejectingAdId(ad.id);
+                                setShowRejectModal(true);
+                              }}
+                              className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center justify-center gap-1"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Odrzuć
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Empty State */}
+                  {filteredAds.length === 0 && (
+                    <div className="text-center py-12">
+                      <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                        Brak ogłoszeń
+                      </h3>
+                      <p className="text-gray-500">
+                        Nie znaleziono ogłoszeń spełniających kryteria
+                        wyszukiwania.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -460,7 +619,7 @@ const ModeracjaOgloszen: React.FC = () => {
 
         {/* White footer bar at bottom */}
         <div className="panel-footer w-full py-2 mt-auto">
-          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
             <a
               href="/zasady-bezpieczenstwa"
               className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -499,6 +658,68 @@ const ModeracjaOgloszen: React.FC = () => {
             </a>
           </div>
         </div>
+
+        {/* Reject Modal */}
+        {showRejectModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-gray-600 text-xl font-semibold mb-4">
+                Odrzuć ogłoszenie
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Wybierz powód odrzucenia ogłoszenia:
+              </p>
+              <div className="space-y-3 mb-4">
+                {rejectReasons.map((reason) => (
+                  <label
+                    key={reason}
+                    className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-gray-50"
+                  >
+                    <input
+                      type="radio"
+                      name="rejectReason"
+                      value={reason}
+                      checked={rejectReason === reason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      className="w-4 h-4 text-orange-500 focus:ring-orange-500"
+                    />
+                    <span className="text-sm text-gray-900 flex-1">
+                      {reason}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {rejectReason === "Inne (proszę podać powód)" && (
+                <textarea
+                  placeholder="Podaj własny powód..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg mb-4"
+                  rows={3}
+                />
+              )}
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectingAdId(null);
+                    setRejectReason("");
+                    setCustomReason("");
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handleRejectWithReason}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                >
+                  Odrzuć
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,14 +1,16 @@
 package com.example.backend.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class UserRoleChangeRequest {
     private String role;
+
+    // Konstruktory
+    public UserRoleChangeRequest() {}
+
+    public UserRoleChangeRequest(String role) {
+        this.role = role;
+    }
+
+    // Gettery i Settery
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 }

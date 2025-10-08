@@ -118,7 +118,7 @@ const ChangeRole: React.FC = () => {
       try {
         // Dodanie timeoutu dla zapytania
         const response = await axios.get<User[]>(
-          "http://localhost:8088/api/admin/users",
+          "http://localhost:8080/api/admin/users",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -175,7 +175,7 @@ const ChangeRole: React.FC = () => {
       }
 
       await axios.put(
-        `http://localhost:8088/api/admin/users/${userId}/role`,
+        `http://localhost:8080/api/admin/users/${userId}/role`,
         { role: newRole },
         {
           headers: {
@@ -205,7 +205,7 @@ const ChangeRole: React.FC = () => {
         navigate("/");
         return;
       }
-      await axios.delete(`http://localhost:8088/api/admin/users/${userId}`, {
+      await axios.delete(`http://localhost:8080/api/admin/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -722,7 +722,7 @@ const ChangeRole: React.FC = () => {
       </div>
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"

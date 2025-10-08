@@ -16,6 +16,31 @@ import messengerIcon from "../icons/messenger.png";
 import starIcon from "../icons/star.png";
 import "../styles/MobileResponsive.css";
 
+interface SmartphoneData {
+  id: number;
+  title: string;
+  brand: string;
+  model: string;
+  price: number;
+  originalPrice?: number;
+  location: string;
+  condition: "nowy" | "używany" | "uszkodzony";
+  images: string[];
+  seller: string;
+  dateAdded: string;
+  views: number;
+  likes: number;
+  description: string;
+  specifications: {
+    storage: string;
+    ram: string;
+    color: string;
+    batteryCapacity: string;
+    screenSize: string;
+    cameraMP: string;
+  };
+}
+
 type JwtPayLoad = {
   sub: string;
   role: string;
@@ -28,6 +53,10 @@ const MainPanel: React.FC = () => {
   const [selectedVoivodeship, setSelectedVoivodeship] = useState("Województwo");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [featuredSmartphones, setFeaturedSmartphones] = useState<
+    SmartphoneData[]
+  >([]);
+  const [loading, setLoading] = useState(true);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const voivodeshipRef = React.useRef<HTMLDivElement>(null);
   const conditionRef = React.useRef<HTMLDivElement>(null);
@@ -61,6 +90,60 @@ const MainPanel: React.FC = () => {
     };
   }, []);
 
+  // Pobieranie najnowszych ogłoszeń z API
+  useEffect(() => {
+    const fetchLatestAdvertisements = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "http://localhost:8080/api/advertisements/latest"
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // Mapowanie danych z backendu na format frontend
+          const mappedData: SmartphoneData[] = data.map((ad: any) => ({
+            id: ad.id,
+            title: ad.title,
+            brand: ad.specification?.brand || "",
+            model: ad.specification?.model || "",
+            price: ad.price,
+            location: ad.location || "Brak lokalizacji",
+            condition: ad.condition || "nowy",
+            images:
+              ad.imageUrls && ad.imageUrls.length > 0
+                ? ad.imageUrls
+                : ["https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia"],
+            seller: ad.userName || "Użytkownik",
+            dateAdded: ad.createdAt || ad.dateAdded,
+            views: 0, // Backend nie ma jeszcze tego pola
+            likes: 0, // Backend nie ma jeszcze tego pola
+            description: ad.description,
+            specifications: {
+              storage: ad.specification?.storage || "",
+              ram: ad.specification?.ram || "",
+              color: ad.specification?.color || "",
+              batteryCapacity: ad.specification?.batteryCapacity || "",
+              screenSize: ad.specification?.displaySize || "",
+              cameraMP: ad.specification?.rearCameras || "",
+            },
+          }));
+          setFeaturedSmartphones(mappedData);
+        } else {
+          console.error(
+            "Błąd podczas pobierania ogłoszeń:",
+            response.statusText
+          );
+        }
+      } catch (error) {
+        console.error("Błąd podczas pobierania ogłoszeń:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestAdvertisements();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
@@ -83,19 +166,37 @@ const MainPanel: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement search functionality
-    console.log(
-      "Searching for:",
-      searchQuery,
-      "in",
-      selectedVoivodeship,
-      "price:",
-      priceFrom,
-      "-",
-      priceTo,
-      "conditions:",
-      selectedConditions
-    );
+    // Przekierowanie do katalogu smartfonów z parametrami wyszukiwania
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set("search", searchQuery.trim());
+    if (
+      selectedVoivodeship !== "Województwo" &&
+      selectedVoivodeship !== "Cała Polska"
+    ) {
+      params.set("location", selectedVoivodeship);
+    }
+    if (priceFrom) params.set("minPrice", priceFrom);
+    if (priceTo) params.set("maxPrice", priceTo);
+    if (
+      !selectedConditions.includes("Wszystkie") &&
+      selectedConditions.length > 0
+    ) {
+      // Mapuj polskie nazwy na angielskie dla URL
+      const conditionMap: { [key: string]: string } = {
+        Nowe: "nowy",
+        Używane: "używany",
+        Uszkodzone: "uszkodzony",
+      };
+      const firstCondition = selectedConditions[0];
+      if (conditionMap[firstCondition]) {
+        params.set("condition", conditionMap[firstCondition]);
+      }
+    }
+
+    const searchUrl = `/smartfony${
+      params.toString() ? `?${params.toString()}` : ""
+    }`;
+    navigate(searchUrl);
   };
 
   const handleMessengerClick = () => {
@@ -361,7 +462,7 @@ const MainPanel: React.FC = () => {
           </div>
 
           {/* Cena filter (middle-right) */}
-          <div className="hidden xs:flex flex-col text-white mr-1 sm:mr-2">
+          <div className="hidden xs:flex flex-col text-white mr-2 sm:mr-3 md:mr-4">
             <span className="text-xxs xs:text-xs sm:text-sm mb-1">Cena</span>
             <div className="flex items-center gap-2">
               <input
@@ -385,7 +486,7 @@ const MainPanel: React.FC = () => {
 
           {/* Stan dropdown (right, before voivodeship) */}
           <div
-            className="relative hidden xs:flex flex-col text-white"
+            className="relative hidden xs:flex flex-col text-white mr-2 sm:mr-3 md:mr-4"
             ref={conditionRef}
           >
             <span className="text-xxs xs:text-xs sm:text-sm mb-1">Stan</span>
@@ -437,7 +538,7 @@ const MainPanel: React.FC = () => {
           </div>
 
           {/* Voivodeship button on the far right */}
-          <div className="relative" ref={voivodeshipRef}>
+          <div className="relative mr-2 sm:mr-3 md:mr-4" ref={voivodeshipRef}>
             <button
               onClick={handleVoivodeshipClick}
               className="voivodeship-button"
@@ -477,6 +578,33 @@ const MainPanel: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Search button with magnifying glass icon */}
+          <div className="ml-2 sm:ml-3 md:ml-4">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                handleSearch(e);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white p-2 sm:p-3 rounded-lg transition-colors shadow-lg hover:shadow-xl group"
+              title="Szukaj"
+            >
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -498,37 +626,108 @@ const MainPanel: React.FC = () => {
           </div>
 
           {/* White content box - adjusted positioning with equal spacing */}
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-17 w-full max-w-5xl mx-auto min-h-[400px] sm:min-h-[500px] mt-10 mb-12 flex flex-col gap-6 sm:gap-8">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-17 w-full max-w-5xl mx-auto h-auto min-h-[600px] sm:min-h-[700px] mt-36 mb-12  flex flex-col gap-6 sm:gap-8 ">
             {/* Reklama */}
-            <div className="w-full h-24 sm:h-32 md:h-40 flex items-center justify-center border border-dashed border-gray-400 mb-4 sm:mb-6 text-sm sm:text-base md:text-lg font-semibold text-gray-700">
-              Reklama
-            </div>
-            {/* Okienka na smartfony */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 mt-2 mb-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="border border-black rounded-lg p-1 sm:p-2 flex flex-col items-center"
-                >
-                  <img
-                    src="https://dummyimage.com/120x128/ddd/222"
-                    alt="Smartfon"
-                    className="mb-2 sm:mb-3 w-20 h-24 sm:w-28 sm:h-32 md:w-32 md:h-36 lg:w-36 lg:h-44 xl:w-40 xl:h-48 object-cover rounded"
-                  />
-                  <div className="font-medium text-gray-800 mb-0.5 sm:mb-1 text-xs md:text-sm truncate w-full text-center">
-                    Nazwa smartfona
-                  </div>
-                  <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900">
-                    999 zł
-                  </div>
-                  <div className="text-xs md:text-sm text-gray-600 mt-0.5 sm:mt-1 truncate w-full text-center">
-                    Warszawa
-                  </div>
-                  <div className="text-xs text-gray-400 mt-0.5 sm:mt-1 truncate w-full text-center">
-                    Dodano: 31.07
-                  </div>
+            <div className="w-full h-24 sm:h-32 md:h-40 mb-4 sm:mb-6 overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 border border-gray-200 flex items-center justify-center relative">
+              {/* Tło dekoracyjne */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute right-4 top-2 text-6xl sm:text-8xl">
+                  📱
                 </div>
-              ))}
+                <div className="absolute right-16 bottom-2 text-4xl sm:text-6xl">
+                  📱
+                </div>
+                <div className="absolute right-32 top-4 text-3xl sm:text-5xl">
+                  📱
+                </div>
+              </div>
+
+              {/* Główna zawartość */}
+              <div className="text-center z-10 px-4">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
+                  📱 MobliX - Twoja platforma smartfonów
+                </div>
+                <div className="text-xs sm:text-sm md:text-base text-blue-100">
+                  Najlepsze ceny • Sprawdzone telefony • Bezpieczne transakcje
+                </div>
+              </div>
+            </div>
+
+            {/* Browse All Smartphones Button - prominent position */}
+            <div className="w-full flex justify-center mb-6">
+              <button
+                onClick={() => navigate("/smartfony")}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-medium text-lg shadow-lg transition-colors flex items-center gap-2"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
+                </svg>
+                Zobacz wszystkie smartfony
+              </button>
+            </div>
+
+            {/* Okienka na smartfony */}
+            <div className="min-h-[300px] sm:min-h-[400px]">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 mt-2 mb-4">
+                {loading ? (
+                  <div className="col-span-full text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                    <p className="mt-4 text-gray-600 text-lg">
+                      Ładowanie najnowszych ogłoszeń...
+                    </p>
+                  </div>
+                ) : featuredSmartphones.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <div className="text-6xl mb-4">📱</div>
+                    <p className="text-gray-600 text-lg">
+                      Brak ogłoszeń do wyświetlenia
+                    </p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Dodaj pierwsze ogłoszenie!
+                    </p>
+                  </div>
+                ) : (
+                  featuredSmartphones.map((phone) => (
+                    <div
+                      key={phone.id}
+                      className="border border-black rounded-lg p-1 sm:p-2 flex flex-col items-center cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => navigate(`/smartfon/${phone.id}`)}
+                    >
+                      <img
+                        src={phone.images[0]}
+                        alt={phone.title}
+                        className="mb-2 sm:mb-3 w-20 h-24 sm:w-28 sm:h-32 md:w-32 md:h-36 lg:w-36 lg:h-44 xl:w-40 xl:h-48 object-cover rounded"
+                      />
+                      <div className="font-medium text-gray-800 mb-0.5 sm:mb-1 text-xs md:text-sm truncate w-full text-center">
+                        {phone.title}
+                      </div>
+                      <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900">
+                        {phone.price.toLocaleString()} zł
+                      </div>
+                      <div className="text-xs md:text-sm text-gray-600 mt-0.5 sm:mt-1 truncate w-full text-center">
+                        {phone.location.split(",")[0]}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5 sm:mt-1 truncate w-full text-center">
+                        Dodano:{" "}
+                        {new Date(phone.dateAdded).toLocaleDateString("pl-PL", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -536,7 +735,7 @@ const MainPanel: React.FC = () => {
 
       {/* White footer bar at bottom */}
       <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xxs xs:text-xs sm:text-sm px-1 sm:px-2">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
             href="/zasady-bezpieczenstwa"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
