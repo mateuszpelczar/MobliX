@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   User,
   ChevronDown,
@@ -58,7 +59,7 @@ interface SmartphoneData {
   price: number;
   originalPrice?: number;
   location: string;
-  condition: "nowy" | "używany" | "uszkodzony";
+  condition: string;
   images: string[];
   seller: string;
   sellerPhone: string;
@@ -92,21 +93,23 @@ interface SmartphoneData {
   };
   additionalInfo: {
     warranty: string;
-    includesBox: boolean;
     includesCharger: boolean;
-    includesHeadphones: boolean;
-    imei: string;
   };
 }
 
 interface Review {
   id: number;
   userId: number;
-  userName: string;
+  advertisementId: number;
+  advertisementTitle?: string; // Opcjonalne, bo nie zawsze jest potrzebne
+  advertisementStatus?: string; // Status ogłoszenia
+  userName: string; // email użytkownika
   rating: number;
   comment: string;
-  dateAdded: string;
-  isEditable: boolean;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Report {
@@ -129,7 +132,7 @@ const smartphones: SmartphoneData[] = [
     price: 5299,
     originalPrice: 5999,
     location: "Warszawa, Mokotów",
-    condition: "nowy",
+    condition: "NEW",
     images: [
       "https://dummyimage.com/600x700/007acc/fff&text=iPhone+15+Pro+Front",
       "https://dummyimage.com/600x700/007acc/fff&text=iPhone+15+Pro+Back",
@@ -169,10 +172,7 @@ const smartphones: SmartphoneData[] = [
     },
     additionalInfo: {
       warranty: "24 miesiące",
-      includesBox: true,
       includesCharger: true,
-      includesHeadphones: false,
-      imei: "359***********45",
     },
   },
   {
@@ -182,7 +182,7 @@ const smartphones: SmartphoneData[] = [
     model: "Galaxy S24 Ultra",
     price: 4899,
     location: "Kraków, Stare Miasto",
-    condition: "nowy",
+    condition: "LIKE_NEW",
     images: [
       "https://dummyimage.com/600x700/1f2937/fff&text=Galaxy+S24+Front",
       "https://dummyimage.com/600x700/1f2937/fff&text=Galaxy+S24+Back",
@@ -221,10 +221,7 @@ const smartphones: SmartphoneData[] = [
     },
     additionalInfo: {
       warranty: "24 miesiące",
-      includesBox: true,
       includesCharger: true,
-      includesHeadphones: false,
-      imei: "358***********22",
     },
   },
   {
@@ -235,7 +232,7 @@ const smartphones: SmartphoneData[] = [
     price: 3299,
     originalPrice: 3699,
     location: "Gdańsk, Śródmieście",
-    condition: "używany",
+    condition: "VERY_GOOD",
     images: [
       "https://dummyimage.com/600x700/f59e0b/fff&text=Xiaomi+14+Front",
       "https://dummyimage.com/600x700/f59e0b/fff&text=Xiaomi+14+Back",
@@ -273,10 +270,7 @@ const smartphones: SmartphoneData[] = [
     },
     additionalInfo: {
       warranty: "22 miesiące",
-      includesBox: true,
       includesCharger: true,
-      includesHeadphones: true,
-      imei: "862***********78",
     },
   },
 ];
@@ -293,29 +287,19 @@ const SmartphoneDetails: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Reviews states
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: 1,
-      userId: 1,
-      userName: "Jan Kowalski",
-      rating: 5,
-      comment: "Świetny telefon, dokładnie jak w opisie. Polecam sprzedawcę!",
-      dateAdded: "2024-09-22",
-      isEditable: true,
-    },
-    {
-      id: 2,
-      userId: 2,
-      userName: "Anna Nowak",
-      rating: 4,
-      comment: "Telefon w dobrym stanie, szybka wysyłka.",
-      dateAdded: "2024-09-21",
-      isEditable: false,
-    },
-  ]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
+
+  // Edit review states
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const [editReviewData, setEditReviewData] = useState({
+    rating: 5,
+    comment: "",
+    advertisementId: 0,
+  });
 
   // Report states
   const [showReportForm, setShowReportForm] = useState(false);
@@ -421,10 +405,7 @@ const SmartphoneDetails: React.FC = () => {
             },
             additionalInfo: {
               warranty: ad.warranty || "",
-              includesBox: false,
               includesCharger: ad.includesCharger || false,
-              includesHeadphones: false,
-              imei: "",
             },
           };
           setPhoneData(mappedPhone);
@@ -443,6 +424,13 @@ const SmartphoneDetails: React.FC = () => {
 
     fetchPhone();
   }, [id, phone]);
+
+  // Pobieranie opinii dla ogłoszenia
+  useEffect(() => {
+    if (phoneData?.id) {
+      fetchOpinions(phoneData.id);
+    }
+  }, [phoneData?.id]);
 
   // Pobieranie danych sprzedawcy
   useEffect(() => {
@@ -489,6 +477,20 @@ const SmartphoneDetails: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Scroll to reviews section if hash is #opinie
+  useEffect(() => {
+    if (window.location.hash === "#opinie") {
+      // Delay scroll to ensure DOM is fully loaded
+      const timer = setTimeout(() => {
+        const opinieSection = document.getElementById("opinie");
+        if (opinieSection) {
+          opinieSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [id]); // Re-run when id changes
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -561,14 +563,46 @@ const SmartphoneDetails: React.FC = () => {
 
   const getConditionColor = (condition: string) => {
     switch (condition) {
+      case "NEW":
       case "nowy":
         return "bg-green-100 text-green-800";
+      case "LIKE_NEW":
+        return "bg-emerald-100 text-emerald-800";
+      case "VERY_GOOD":
+        return "bg-blue-100 text-blue-800";
+      case "GOOD":
+        return "bg-yellow-100 text-yellow-800";
+      case "ACCEPTABLE":
+        return "bg-orange-100 text-orange-800";
       case "używany":
         return "bg-blue-100 text-blue-800";
       case "uszkodzony":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getConditionLabel = (condition: string) => {
+    switch (condition) {
+      case "NEW":
+        return "Nowy";
+      case "LIKE_NEW":
+        return "Jak nowy";
+      case "VERY_GOOD":
+        return "Bardzo dobry";
+      case "GOOD":
+        return "Dobry";
+      case "ACCEPTABLE":
+        return "Zadowalający";
+      case "nowy":
+        return "Nowy";
+      case "używany":
+        return "Używany";
+      case "uszkodzony":
+        return "Uszkodzony";
+      default:
+        return condition;
     }
   };
 
@@ -598,61 +632,183 @@ const SmartphoneDetails: React.FC = () => {
     }
   };
 
+  // Fetch opinions for advertisement
+  const fetchOpinions = async (advertisementId: number) => {
+    try {
+      console.log(`Fetching opinions for advertisement ${advertisementId}...`);
+      const response = await axios.get<Review[]>(
+        `http://localhost:8080/api/opinions/advertisement/${advertisementId}`
+      );
+      console.log(`Received ${response.data.length} opinions:`, response.data);
+      setReviews(response.data);
+    } catch (error) {
+      console.error("Error fetching opinions:", error);
+    }
+  };
+
   // Review handlers
-  const handleAddReview = () => {
+  const handleAddReview = async () => {
     if (!token) {
       alert("Musisz być zalogowany, aby dodać opinię");
       return;
     }
 
-    if (newReview.comment.trim()) {
-      const review: Review = {
-        id: Date.now(),
-        userId: 1, // W prawdziwej aplikacji pobralibyśmy z tokena
-        userName: "Aktualny użytkownik",
-        rating: newReview.rating,
-        comment: newReview.comment.trim(),
-        dateAdded: new Date().toISOString().split("T")[0],
-        isEditable: true,
-      };
+    if (!newReview.comment.trim() || newReview.comment.trim().length < 10) {
+      setReviewError("Komentarz musi mieć co najmniej 10 znaków");
+      return;
+    }
 
-      setReviews([review, ...reviews]);
+    try {
+      setReviewError(null);
+      const response = await axios.post(
+        "http://localhost:8080/api/opinions",
+        {
+          advertisementId: phoneData?.id,
+          rating: newReview.rating,
+          comment: newReview.comment.trim(),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setReviewSuccess(
+        "Opinia została dodana i oczekuje na moderację. Zostanie wyświetlona po zatwierdzeniu przez administratora."
+      );
       setNewReview({ rating: 5, comment: "" });
       setShowReviewForm(false);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setReviewSuccess(null), 5000);
+    } catch (error: any) {
+      if (error.response?.data) {
+        setReviewError(error.response.data);
+      } else {
+        setReviewError("Nie udało się dodać opinii. Spróbuj ponownie.");
+      }
     }
   };
 
-  const handleEditReview = (reviewId: number) => {
-    const review = reviews.find((r) => r.id === reviewId);
-    if (review && review.isEditable) {
-      setEditingReviewId(reviewId);
-      setNewReview({ rating: review.rating, comment: review.comment });
-      setShowReviewForm(true);
-    }
+  // Start editing review
+  const handleStartEdit = (review: Review) => {
+    setEditingReviewId(review.id);
+    setEditReviewData({
+      rating: review.rating,
+      comment: review.comment,
+      advertisementId: review.advertisementId,
+    });
+    setReviewError(null);
+    setReviewSuccess(null);
   };
 
-  const handleUpdateReview = () => {
-    if (editingReviewId && newReview.comment.trim()) {
-      setReviews(
-        reviews.map((review) =>
-          review.id === editingReviewId
-            ? {
-                ...review,
-                rating: newReview.rating,
-                comment: newReview.comment.trim(),
-              }
-            : review
-        )
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setEditReviewData({ rating: 5, comment: "", advertisementId: 0 });
+    setReviewError(null);
+  };
+
+  // Submit edited review
+  const handleEditReview = async (reviewId: number) => {
+    if (!token) {
+      alert("Musisz być zalogowany, aby edytować opinię");
+      return;
+    }
+
+    if (
+      !editReviewData.comment.trim() ||
+      editReviewData.comment.trim().length < 10
+    ) {
+      setReviewError("Komentarz musi mieć co najmniej 10 znaków");
+      return;
+    }
+
+    try {
+      setReviewError(null);
+      await axios.put(
+        `http://localhost:8080/api/opinions/${reviewId}`,
+        {
+          rating: editReviewData.rating,
+          comment: editReviewData.comment.trim(),
+          advertisementId: editReviewData.advertisementId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setReviewSuccess(
+        "Opinia została zaktualizowana i oczekuje na ponowną moderację."
       );
       setEditingReviewId(null);
-      setNewReview({ rating: 5, comment: "" });
-      setShowReviewForm(false);
+      setEditReviewData({ rating: 5, comment: "", advertisementId: 0 });
+
+      // Refresh opinions
+      if (phoneData) {
+        await fetchOpinions(phoneData.id);
+      }
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setReviewSuccess(null), 5000);
+    } catch (error: any) {
+      if (error.response?.data) {
+        setReviewError(error.response.data);
+      } else {
+        setReviewError("Nie udało się zaktualizować opinii. Spróbuj ponownie.");
+      }
     }
   };
 
-  const handleDeleteReview = (reviewId: number) => {
-    if (confirm("Czy na pewno chcesz usunąć tę opinię?")) {
-      setReviews(reviews.filter((review) => review.id !== reviewId));
+  // Delete review
+  const handleDeleteReview = async (reviewId: number) => {
+    if (!token) {
+      alert("Musisz być zalogowany, aby usunąć opinię");
+      return;
+    }
+
+    if (!window.confirm("Czy na pewno chcesz usunąć tę opinię?")) {
+      return;
+    }
+
+    try {
+      setReviewError(null);
+      await axios.delete(`http://localhost:8080/api/opinions/${reviewId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setReviewSuccess("Opinia została usunięta");
+
+      // Refresh opinions
+      if (phoneData) {
+        await fetchOpinions(phoneData.id);
+      }
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setReviewSuccess(null), 3000);
+    } catch (error: any) {
+      if (error.response?.data) {
+        setReviewError(error.response.data);
+      } else {
+        setReviewError("Nie udało się usunąć opinii. Spróbuj ponownie.");
+      }
+    }
+  };
+
+  // Check if current user is owner of the review
+  const isReviewOwner = (review: Review): boolean => {
+    if (!token) return false;
+    try {
+      const decoded: any = jwtDecode(token);
+      const userEmail = decoded.sub;
+      return review.userName === userEmail;
+    } catch (error) {
+      return false;
     }
   };
 
@@ -937,7 +1093,7 @@ const SmartphoneDetails: React.FC = () => {
                           phoneData.condition
                         )}`}
                       >
-                        {phoneData.condition}
+                        {getConditionLabel(phoneData.condition)}
                       </span>
                       <div className="flex items-center gap-1 text-gray-600">
                         <Eye className="w-4 h-4" />
@@ -1115,9 +1271,9 @@ const SmartphoneDetails: React.FC = () => {
                   </div>
 
                   {/* Basic Specifications */}
-                  <div className="bg-green-50 p-4 rounded-lg mb-4">
+                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
                     <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Smartphone className="w-5 h-5 text-green-600" />
+                      <Smartphone className="w-5 h-5 text-purple-600" />
                       Specyfikacja podstawowa
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1384,6 +1540,21 @@ const SmartphoneDetails: React.FC = () => {
                       Dodatkowe informacje
                     </h3>
                     <div className="space-y-3">
+                      {/* Stan urządzenia */}
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-gray-600" />
+                        <span className="text-sm text-gray-600">
+                          Stan urządzenia:
+                        </span>
+                        <span
+                          className={`text-sm font-medium px-2 py-0.5 rounded ${getConditionColor(
+                            phoneData.condition
+                          )}`}
+                        >
+                          {getConditionLabel(phoneData.condition)}
+                        </span>
+                      </div>
+
                       {/* Gwarancja */}
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-gray-600" />
@@ -1395,41 +1566,19 @@ const SmartphoneDetails: React.FC = () => {
                         </span>
                       </div>
 
-                      {/* IMEI */}
-                      <div className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-600">IMEI:</span>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.additionalInfo.imei || "Brak danych"}
-                        </span>
-                      </div>
-
                       {/* W zestawie */}
                       <div className="space-y-1">
                         <div className="text-sm text-gray-600">W zestawie:</div>
                         <div className="flex flex-wrap gap-2">
-                          {phoneData.additionalInfo.includesBox && (
-                            <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                              <Check className="w-3 h-3" /> Oryginalne pudełko
-                            </span>
-                          )}
-                          {phoneData.additionalInfo.includesCharger && (
+                          {phoneData.additionalInfo.includesCharger ? (
                             <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                               <Check className="w-3 h-3" /> Ładowarka z kablem
                             </span>
-                          )}
-                          {phoneData.additionalInfo.includesHeadphones && (
-                            <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                              <Check className="w-3 h-3" /> Słuchawki
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              Tylko telefon
                             </span>
                           )}
-                          {!phoneData.additionalInfo.includesBox &&
-                            !phoneData.additionalInfo.includesCharger &&
-                            !phoneData.additionalInfo.includesHeadphones && (
-                              <span className="text-xs text-gray-500">
-                                Tylko telefon
-                              </span>
-                            )}
                         </div>
                       </div>
                     </div>
@@ -1438,27 +1587,47 @@ const SmartphoneDetails: React.FC = () => {
               </div>
 
               {/* Reviews Section */}
-              <div className="mt-8 pt-8 border-t border-gray-200">
+              <div id="opinie" className="mt-8 pt-8 border-t border-gray-200">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-semibold text-gray-900">
                     Opinie ({reviews.length})
                   </h3>
-                  {token && (
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => setShowReviewForm(!showReviewForm)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      onClick={() => phoneData && fetchOpinions(phoneData.id)}
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm flex items-center gap-2"
+                      title="Odśwież listę opinii"
                     >
-                      {editingReviewId ? "Edytuj opinię" : "Dodaj opinię"}
+                      <Clock className="w-4 h-4" />
+                      Odśwież
                     </button>
-                  )}
+                    {token && (
+                      <button
+                        onClick={() => setShowReviewForm(!showReviewForm)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        Dodaj opinię
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Success/Error Messages */}
+                {reviewSuccess && (
+                  <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-800">{reviewSuccess}</p>
+                  </div>
+                )}
+                {reviewError && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-800">{reviewError}</p>
+                  </div>
+                )}
 
                 {/* Review Form */}
                 {showReviewForm && token && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium mb-4">
-                      {editingReviewId ? "Edytuj opinię" : "Dodaj swoją opinię"}
-                    </h4>
+                    <h4 className="font-medium mb-4">Dodaj swoją opinię</h4>
 
                     {/* Rating */}
                     <div className="mb-4">
@@ -1485,7 +1654,7 @@ const SmartphoneDetails: React.FC = () => {
                     {/* Comment */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Komentarz
+                        Komentarz (minimum 10 znaków)
                       </label>
                       <textarea
                         value={newReview.comment}
@@ -1499,23 +1668,24 @@ const SmartphoneDetails: React.FC = () => {
                         rows={4}
                         placeholder="Podziel się swoją opinią o tym smartfonie..."
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {newReview.comment.length} / 1000 znaków
+                      </p>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-2">
                       <button
-                        onClick={
-                          editingReviewId ? handleUpdateReview : handleAddReview
-                        }
+                        onClick={handleAddReview}
                         className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                       >
-                        {editingReviewId ? "Zaktualizuj" : "Dodaj opinię"}
+                        Dodaj opinię
                       </button>
                       <button
                         onClick={() => {
                           setShowReviewForm(false);
-                          setEditingReviewId(null);
                           setNewReview({ rating: 5, comment: "" });
+                          setReviewError(null);
                         }}
                         className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
                       >
@@ -1536,50 +1706,165 @@ const SmartphoneDetails: React.FC = () => {
                       <div
                         key={review.id}
                         id={`review-${review.id}`}
-                        className="border border-gray-200 rounded-lg p-4 transition-colors duration-300"
+                        className="border border-gray-200 rounded-lg p-4"
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <User className="w-5 h-5 text-gray-400" />
-                            <span className="font-medium">
-                              {review.userName}
-                            </span>
-                            <div className="flex">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-4 h-4 ${
-                                    star <= review.rating
-                                      ? "text-yellow-400 fill-current"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">
-                              {review.dateAdded}
-                            </span>
-                            {review.isEditable && token && (
+                        {/* Check if this review is being edited */}
+                        {editingReviewId === review.id ? (
+                          // Edit Form
+                          <div className="space-y-4">
+                            <h4 className="font-medium text-gray-900">
+                              Edytuj opinię
+                            </h4>
+
+                            {/* Rating */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Ocena
+                              </label>
                               <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleEditReview(review.id)}
-                                  className="text-blue-600 hover:text-blue-700 text-sm"
-                                >
-                                  Edytuj
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteReview(review.id)}
-                                  className="text-red-600 hover:text-red-700 text-sm"
-                                >
-                                  Usuń
-                                </button>
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <Star
+                                    key={rating}
+                                    className={`w-6 h-6 cursor-pointer ${
+                                      rating <= editReviewData.rating
+                                        ? "text-yellow-400 fill-current"
+                                        : "text-gray-300"
+                                    }`}
+                                    onClick={() =>
+                                      setEditReviewData({
+                                        ...editReviewData,
+                                        rating,
+                                      })
+                                    }
+                                  />
+                                ))}
                               </div>
-                            )}
+                            </div>
+
+                            {/* Comment */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Komentarz (minimum 10 znaków)
+                              </label>
+                              <textarea
+                                value={editReviewData.comment}
+                                onChange={(e) =>
+                                  setEditReviewData({
+                                    ...editReviewData,
+                                    comment: e.target.value,
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                rows={4}
+                                placeholder="Podziel się swoją opinią..."
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                {editReviewData.comment.length} / 1000 znaków
+                              </p>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEditReview(review.id)}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                              >
+                                Zapisz zmiany
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors text-sm"
+                              >
+                                Anuluj
+                              </button>
+                            </div>
+
+                            <p className="text-xs text-orange-600 mt-2">
+                              ⚠️ Po edycji opinia będzie wymagała ponownej
+                              moderacji przez administratora
+                            </p>
                           </div>
-                        </div>
-                        <p className="text-gray-700">{review.comment}</p>
+                        ) : (
+                          // Display Review
+                          <>
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2">
+                                <User className="w-5 h-5 text-gray-400" />
+                                <span className="font-medium text-gray-900">
+                                  {review.userName}
+                                </span>
+                                <div className="flex">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`w-4 h-4 ${
+                                        star <= review.rating
+                                          ? "text-yellow-400 fill-current"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-gray-500">
+                                  {new Date(
+                                    review.createdAt
+                                  ).toLocaleDateString("pl-PL")}
+                                </span>
+
+                                {/* Edit/Delete buttons - only for review owner */}
+                                {token && isReviewOwner(review) && (
+                                  <div className="flex gap-1 ml-2">
+                                    <button
+                                      onClick={() => handleStartEdit(review)}
+                                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                      title="Edytuj opinię"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                        />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteReview(review.id)
+                                      }
+                                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      title="Usuń opinię"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-gray-700">{review.comment}</p>
+                          </>
+                        )}
                       </div>
                     ))
                   )}

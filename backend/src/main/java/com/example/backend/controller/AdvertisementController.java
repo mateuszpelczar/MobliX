@@ -96,8 +96,9 @@ public class AdvertisementController {
             @RequestBody Map<String, String> request,
             Authentication authentication) {
         String status = request.get("status");
+        String rejectReason = request.get("rejectReason"); // Opcjonalne pole dla statusu REJECTED
         String userEmail = authentication.getName();
-        AdvertisementResponseDTO updated = advertisementService.updateAdvertisementStatus(id, status, userEmail);
+        AdvertisementResponseDTO updated = advertisementService.updateAdvertisementStatus(id, status, rejectReason, userEmail);
         return ResponseEntity.ok(updated);
     }
 
@@ -128,5 +129,15 @@ public class AdvertisementController {
         String userEmail = authentication.getName();
         advertisementService.deleteAdvertisement(id, userEmail);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<AdvertisementResponseDTO> updateAdvertisement(
+            @PathVariable Long id,
+            @Valid @RequestBody CreateAdvertisementDTO updateDto,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        AdvertisementResponseDTO updated = advertisementService.updateAdvertisement(id, updateDto, userEmail);
+        return ResponseEntity.ok(updated);
     }
 }

@@ -181,11 +181,13 @@ const MainPanel: React.FC = () => {
       !selectedConditions.includes("Wszystkie") &&
       selectedConditions.length > 0
     ) {
-      // Mapuj polskie nazwy na angielskie dla URL
+      // Mapuj polskie nazwy na wartości enum backendu
       const conditionMap: { [key: string]: string } = {
-        Nowe: "nowy",
-        Używane: "używany",
-        Uszkodzone: "uszkodzony",
+        Nowy: "NEW",
+        "Jak nowy": "LIKE_NEW",
+        "Bardzo dobry": "VERY_GOOD",
+        Dobry: "GOOD",
+        Zadowalający: "ACCEPTABLE",
       };
       const firstCondition = selectedConditions[0];
       if (conditionMap[firstCondition]) {
@@ -515,7 +517,14 @@ const MainPanel: React.FC = () => {
             {isConditionOpen && (
               <div className="voivodeship-dropdown z-50 w-56">
                 <div className="py-1 max-h-64 overflow-auto">
-                  {["Wszystkie", "Używane", "Nowe", "Uszkodzone"].map((opt) => (
+                  {[
+                    "Wszystkie",
+                    "Nowy",
+                    "Jak nowy",
+                    "Bardzo dobry",
+                    "Dobry",
+                    "Zadowalający",
+                  ].map((opt) => (
                     <label
                       key={opt}
                       className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer text-black"

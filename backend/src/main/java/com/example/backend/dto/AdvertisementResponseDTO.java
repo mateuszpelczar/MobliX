@@ -16,6 +16,7 @@ public class AdvertisementResponseDTO {
     private String voivodeship; // województwo
     private List<String> imageUrls;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private LocalDateTime dateAdded;
     private String status; // status ogłoszenia
     private String condition; // stan urządzenia
@@ -35,7 +36,7 @@ public class AdvertisementResponseDTO {
     public AdvertisementResponseDTO(Long id, String title, String description, Double price, 
                                     String userName, String categoryName, String locationName, 
                                     String location, String voivodeship, List<String> imageUrls, 
-                                    LocalDateTime createdAt, LocalDateTime dateAdded, String status, 
+                                    LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime dateAdded, String status, 
                                     String condition, String imageUrl, Long imageId, Boolean includesCharger, 
                                     String warranty, SmartphoneSpecificationDTO specification) {
         this.id = id;
@@ -49,6 +50,7 @@ public class AdvertisementResponseDTO {
         this.voivodeship = voivodeship;
         this.imageUrls = imageUrls;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.dateAdded = dateAdded;
         this.status = status;
         this.condition = condition;
@@ -92,6 +94,9 @@ public class AdvertisementResponseDTO {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
     public LocalDateTime getDateAdded() { return dateAdded; }
     public void setDateAdded(LocalDateTime dateAdded) { this.dateAdded = dateAdded; }

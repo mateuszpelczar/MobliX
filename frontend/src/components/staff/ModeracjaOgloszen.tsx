@@ -124,7 +124,7 @@ const ModeracjaOgloszen: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:8080/api/advertisements/${rejectingAdId}/reject`,
+        `http://localhost:8080/api/advertisements/${rejectingAdId}/status`,
         {
           method: "PATCH",
           headers: {
@@ -132,6 +132,7 @@ const ModeracjaOgloszen: React.FC = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            status: "REJECTED",
             rejectReason: finalReason,
           }),
         }

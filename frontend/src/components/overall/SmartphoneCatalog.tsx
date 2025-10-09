@@ -29,7 +29,7 @@ interface SmartphoneData {
   price: number;
   originalPrice?: number;
   location: string;
-  condition: "nowy" | "używany" | "uszkodzony";
+  condition: string;
   images: string[];
   seller: string;
   dateAdded: string;
@@ -111,7 +111,7 @@ const SmartphoneCatalog: React.FC = () => {
             model: ad.specification?.model || "",
             price: ad.price,
             location: ad.location || "Brak lokalizacji",
-            condition: ad.condition || "nowy",
+            condition: ad.condition || "NEW",
             images:
               ad.imageUrls && ad.imageUrls.length > 0
                 ? ad.imageUrls
@@ -426,7 +426,7 @@ const SmartphoneCatalog: React.FC = () => {
       <div className="panel-content flex-grow w-full overflow-y-auto bg-purple-600">
         <div className="container mx-auto px-4 relative pt-32 pb-12 max-w-7xl">
           {/* Jeden biały kontener na fioletowym tle */}
-          <div className="bg-white rounded-lg shadow-lg p-6 min-h-[80vh] mt-80">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-h-[calc(100vh-10rem)] overflow-y-auto mt-20">
             {/* Tytuł strony po lewej stronie - standardowy rozmiar */}
             <div className="mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
@@ -489,9 +489,11 @@ const SmartphoneCatalog: React.FC = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="all">Wszystkie stany</option>
-                      <option value="nowy">Nowy</option>
-                      <option value="używany">Używany</option>
-                      <option value="uszkodzony">Uszkodzony</option>
+                      <option value="NEW">Nowy</option>
+                      <option value="LIKE_NEW">Jak nowy</option>
+                      <option value="VERY_GOOD">Bardzo dobry</option>
+                      <option value="GOOD">Dobry</option>
+                      <option value="ACCEPTABLE">Zadowalający</option>
                     </select>
                   </div>
 

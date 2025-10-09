@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
@@ -14,284 +15,228 @@ import {
   Edit3,
   Trash2,
   Search,
-  Filter,
   Smartphone,
   Calendar,
   MapPin,
   DollarSign,
   Eye,
-  Heart,
-  Tag,
-  Image,
   Clock,
   CheckCircle,
   XCircle,
   AlertTriangle,
+  FileText,
   Settings,
-  BarChart3,
+  X,
+  Save,
+  Upload,
+  ChevronUp,
+  ChevronDown as ChevronDownIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 
-type AdItem = {
+type JwtPayLoad = {
+  sub: string;
+  role: string;
+  exp: number;
+};
+
+interface Advertisement {
   id: number;
   title: string;
-  owner: "me" | "user";
-  brand: string;
-  model: string;
-  price: number;
-  location: string;
-  date: string;
-  status: "active" | "pending" | "rejected";
-  views: number;
-  likes: number;
-  category: string;
-  condition: string;
-  images: number;
-  ownerName: string;
   description: string;
-  color: string;
-  osType: "Android" | "iOS";
-  osVersion: string;
-  storage: string;
-  ram: string;
-  rearCameras: string;
-  frontCamera: string;
-  batteryCapacity: string;
-  displaySize: string;
-  displayTech: string;
-  wifi: string;
-  bluetooth: string;
-  ipRating: string;
-  fastCharging: string;
-  wirelessCharging: string;
+  price: number;
+  condition: string;
+  status: "ACTIVE" | "PENDING" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+  warranty?: string;
+  includesCharger: boolean;
+  userName: string;
+  categoryName: string;
+  locationName: string;
+  location: string;
+  voivodeship: string;
+  specification: {
+    brand: string;
+    model: string;
+    color: string;
+    osType: string;
+    osVersion: string;
+    storage: string;
+    ram: string;
+    rearCameras: string;
+    frontCamera: string;
+    batteryCapacity: string;
+  };
   imageUrls: string[];
+}
+
+// Helper function to normalize image URLs
+const normalizeImageUrl = (imageUrl: string): string => {
+  // If already a full URL, return as is
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    // Fix old URLs with wrong path
+    if (
+      imageUrl.includes("/images/") &&
+      !imageUrl.includes("/uploads/images/")
+    ) {
+      // Convert http://localhost:8080/images/xyz.png -> http://localhost:8080/uploads/images/xyz.png
+      return imageUrl.replace("/images/", "/uploads/images/");
+    }
+    return imageUrl;
+  }
+
+  // If relative path, prepend base URL
+  return `http://localhost:8080${imageUrl}`;
 };
 
 const EditAd: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Edit Modal States
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingAd, setEditingAd] = useState<AdItem | null>(null);
+  // API State
+  const [ads, setAds] = useState<Advertisement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [adToDelete, setAdToDelete] = useState<number | null>(null);
+
+  // Edit modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
   const [editForm, setEditForm] = useState({
     title: "",
-    price: 0,
-    location: "",
-    status: "active" as "active" | "pending" | "rejected",
-    condition: "",
-    category: "",
     description: "",
-    brand: "",
-    model: "",
-    color: "",
-    osType: "Android" as "Android" | "iOS",
-    osVersion: "",
-    storage: "",
-    ram: "",
-    rearCameras: "",
-    frontCamera: "",
-    batteryCapacity: "",
-    displaySize: "",
-    displayTech: "",
-    wifi: "",
-    bluetooth: "",
-    ipRating: "",
-    fastCharging: "",
-    wirelessCharging: "",
-    imageUrls: [] as string[],
-  });
-
-  // Mock data with more detailed information
-  const [filter, setFilter] = useState<"me" | "user" | "all">("all");
-
-  const createMockAd = (baseAd: Partial<AdItem>): AdItem =>
-    ({
-      description: "Szczegółowy opis urządzenia...",
-      color: "Czarny",
-      osType: "Android",
-      osVersion: "14.0",
-      storage: "128GB",
-      ram: "8GB",
-      rearCameras: "50MP",
-      frontCamera: "12MP",
-      batteryCapacity: "4000mAh",
-      displaySize: '6.2"',
-      displayTech: "AMOLED",
-      wifi: "Wi-Fi 6",
-      bluetooth: "5.0",
-      ipRating: "IP68",
-      fastCharging: "25W",
-      wirelessCharging: "15W",
-      imageUrls: ["/api/placeholder/400/300"],
-      ...baseAd,
-    } as AdItem);
-
-  const [ads, setAds] = useState<AdItem[]>([
-    {
-      id: 1,
-      title: "iPhone 15 Pro Max 256GB Titanium Blue",
-      brand: "Apple",
-      model: "iPhone 15 Pro Max",
-      price: 5299,
-      location: "Warszawa, Śródmieście",
-      date: "2024-09-05",
-      status: "active",
-      views: 1247,
-      likes: 89,
-      category: "Smartfony",
-      condition: "Nowy",
-      images: 8,
-      owner: "user",
-      ownerName: "Jan Kowalski",
-      description:
-        "Sprzedam iPhone 15 Pro Max w doskonałym stanie. Telefon był używany z etui i folią ochronną od pierwszego dnia. Kompletny zestaw z ładowarką.",
-      color: "Titanium Blue",
-      osType: "iOS",
-      osVersion: "17.6",
-      storage: "256GB",
-      ram: "8GB",
-      rearCameras: "48MP + 12MP + 12MP",
-      frontCamera: "12MP",
-      batteryCapacity: "4441mAh",
-      displaySize: '6.7"',
-      displayTech: "Super Retina XDR OLED",
-      wifi: "Wi-Fi 6E",
-      bluetooth: "5.3",
-      ipRating: "IP68",
-      fastCharging: "27W",
-      wirelessCharging: "15W MagSafe",
-      imageUrls: ["/api/placeholder/400/300", "/api/placeholder/400/300"],
+    price: 0,
+    condition: "",
+    warranty: "",
+    includesCharger: false,
+    specification: {
+      brand: "",
+      model: "",
+      color: "",
+      osType: "",
+      osVersion: "",
+      storage: "",
+      ram: "",
+      rearCameras: "",
+      frontCamera: "",
+      batteryCapacity: "",
     },
-    createMockAd({
-      id: 2,
-      title: "Samsung Galaxy S24 Ultra 512GB Black",
-      brand: "Samsung",
-      model: "Galaxy S24 Ultra",
-      price: 4799,
-      location: "Kraków, Nowa Huta",
-      date: "2024-09-03",
-      status: "pending",
-      views: 892,
-      likes: 67,
-      category: "Smartfony",
-      condition: "Bardzo dobry",
-      images: 6,
-      owner: "me",
-      ownerName: "Administrator",
-      description:
-        "Samsung Galaxy S24 Ultra w bardzo dobrym stanie. Używany przez 6 miesięcy, zawsze z etui i folią.",
-      color: "Czarny",
-      storage: "512GB",
-      ram: "12GB",
-      rearCameras: "200MP + 50MP + 10MP + 12MP",
-      batteryCapacity: "5000mAh",
-      displaySize: '6.8"',
-      displayTech: "Dynamic AMOLED 2X",
-    }),
-    createMockAd({
-      id: 3,
-      title: "Google Pixel 8 Pro 128GB Obsidian",
-      brand: "Google",
-      model: "Pixel 8 Pro",
-      price: 3299,
-      location: "Gdańsk, Wrzeszcz",
-      date: "2024-09-01",
-      status: "active",
-      views: 634,
-      likes: 45,
-      category: "Smartfony",
-      condition: "Dobry",
-      images: 5,
-      owner: "user",
-      ownerName: "Anna Nowak",
-      description:
-        "Google Pixel 8 Pro z najlepszymi zdjęciami w klasie. Używany rok, drobne ślady użytkowania.",
-      color: "Obsidian",
-      storage: "128GB",
-      ram: "12GB",
-    }),
-    createMockAd({
-      id: 4,
-      title: "Xiaomi 14 Ultra 512GB Black",
-      brand: "Xiaomi",
-      model: "14 Ultra",
-      price: 4199,
-      location: "Wrocław, Krzyki",
-      date: "2024-08-28",
-      status: "rejected",
-      views: 234,
-      likes: 12,
-      category: "Smartfony",
-      condition: "Uszkodzony",
-      images: 3,
-      owner: "user",
-      ownerName: "Piotr Wiśniewski",
-      description:
-        "Xiaomi 14 Ultra z pękniętym ekranem. Reszta działa bez problemów. Do naprawy lub na części.",
-      color: "Czarny",
-      storage: "512GB",
-    }),
-    createMockAd({
-      id: 5,
-      title: "OnePlus 12 256GB Green",
-      brand: "OnePlus",
-      model: "12",
-      price: 3599,
-      location: "Poznań, Stare Miasto",
-      date: "2024-09-07",
-      status: "active",
-      views: 567,
-      likes: 34,
-      category: "Smartfony",
-      condition: "Bardzo dobry",
-      images: 7,
-      owner: "me",
-      ownerName: "Administrator",
-      description:
-        "OnePlus 12 w zielonym kolorze. Bardzo szybki telefon z super szybkim ładowaniem.",
-      color: "Zielony",
-      storage: "256GB",
-      fastCharging: "100W",
-    }),
-  ]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  });
+  const [editImages, setEditImages] = useState<string[]>([]);
 
-  // Advanced filtering function
+  // Authentication
+  const token = localStorage.getItem("token");
+  let isAdmin = false;
+  let isStaff = false;
+
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayLoad>(token);
+      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
+      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+    } catch (err) {
+      console.error("Nieprawidłowy token JWT", err);
+    }
+  }
+
+  // Fetch all advertisements on mount
+  useEffect(() => {
+    const fetchAdvertisements = async () => {
+      if (!token) {
+        console.error("Brak tokenu autoryzacji");
+        setError("Brak tokenu autoryzacji");
+        setLoading(false);
+        return;
+      }
+
+      console.log("Pobieranie ogłoszeń...");
+      console.log("Token:", token ? "Istnieje" : "Brak");
+      console.log("isAdmin:", isAdmin);
+      console.log("isStaff:", isStaff);
+
+      try {
+        const response = await axios.get<Advertisement[]>(
+          "http://localhost:8080/api/advertisements/all",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        console.log("Pobrano ogłoszenia:", response.data.length);
+        console.log("Szczegóły ogłoszeń (imageUrls):");
+        response.data.forEach((ad, index) => {
+          console.log(`[${index}] ID: ${ad.id}, Title: ${ad.title}`);
+          console.log(`    imageUrls:`, ad.imageUrls);
+          console.log(`    imageUrls length:`, ad.imageUrls?.length || 0);
+          if (ad.imageUrls && ad.imageUrls.length > 0) {
+            console.log(`    First image:`, ad.imageUrls[0]);
+          }
+        });
+
+        // Sort by updatedAt descending (recently updated first)
+        const sortedAds = response.data.sort((a, b) => {
+          const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+          const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+          return dateB - dateA;
+        });
+        setAds(sortedAds);
+        setLoading(false);
+      } catch (err: any) {
+        console.error("Błąd podczas pobierania ogłoszeń:", err);
+        console.error("Status:", err.response?.status);
+        console.error("Data:", err.response?.data);
+        setError(
+          err.response?.data?.message || "Nie udało się pobrać ogłoszeń"
+        );
+        setLoading(false);
+      }
+    };
+
+    fetchAdvertisements();
+  }, [token, isAdmin, isStaff]);
+
+  // Filter ads
   const filteredAds = ads.filter((ad) => {
-    const matchesOwner = filter === "all" || ad.owner === filter;
     const matchesStatus = statusFilter === "all" || ad.status === statusFilter;
     const matchesSearch =
       searchTerm === "" ||
       ad.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ad.ownerName.toLowerCase().includes(searchTerm.toLowerCase());
+      ad.specification?.brand
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      ad.specification?.model
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      ad.locationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ad.userName?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesOwner && matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch;
   });
 
-  // Get status icon and color
+  // Get status config
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
         return {
           icon: CheckCircle,
           color: "text-green-600",
           bg: "bg-green-100",
           text: "Aktywne",
         };
-      case "pending":
+      case "PENDING":
         return {
           icon: Clock,
           color: "text-yellow-600",
           bg: "bg-yellow-100",
           text: "Oczekuje",
         };
-      case "rejected":
+      case "REJECTED":
         return {
           icon: XCircle,
           color: "text-red-600",
@@ -314,140 +259,197 @@ const EditAd: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const getUserRole = () => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decodedToken: any = jwtDecode(token);
-        return decodedToken.role;
-      } catch (error) {
-        console.error("Error decoding token:", error);
-        return null;
-      }
-    }
-    return null;
+  const handleViewAd = (id: number) => {
+    navigate(`/smartfon/${id}`);
   };
 
-  const userRole = getUserRole();
-  const isAdmin = userRole === "ADMIN";
-  const isStaff = userRole === "STAFF";
-  const isUser = userRole === "USER";
-
-  // Check permissions for editing ads
-  const canEditAd = (ad: AdItem) => {
-    if (isAdmin) return true; // Admin can edit everything
-    if (isStaff && ad.owner === "user") return true; // Staff can edit user ads
-    if (ad.owner === "me") return true; // Can edit own ads
-    return false;
-  };
-
-  const handleEdit = (id: number) => {
+  const handleEditAd = (id: number) => {
     const ad = ads.find((a) => a.id === id);
-    if (!ad) return;
-
-    if (!canEditAd(ad)) {
-      alert("Nie masz uprawnień do edycji tego ogłoszenia");
-      return;
+    if (ad) {
+      setEditingAd(ad);
+      setEditForm({
+        title: ad.title,
+        description: ad.description,
+        price: ad.price,
+        condition: ad.condition,
+        warranty: ad.warranty || "",
+        includesCharger: ad.includesCharger,
+        specification: {
+          brand: ad.specification?.brand || "",
+          model: ad.specification?.model || "",
+          color: ad.specification?.color || "",
+          osType: ad.specification?.osType || "",
+          osVersion: ad.specification?.osVersion || "",
+          storage: ad.specification?.storage || "",
+          ram: ad.specification?.ram || "",
+          rearCameras: ad.specification?.rearCameras || "",
+          frontCamera: ad.specification?.frontCamera || "",
+          batteryCapacity: ad.specification?.batteryCapacity || "",
+        },
+      });
+      setEditImages(ad.imageUrls || []);
+      setShowEditModal(true);
     }
-
-    setEditingAd(ad);
-    setEditForm({
-      title: ad.title,
-      price: ad.price,
-      location: ad.location,
-      status: ad.status,
-      condition: ad.condition,
-      category: ad.category,
-      description: ad.description,
-      brand: ad.brand,
-      model: ad.model,
-      color: ad.color,
-      osType: ad.osType,
-      osVersion: ad.osVersion,
-      storage: ad.storage,
-      ram: ad.ram,
-      rearCameras: ad.rearCameras,
-      frontCamera: ad.frontCamera,
-      batteryCapacity: ad.batteryCapacity,
-      displaySize: ad.displaySize,
-      displayTech: ad.displayTech,
-      wifi: ad.wifi,
-      bluetooth: ad.bluetooth,
-      ipRating: ad.ipRating,
-      fastCharging: ad.fastCharging,
-      wirelessCharging: ad.wirelessCharging,
-      imageUrls: ad.imageUrls,
-    });
-    setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = () => {
-    if (!editingAd) return;
+  const handleSaveEdit = async () => {
+    if (!editingAd || !token) return;
 
-    const updatedAds = ads.map((ad) =>
-      ad.id === editingAd.id
-        ? {
-            ...ad,
-            title: editForm.title,
-            price: editForm.price,
-            location: editForm.location,
-            status: editForm.status,
-            condition: editForm.condition,
-            category: editForm.category,
-            description: editForm.description,
-            brand: editForm.brand,
-            model: editForm.model,
-            color: editForm.color,
-            osType: editForm.osType,
-            osVersion: editForm.osVersion,
-            storage: editForm.storage,
-            ram: editForm.ram,
-            rearCameras: editForm.rearCameras,
-            frontCamera: editForm.frontCamera,
-            batteryCapacity: editForm.batteryCapacity,
-            displaySize: editForm.displaySize,
-            displayTech: editForm.displayTech,
-            wifi: editForm.wifi,
-            bluetooth: editForm.bluetooth,
-            ipRating: editForm.ipRating,
-            fastCharging: editForm.fastCharging,
-            wirelessCharging: editForm.wirelessCharging,
-            imageUrls: editForm.imageUrls,
+    try {
+      const updateData = {
+        title: editForm.title,
+        description: editForm.description,
+        price: editForm.price,
+        condition: editForm.condition,
+        warranty: editForm.warranty,
+        includesCharger: editForm.includesCharger,
+        categoryId: 1, // Default smartphone category
+        imageUrls: editImages, // Send updated images
+        // Flatten specification fields
+        brand: editForm.specification.brand,
+        model: editForm.specification.model,
+        color: editForm.specification.color,
+        osType: editForm.specification.osType,
+        osVersion: editForm.specification.osVersion,
+        storage: editForm.specification.storage,
+        ram: editForm.specification.ram,
+        rearCameras: editForm.specification.rearCameras,
+        frontCamera: editForm.specification.frontCamera,
+        batteryCapacity: editForm.specification.batteryCapacity,
+      };
+
+      await axios.put(
+        `http://localhost:8080/api/advertisements/${editingAd.id}`,
+        updateData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Refresh the advertisements list
+      const response = await axios.get<Advertisement[]>(
+        "http://localhost:8080/api/advertisements/all",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Sort by updatedAt descending (recently updated first)
+      const sortedAds = response.data.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+        return dateB - dateA;
+      });
+      setAds(sortedAds);
+
+      setShowEditModal(false);
+      setEditingAd(null);
+      alert("Ogłoszenie zostało zaktualizowane!");
+    } catch (err: any) {
+      console.error("Błąd podczas edycji ogłoszenia:", err);
+      alert(
+        err.response?.data?.message || "Nie udało się zaktualizować ogłoszenia"
+      );
+    }
+  };
+
+  const cancelEdit = () => {
+    setShowEditModal(false);
+    setEditingAd(null);
+  };
+
+  // Image management functions
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !token) return;
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const formData = new FormData();
+        formData.append("file", files[i]);
+
+        const response = await axios.post<{ imageUrl: string }>(
+          "http://localhost:8080/api/advertisements/upload",
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
           }
-        : ad
-    );
+        );
 
-    setAds(updatedAds);
-    setIsEditModalOpen(false);
-    setEditingAd(null);
-    alert("Ogłoszenie zostało zaktualizowane!");
+        uploadedUrls.push(response.data.imageUrl);
+      }
+
+      setEditImages([...editImages, ...uploadedUrls]);
+    } catch (err: any) {
+      console.error("Błąd podczas uploadowania zdjęć:", err);
+      alert("Nie udało się przesłać zdjęć");
+    }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditModalOpen(false);
-    setEditingAd(null);
+  const handleRemoveImage = (index: number) => {
+    setEditImages(editImages.filter((_, i) => i !== index));
   };
 
-  const handleDelete = (id: number) => {
-    const ad = ads.find((a) => a.id === id);
-    if (!ad) return;
+  const handleMoveImageUp = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...editImages];
+    [newImages[index - 1], newImages[index]] = [
+      newImages[index],
+      newImages[index - 1],
+    ];
+    setEditImages(newImages);
+  };
 
-    if (!canEditAd(ad)) {
-      alert("Nie masz uprawnień do usunięcia tego ogłoszenia");
-      return;
-    }
+  const handleMoveImageDown = (index: number) => {
+    if (index === editImages.length - 1) return;
+    const newImages = [...editImages];
+    [newImages[index], newImages[index + 1]] = [
+      newImages[index + 1],
+      newImages[index],
+    ];
+    setEditImages(newImages);
+  };
 
-    const confirmed = confirm("Na pewno usunąć ogłoszenie?");
-    if (confirmed) {
-      const updatedAds = ads.filter((a) => a.id !== id);
-      setAds(updatedAds);
-      alert(`Usunięto ogłoszenie "${ad.title}"`);
+  const handleDeleteClick = (id: number) => {
+    setAdToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!adToDelete || !token) return;
+
+    try {
+      await axios.delete(
+        `http://localhost:8080/api/advertisements/${adToDelete}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Remove from list
+      setAds(ads.filter((ad) => ad.id !== adToDelete));
+      setShowDeleteModal(false);
+      setAdToDelete(null);
+      alert("Ogłoszenie zostało usunięte!");
+    } catch (err: any) {
+      console.error("Błąd podczas usuwania ogłoszenia:", err);
+      alert(err.response?.data?.message || "Nie udało się usunąć ogłoszenia");
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setAdToDelete(null);
   };
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header like AdminPanel */}
+      {/* Header - biały pasek jak w AdminPanel */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         <div
           className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
@@ -460,7 +462,7 @@ const EditAd: React.FC = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button flex items-center gap-2"
+              className="account-dropdown-button"
             >
               <User className="w-4 h-4" />
               Twoje konto
@@ -471,7 +473,7 @@ const EditAd: React.FC = () => {
               />
             </button>
             {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
+              <div className="dropdown-menu">
                 <div className="py-1">
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
@@ -537,7 +539,7 @@ const EditAd: React.FC = () => {
                       Panel pracownika
                     </button>
                   )}
-                  {(isAdmin || isStaff || isUser) && (
+                  {(isAdmin || isStaff) && (
                     <button
                       className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
@@ -551,9 +553,9 @@ const EditAd: React.FC = () => {
                   )}
                   <button
                     onClick={handleLogout}
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
                   >
-                    <LogOut className="w-4 h-4 text-red-600" />
+                    <LogOut className="w-4 h-4 text-red-500" />
                     Wyloguj
                   </button>
                 </div>
@@ -563,284 +565,230 @@ const EditAd: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="panel-content-with-search flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-12 pb-12">
-          <div
-            className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full max-w-6xl mx-auto min-h-[500px] max-h-[80vh] flex flex-col gap-6 sm:gap-8 overflow-y-auto"
-            style={{
-              scrollbarWidth: "thin",
-              scrollbarColor: "#a855f7 #f3f4f6",
-            }}
-          >
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-lg shadow-md mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <Settings className="w-8 h-8" />
-                <h2 className="text-2xl sm:text-3xl font-bold">
-                  Panel Edycji Ogłoszeń
-                </h2>
-              </div>
-              <p className="text-purple-100 text-sm sm:text-base">
-                Zarządzaj ogłoszeniami użytkowników - edytuj, moderuj i
-                kontroluj zawartość platformy
+      {/* Main content with modern design - jak w AdminPanel */}
+      <div className="panel-content flex-grow w-full overflow-y-auto">
+        <div className="container mx-auto px-4 relative pt-[220px] pb-16 max-w-6xl">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="mb-8 p-6 md:p-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <Settings className="h-8 w-8 text-purple-600" />
+                Edycja ogłoszeń
+              </h1>
+              <p className="text-gray-600">
+                Zarządzaj wszystkimi ogłoszeniami w systemie
               </p>
             </div>
 
-            {/* Advanced Search and Filter Section - Fixed at top */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 flex-shrink-0">
-              <div className="flex flex-col xl:flex-row gap-4">
-                {/* Search Bar - Full width on mobile, flex-1 on desktop */}
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            {/* Content wrapper z scrollem */}
+            <div className="p-6 md:p-8 max-h-[calc(100vh-20rem)] overflow-y-auto">
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Szukaj po tytule, marce, lokalizacji..."
+                    placeholder="Szukaj ogłoszeń..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
-                {/* Owner Filter - Flex wrap for better mobile support */}
-                <div className="flex gap-2 flex-wrap flex-shrink-0">
-                  <button
-                    onClick={() => setFilter("all")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      filter === "all"
-                        ? "bg-purple-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4" />
-                      Wszystkie
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setFilter("me")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      filter === "me"
-                        ? "bg-blue-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      Moje
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setFilter("user")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      filter === "user"
-                        ? "bg-green-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Użytkowników
-                    </div>
-                  </button>
-                </div>
-
-                {/* Status Filter - Wrap for mobile, fixed width for desktop */}
-                <div className="flex gap-2 flex-wrap flex-shrink-0">
-                  <button
-                    onClick={() => setStatusFilter("all")}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      statusFilter === "all"
-                        ? "bg-gray-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    Wszystkie
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter("active")}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      statusFilter === "active"
-                        ? "bg-green-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    Aktywne
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter("pending")}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      statusFilter === "pending"
-                        ? "bg-yellow-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    Oczekujące
-                  </button>
-                </div>
+                {/* Status filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="all">Wszystkie statusy</option>
+                  <option value="ACTIVE">Aktywne</option>
+                  <option value="PENDING">Oczekujące</option>
+                  <option value="REJECTED">Odrzucone</option>
+                </select>
               </div>
 
-              {/* Results Counter */}
-              <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                <span>
-                  Znaleziono {filteredAds.length} z {ads.length} ogłoszeń
-                </span>
-              </div>
-            </div>
+              {/* Loading state */}
+              {loading && (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+                  <p className="mt-4 text-gray-600">Ładowanie ogłoszeń...</p>
+                </div>
+              )}
 
-            {/* Modern Cards Layout - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
-                {filteredAds.length === 0 ? (
-                  <div className="col-span-full text-center py-12">
-                    <div className="flex flex-col items-center gap-4">
-                      <AlertTriangle className="w-16 h-16 text-gray-400" />
-                      <p className="text-gray-500 text-lg">
-                        Nie znaleziono ogłoszeń spełniających kryteria
-                      </p>
-                      <button
-                        onClick={() => {
-                          setSearchTerm("");
-                          setFilter("all");
-                          setStatusFilter("all");
-                        }}
-                        className="text-purple-600 hover:text-purple-800 underline"
-                      >
-                        Wyczyść filtry
-                      </button>
-                    </div>
+              {/* Error state */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-semibold">Błąd:</span>
+                    <span>{error}</span>
                   </div>
-                ) : (
-                  filteredAds.map((ad) => {
-                    const statusConfig = getStatusConfig(ad.status);
-                    const StatusIcon = statusConfig.icon;
+                </div>
+              )}
 
-                    return (
-                      <div
-                        key={ad.id}
-                        className={`bg-white rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${
-                          selectedId === ad.id
-                            ? "border-purple-500 bg-purple-50"
-                            : "border-gray-200 hover:border-purple-300"
-                        }`}
-                        onClick={() => {
-                          setSelectedId(ad.id);
-                          navigate(`/smartfon/${ad.id}`);
-                        }}
-                      >
-                        {/* Card Header */}
-                        <div className="p-4 border-b border-gray-100">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Smartphone className="w-5 h-5 text-purple-600" />
-                              <span className="font-medium text-gray-900">
-                                {ad.brand}
-                              </span>
+              {/* Ads list */}
+              {!loading && !error && (
+                <>
+                  <div className="mb-4 text-sm text-gray-600">
+                    Znaleziono:{" "}
+                    <span className="font-semibold">{filteredAds.length}</span>{" "}
+                    ogłoszeń
+                  </div>
+
+                  <div className="space-y-4">
+                    {filteredAds.map((ad) => {
+                      const statusConfig = getStatusConfig(ad.status);
+                      const StatusIcon = statusConfig.icon;
+
+                      return (
+                        <div
+                          key={ad.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                        >
+                          <div className="flex flex-col md:flex-row gap-4">
+                            {/* Image */}
+                            <div className="w-full md:w-32 h-32 flex-shrink-0">
+                              {ad.imageUrls && ad.imageUrls.length > 0 ? (
+                                <img
+                                  src={normalizeImageUrl(ad.imageUrls[0])}
+                                  alt={ad.title}
+                                  className="w-full h-full object-cover rounded-lg"
+                                  onError={(e) => {
+                                    console.error(
+                                      `Błąd ładowania obrazu dla ogłoszenia #${ad.id}:`,
+                                      {
+                                        title: ad.title,
+                                        imageUrl: ad.imageUrls[0],
+                                        normalizedUrl: normalizeImageUrl(
+                                          ad.imageUrls[0]
+                                        ),
+                                      }
+                                    );
+                                    (e.target as HTMLImageElement).src =
+                                      "https://via.placeholder.com/128x128?text=Brak+zdjęcia";
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <Smartphone className="h-12 w-12 text-gray-400" />
+                                </div>
+                              )}
                             </div>
-                            <div
-                              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.color}`}
-                            >
-                              <StatusIcon className="w-3 h-3" />
-                              {statusConfig.text}
+
+                            {/* Details */}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                    {ad.title}
+                                  </h3>
+                                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                    <span className="font-semibold">
+                                      {ad.specification?.brand || "N/A"}{" "}
+                                      {ad.specification?.model || ""}
+                                    </span>
+                                    {ad.specification?.storage && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{ad.specification.storage}</span>
+                                      </>
+                                    )}
+                                    {ad.specification?.color && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{ad.specification.color}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-1 rounded-full ${statusConfig.bg}`}
+                                >
+                                  <StatusIcon
+                                    className={`h-4 w-4 ${statusConfig.color}`}
+                                  />
+                                  <span
+                                    className={`text-sm font-medium ${statusConfig.color}`}
+                                  >
+                                    {statusConfig.text}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <DollarSign className="h-4 w-4 text-green-600" />
+                                  <span className="font-semibold text-gray-900">
+                                    {ad.price.toLocaleString()} zł
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-red-600" />
+                                  <span>{ad.locationName || "N/A"}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-purple-600" />
+                                  <span>{ad.userName || "N/A"}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-blue-600" />
+                                  <span>
+                                    {new Date(
+                                      ad.createdAt
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex gap-2 mt-3">
+                                <button
+                                  onClick={() => handleViewAd(ad.id)}
+                                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span>Wyświetl</span>
+                                </button>
+                                <button
+                                  onClick={() => handleEditAd(ad.id)}
+                                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                  <span>Edytuj</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(ad.id)}
+                                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  <span>Usuń</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <h3 className="font-semibold text-gray-800 text-sm leading-tight">
-                            {ad.title}
-                          </h3>
                         </div>
+                      );
+                    })}
 
-                        {/* Card Content */}
-                        <div className="p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-green-600 font-bold">
-                              <DollarSign className="w-4 h-4" />
-                              {ad.price.toLocaleString()} zł
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-500 text-sm">
-                              <Image className="w-4 h-4" />
-                              {ad.images} zdjęć
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-gray-600 text-sm">
-                            <MapPin className="w-4 h-4" />
-                            {ad.location}
-                          </div>
-
-                          <div className="flex items-center gap-2 text-gray-600 text-sm">
-                            <Calendar className="w-4 h-4" />
-                            {new Date(ad.date).toLocaleDateString("pl-PL")}
-                          </div>
-
-                          <div className="flex items-center gap-2 text-gray-600 text-sm">
-                            <User className="w-4 h-4" />
-                            {ad.ownerName} {ad.owner === "me" && "(Admin)"}
-                          </div>
-
-                          {/* Statistics */}
-                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                            <div className="flex items-center gap-2 text-blue-600 text-sm">
-                              <Eye className="w-4 h-4" />
-                              {ad.views}
-                            </div>
-                            <div className="flex items-center gap-2 text-red-500 text-sm">
-                              <Heart className="w-4 h-4" />
-                              {ad.likes}
-                            </div>
-                            <div className="flex items-center gap-2 text-orange-600 text-sm">
-                              <Tag className="w-4 h-4" />
-                              {ad.condition}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        {canEditAd(ad) && (
-                          <div className="p-4 pt-0 flex gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(ad.id);
-                              }}
-                              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 justify-center"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                              Edytuj
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(ad.id);
-                              }}
-                              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-1 justify-center"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Usuń
-                            </button>
-                          </div>
-                        )}
-
-                        {/* No permissions message */}
-                        {!canEditAd(ad) && (
-                          <div className="p-4 pt-0">
-                            <div className="text-center text-gray-500 text-sm py-2">
-                              <Shield className="w-4 h-4 mx-auto mb-1" />
-                              Brak uprawnień do edycji
-                            </div>
-                          </div>
-                        )}
+                    {filteredAds.length === 0 && (
+                      <div className="text-center py-12">
+                        <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-600 text-lg">
+                          Nie znaleziono ogłoszeń
+                        </p>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* White footer bar at bottom */}
+      {/* White footer bar at bottom - jak w AdminPanel */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
@@ -882,39 +830,33 @@ const EditAd: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Modal */}
-      {isEditModalOpen && editingAd && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-purple-600 text-white p-6 rounded-t-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Edit3 className="w-6 h-6" />
-                  <h2 className="text-xl font-bold">Edytuj Ogłoszenie</h2>
-                </div>
-                <button
-                  onClick={handleCancelEdit}
-                  className="text-white hover:text-gray-200 transition-colors"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
-              <p className="text-purple-100 mt-2 text-sm">
-                ID: {editingAd.id} | Właściciel: {editingAd.ownerName}
-              </p>
+      {/* Edit modal */}
+      {showEditModal && editingAd && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full my-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">
+                Edytuj ogłoszenie #{editingAd.id}
+              </h3>
+              <button
+                onClick={cancelEdit}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
             </div>
 
-            <div className="p-6 space-y-8">
-              {/* Basic Information Section */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+              {/* Podstawowe informacje */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-purple-600" />
                   Podstawowe informacje
-                </h3>
+                </h4>
 
-                {/* Title */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tytuł ogłoszenia
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tytuł *
                   </label>
                   <input
                     type="text"
@@ -922,15 +864,14 @@ const EditAd: React.FC = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, title: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Tytuł ogłoszenia..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    placeholder="np. iPhone 13 128GB"
                   />
                 </div>
 
-                {/* Description */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Opis
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Opis *
                   </label>
                   <textarea
                     value={editForm.description}
@@ -938,484 +879,461 @@ const EditAd: React.FC = () => {
                       setEditForm({ ...editForm, description: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Szczegółowy opis urządzenia..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    placeholder="Szczegółowy opis ogłoszenia..."
                   />
                 </div>
 
-                {/* Price and Location */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cena (PLN)
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Cena (zł) *
                     </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="number"
-                        value={editForm.price}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            price: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lokalizacja
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={editForm.location}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, location: e.target.value })
-                        }
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Miasto, dzielnica..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status, Condition, and Category */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={editForm.status}
+                    <input
+                      type="number"
+                      value={editForm.price}
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          status: e.target.value as
-                            | "active"
-                            | "pending"
-                            | "rejected",
+                          price: parseFloat(e.target.value),
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="active">Aktywne</option>
-                      <option value="pending">Oczekujące</option>
-                      <option value="rejected">Odrzucone</option>
-                    </select>
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="2500"
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stan
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Stan *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={editForm.condition}
                       onChange={(e) =>
                         setEditForm({ ...editForm, condition: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Nowy, Bardzo dobry, Dobry..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kategoria
-                    </label>
-                    <div className="relative">
-                      <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={editForm.category}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, category: e.target.value })
-                        }
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Kategoria..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Device Information Section */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Informacje o urządzeniu
-                </h3>
-
-                {/* Brand, Model, Color */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Marka
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.brand}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, brand: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Apple, Samsung, Huawei..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Model
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.model}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, model: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="iPhone 13, Galaxy S21..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Kolor
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.color}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, color: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Biały, Czarny, Niebieski..."
-                    />
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    >
+                      <option value="Nowy">Nowy</option>
+                      <option value="Używany - bardzo dobry">
+                        Używany - bardzo dobry
+                      </option>
+                      <option value="Używany - dobry">Używany - dobry</option>
+                      <option value="Używany - zadowalający">
+                        Używany - zadowalający
+                      </option>
+                    </select>
                   </div>
                 </div>
 
-                {/* OS Type and Version */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      System operacyjny
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gwarancja
                     </label>
                     <input
                       type="text"
-                      value={editForm.osType}
+                      value={editForm.warranty}
                       onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          osType: e.target.value as "Android" | "iOS",
-                        })
+                        setEditForm({ ...editForm, warranty: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="iOS, Android, HarmonyOS..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="np. 12 miesięcy"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Wersja systemu
+                  <div className="flex items-center h-full pt-7">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editForm.includesCharger}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            includesCharger: e.target.checked,
+                          })
+                        }
+                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-600"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Dołączona ładowarka
+                      </span>
                     </label>
-                    <input
-                      type="text"
-                      value={editForm.osVersion}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, osVersion: e.target.value })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="15.0, Android 12..."
-                    />
                   </div>
                 </div>
               </div>
 
-              {/* Technical Specifications Section */}
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+              {/* Zdjęcia */}
+              <div className="space-y-4 border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5 text-purple-600" />
+                  Zdjęcia ogłoszenia
+                </h4>
+
+                {/* Existing images */}
+                {editImages.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {editImages.map((imageUrl, index) => (
+                      <div
+                        key={index}
+                        className="relative border-2 border-gray-200 rounded-lg p-2 hover:border-purple-600 transition-colors"
+                      >
+                        <img
+                          src={normalizeImageUrl(imageUrl)}
+                          alt={`Zdjęcie ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg mb-2"
+                        />
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveImageUp(index)}
+                              disabled={index === 0}
+                              className={`p-1 rounded ${
+                                index === 0
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                              title="Przesuń w górę"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveImageDown(index)}
+                              disabled={index === editImages.length - 1}
+                              className={`p-1 rounded ${
+                                index === editImages.length - 1
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                              title="Przesuń w dół"
+                            >
+                              <ChevronDownIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            title="Usuń zdjęcie"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {index === 0 && (
+                          <div className="absolute top-1 left-1 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+                            Główne
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600">Brak zdjęć</p>
+                  </div>
+                )}
+
+                {/* Upload new images */}
+                <div>
+                  <label className="block w-full">
+                    <div className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors cursor-pointer">
+                      <Upload className="h-5 w-5" />
+                      <span>Dodaj nowe zdjęcia</span>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Pierwsze zdjęcie będzie wyświetlane jako główne. Możesz
+                    zmienić kolejność używając strzałek.
+                  </p>
+                </div>
+              </div>
+
+              {/* Specyfikacja techniczna */}
+              <div className="space-y-4 border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Smartphone className="h-5 w-5 text-purple-600" />
                   Specyfikacja techniczna
-                </h3>
+                </h4>
 
-                {/* Storage and RAM */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pamięć wewnętrzna (GB)
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.storage}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          storage: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="64, 128, 256, 512..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pamięć RAM (GB)
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.ram}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          ram: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="4, 6, 8, 12..."
-                    />
-                  </div>
-                </div>
-
-                {/* Cameras */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparaty tylne (MP)
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.rearCameras}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          rearCameras: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="48 + 12 + 12"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat przedni (MP)
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.frontCamera}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          frontCamera: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="12"
-                    />
-                  </div>
-                </div>
-
-                {/* Battery and Display */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bateria (mAh)
-                    </label>
-                    <input
-                      type="number"
-                      value={editForm.batteryCapacity}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          batteryCapacity: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="3000"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Wielkość wyświetlacza
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.displaySize}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          displaySize: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder='6.1"'
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Technologia wyświetlacza
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.displayTech}
-                      onChange={(e) =>
-                        setEditForm({
-                          ...editForm,
-                          displayTech: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Super Retina XDR OLED"
-                    />
-                  </div>
-                </div>
-
-                {/* Connectivity */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Wi-Fi
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Marka *
                     </label>
                     <input
                       type="text"
-                      value={editForm.wifi}
+                      value={editForm.specification.brand}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, wifi: e.target.value })
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            brand: e.target.value,
+                          },
+                        })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="802.11ax Wi-Fi 6"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="Apple"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bluetooth
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Model *
                     </label>
                     <input
                       type="text"
-                      value={editForm.bluetooth}
+                      value={editForm.specification.model}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, bluetooth: e.target.value })
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            model: e.target.value,
+                          },
+                        })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="5.0"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="iPhone 13"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Odporność IP
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kolor *
                     </label>
                     <input
                       type="text"
-                      value={editForm.ipRating}
+                      value={editForm.specification.color}
                       onChange={(e) =>
-                        setEditForm({ ...editForm, ipRating: e.target.value })
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            color: e.target.value,
+                          },
+                        })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="IP68"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="Midnight"
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Charging Section */}
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Ładowanie
-                </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Szybkie ładowanie
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      System operacyjny *
                     </label>
                     <input
                       type="text"
-                      value={editForm.fastCharging}
+                      value={editForm.specification.osType}
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          fastCharging: e.target.value,
+                          specification: {
+                            ...editForm.specification,
+                            osType: e.target.value,
+                          },
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="20W"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="iOS / Android"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ładowanie bezprzewodowe
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Wersja systemu *
                     </label>
                     <input
                       type="text"
-                      value={editForm.wirelessCharging}
+                      value={editForm.specification.osVersion}
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          wirelessCharging: e.target.value,
+                          specification: {
+                            ...editForm.specification,
+                            osVersion: e.target.value,
+                          },
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="15W MagSafe"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="17.0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Pamięć wewnętrzna *
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.specification.storage}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            storage: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="128GB"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Pamięć RAM *
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.specification.ram}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            ram: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="6GB"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Aparat tylny *
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.specification.rearCameras}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            rearCameras: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="12MP + 12MP"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Aparat przedni *
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.specification.frontCamera}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            frontCamera: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="12MP"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bateria *
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.specification.batteryCapacity}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          specification: {
+                            ...editForm.specification,
+                            batteryCapacity: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      placeholder="3240mAh"
                     />
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Images Section */}
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Zdjęcia (URL-e rozdzielone przecinkami)
-                </h3>
+            {/* Action buttons */}
+            <div className="flex gap-3 justify-end mt-6 pt-6 border-t">
+              <button
+                onClick={cancelEdit}
+                className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <Save className="h-5 w-5" />
+                Zapisz zmiany
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URL-e zdjęć
-                  </label>
-                  <textarea
-                    value={editForm.imageUrls.join(", ")}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        imageUrls: e.target.value
-                          .split(",")
-                          .map((url) => url.trim())
-                          .filter((url) => url.length > 0),
-                      })
-                    }
-                    rows={3}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg..."
-                  />
-                </div>
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 p-3 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={handleSaveEdit}
-                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex-1"
-                >
-                  <CheckCircle className="w-5 h-5" />
-                  Zapisz zmiany
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  className="flex items-center justify-center gap-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex-1"
-                >
-                  <XCircle className="w-5 h-5" />
-                  Anuluj
-                </button>
-              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Potwierdź usunięcie
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Czy na pewno chcesz usunąć to ogłoszenie? Ta operacja jest
+              nieodwracalna.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Usuń ogłoszenie
+              </button>
             </div>
           </div>
         </div>

@@ -5,11 +5,15 @@ C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.j
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdvertisementController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\MessageController.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\OpinionController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateOpinionDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LoginRequest.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\OpinionResponseDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\RejectOpinionDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\SellerInfoDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UpdateUserRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java
@@ -24,6 +28,8 @@ C:\MobliX\backend\src\main\java\com\example\backend\model\Location.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Log.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Message.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Moderation.java
+C:\MobliX\backend\src\main\java\com\example\backend\model\Opinion.java
+C:\MobliX\backend\src\main\java\com\example\backend\model\OpinionStatus.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Regulation.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Report.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\ReportSummary.java
@@ -40,6 +46,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\repository\LocationRepositor
 C:\MobliX\backend\src\main\java\com\example\backend\repository\LogRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\MessageRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ModerationRepository.java
+C:\MobliX\backend\src\main\java\com\example\backend\repository\OpinionRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\RegulationRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportSummaryRepository.java
@@ -53,4 +60,5 @@ C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementService
 C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\MessageService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\OpinionService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java

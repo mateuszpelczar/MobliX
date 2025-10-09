@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/ogloszenia/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/advertisements/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/advertisements").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/advertisements/*").authenticated() // Update ogłoszenia
+                .requestMatchers(HttpMethod.DELETE, "/api/advertisements/*").authenticated() // Delete ogłoszenia
                 .requestMatchers("/api/advertisements/user").authenticated()
                 .requestMatchers("/api/advertisements/all").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/advertisements/pending").hasAnyRole("STAFF", "ADMIN")
@@ -56,6 +58,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/advertisements/*/status").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/advertisements/latest").permitAll()
                 .requestMatchers("/api/messages/**").authenticated()
+                // Opinions endpoints
+                .requestMatchers(HttpMethod.GET, "/api/opinions/advertisement/*").permitAll() // Publiczne - opinie dla ogłoszenia
+                .requestMatchers(HttpMethod.POST, "/api/opinions").authenticated() // Dodawanie opinii
+                .requestMatchers(HttpMethod.GET, "/api/opinions/user").authenticated() // Opinie użytkownika
+                .requestMatchers(HttpMethod.GET, "/api/opinions/user/status/*").authenticated() // Opinie użytkownika według statusu
+                .requestMatchers(HttpMethod.GET, "/api/opinions/pending").hasAnyRole("STAFF", "ADMIN") // Oczekujące opinie
+                .requestMatchers(HttpMethod.PUT, "/api/opinions/*/approve").hasAnyRole("STAFF", "ADMIN") // Zatwierdzanie
+                .requestMatchers(HttpMethod.PUT, "/api/opinions/*/reject").hasAnyRole("STAFF", "ADMIN") // Odrzucanie
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .sessionManagement(session -> session

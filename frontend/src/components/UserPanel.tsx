@@ -104,6 +104,16 @@ const UserPanel: React.FC = () => {
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
                       setIsDropdownOpen(false);
+                      navigate("/user/your-opinions");
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4 text-orange-500" />
+                    Twoje opinie
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
                       navigate("/user/personaldetails");
                     }}
                   >
@@ -268,6 +278,29 @@ const UserPanel: React.FC = () => {
                       </h3>
                       <p className="text-amber-100 text-sm">
                         Zarządzaj ofertami
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate("/user/your-opinions")}
+                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  style={
+                    {
+                      "--card-color-1": "#f97316",
+                      "--card-color-2": "#ea580c",
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                      <MessageSquare className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold mb-2">Twoje opinie</h3>
+                      <p className="text-pink-100 text-sm">
+                        Zarządzaj swoimi opiniami
                       </p>
                     </div>
                   </div>

@@ -210,18 +210,29 @@ public class AdvertisementService {
         return convertToResponseDTO(advertisement);
     }
 
-    public AdvertisementResponseDTO updateAdvertisementStatus(Long id, String status, String userEmail) {
+    public AdvertisementResponseDTO updateAdvertisementStatus(Long id, String status, String rejectReason, String userEmail) {
         Advertisement advertisement = advertisementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Advertisement not found"));
         
         User user = userService.findByEmail(userEmail);
         
+        // Allow: owner, ADMIN, or STAFF to update status
         if (!advertisement.getUser().getId().equals(user.getId()) && 
-            user.getRole() != Role.ADMIN) {
+            user.getRole() != Role.ADMIN && 
+            user.getRole() != Role.STAFF) {
             throw new RuntimeException("Unauthorized to update this advertisement");
         }
         
         advertisement.setStatus(AdvertisementStatus.valueOf(status));
+        
+        // Jeśli status to REJECTED, ustaw powód odrzucenia
+        if ("REJECTED".equals(status) && rejectReason != null && !rejectReason.trim().isEmpty()) {
+            advertisement.setRejectReason(rejectReason);
+        } else if (!"REJECTED".equals(status)) {
+            // Jeśli status zmieniony na inny niż REJECTED, wyczyść powód odrzucenia
+            advertisement.setRejectReason(null);
+        }
+        
         advertisement = advertisementRepository.save(advertisement);
         
         return convertToResponseDTO(advertisement);
@@ -262,14 +273,102 @@ public class AdvertisementService {
         return advertisementRepository.findByStatus(status);
     }
 
+    public AdvertisementResponseDTO updateAdvertisement(Long id, CreateAdvertisementDTO updateDto, String userEmail) {
+        Advertisement advertisement = advertisementRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Advertisement not found"));
+        
+        User user = userService.findByEmail(userEmail);
+        
+        // Only owner, ADMIN, or STAFF can update
+        if (!advertisement.getUser().getId().equals(user.getId()) && 
+            user.getRole() != Role.ADMIN && 
+            user.getRole() != Role.STAFF) {
+            throw new RuntimeException("Unauthorized to update this advertisement");
+        }
+        
+        // Update basic fields
+        advertisement.setTitle(updateDto.getTitle());
+        advertisement.setDescription(updateDto.getDescription());
+        advertisement.setPrice(updateDto.getPrice());
+        advertisement.setCondition(updateDto.getCondition());
+        advertisement.setIncludesCharger(updateDto.getIncludesCharger());
+        advertisement.setWarranty(updateDto.getWarranty());
+        
+        // Update category if changed
+        if (updateDto.getCategoryId() != null) {
+            Category category = categoryRepository.findById(updateDto.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            advertisement.setCategory(category);
+        }
+        
+        // Update location if changed
+        if (updateDto.getLocationId() != null) {
+            Location location = locationRepository.findById(updateDto.getLocationId())
+                    .orElseThrow(() -> new RuntimeException("Location not found"));
+            advertisement.setLocation(location);
+        }
+        
+        // Update smartphone specification
+        SmartphoneSpecification spec = advertisement.getSmartphoneSpecification();
+        if (spec == null) {
+            spec = new SmartphoneSpecification();
+        }
+        spec.setBrand(updateDto.getBrand());
+        spec.setModel(updateDto.getModel());
+        spec.setColor(updateDto.getColor());
+        spec.setOsType(updateDto.getOsType());
+        spec.setOsVersion(updateDto.getOsVersion());
+        spec.setStorage(updateDto.getStorage());
+        spec.setRam(updateDto.getRam());
+        spec.setRearCameras(updateDto.getRearCameras());
+        spec.setFrontCamera(updateDto.getFrontCamera());
+        spec.setBatteryCapacity(updateDto.getBatteryCapacity());
+        spec.setDisplaySize(updateDto.getDisplaySize());
+        spec.setDisplayTech(updateDto.getDisplayTech());
+        spec.setWifi(updateDto.getWifi());
+        spec.setBluetooth(updateDto.getBluetooth());
+        spec.setIpRating(updateDto.getIpRating());
+        spec.setFastCharging(updateDto.getFastCharging());
+        spec.setWirelessCharging(updateDto.getWirelessCharging());
+        spec.setProcessor(updateDto.getProcessor());
+        spec.setGpu(updateDto.getGpu());
+        spec.setScreenResolution(updateDto.getScreenResolution());
+        spec.setRefreshRate(updateDto.getRefreshRate());
+        spec.setAdvertisement(advertisement);
+        advertisement.setSmartphoneSpecification(spec);
+        
+        // Update images if provided
+        if (updateDto.getImageUrls() != null && !updateDto.getImageUrls().isEmpty()) {
+            // Remove old images
+            if (advertisement.getImages() != null) {
+                imageRepository.deleteAll(advertisement.getImages());
+            }
+            
+            // Add new images
+            List<Image> images = new ArrayList<>();
+            for (String url : updateDto.getImageUrls()) {
+                Image image = new Image();
+                image.setUrl(url);
+                image.setAdvertisement(advertisement);
+                images.add(imageRepository.save(image));
+            }
+            advertisement.setImages(images);
+        }
+        
+        advertisement = advertisementRepository.save(advertisement);
+        return convertToResponseDTO(advertisement);
+    }
+
     public void deleteAdvertisement(Long id, String userEmail) {
         Advertisement advertisement = advertisementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Advertisement not found"));
         
         User user = userService.findByEmail(userEmail);
         
+        // Only owner, ADMIN, or STAFF can delete
         if (!advertisement.getUser().getId().equals(user.getId()) && 
-            user.getRole() != Role.ADMIN) {
+            user.getRole() != Role.ADMIN && 
+            user.getRole() != Role.STAFF) {
             throw new RuntimeException("Unauthorized to delete this advertisement");
         }
         
@@ -322,6 +421,7 @@ public class AdvertisementService {
         dto.setCondition(advertisement.getCondition());
         dto.setStatus(advertisement.getStatus().toString());
         dto.setCreatedAt(advertisement.getCreatedAt());
+        dto.setUpdatedAt(advertisement.getUpdatedAt());
         
         if (advertisement.getUser() != null) {
             String fullName = advertisement.getUser().getFirstName() + " " + advertisement.getUser().getLastName();

@@ -1,17 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   Smartphone,
   Camera,
   Battery,
   Cpu,
   HardDrive,
-  Monitor,
-  Wifi,
-  Bluetooth,
   Shield,
-  Zap,
   Upload,
   X,
   FileText,
@@ -26,6 +23,8 @@ import {
   LogIn,
   Save,
   ShoppingBag,
+  ChevronUp,
+  ChevronDown as ChevronDownIcon,
 } from "lucide-react";
 import { FaAndroid, FaApple } from "react-icons/fa";
 
@@ -37,33 +36,58 @@ type JwtPayLoad = {
   exp: number;
 };
 
-// Mock data dla ogłoszenia - w prawdziwej aplikacji pobieralibyśmy z API
-const mockAdData = {
-  1: {
-    id: 1,
-    title: "iPhone 13 128GB",
-    price: "2500",
-    description:
-      "Sprzedam iPhone 13 w bardzo dobrym stanie. Telefon był używany z etui i folią ochronną.",
-    brand: "Apple",
-    model: "iPhone 13",
-    color: "Midnight",
-    osType: "iOS" as OsType,
-    osVersion: "17.0",
-    storage: "128GB",
-    ram: "6GB",
-    rearCameras: "12MP + 12MP",
-    frontCamera: "12MP",
-    batteryCapacity: "3240mAh",
-    displaySize: '6.1"',
-    displayTech: "Super Retina XDR",
-    wifi: "Wi-Fi 6",
-    bluetooth: "5.0",
-    ipRating: "IP68",
-    fastCharging: "20W",
-    wirelessCharging: "15W MagSafe",
-    images: ["/api/placeholder/400/300"],
-  },
+interface Advertisement {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  condition: string;
+  status: "ACTIVE" | "PENDING" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+  warranty?: string;
+  includesCharger: boolean;
+  userName: string;
+  categoryName: string;
+  locationName: string;
+  location: string;
+  voivodeship: string;
+  specification: {
+    brand: string;
+    model: string;
+    color: string;
+    osType: string;
+    osVersion: string;
+    storage: string;
+    ram: string;
+    rearCameras: string;
+    frontCamera: string;
+    batteryCapacity: string;
+  };
+  imageUrls: string[];
+}
+
+// Helper function to normalize image URLs
+const normalizeImageUrl = (imageUrl: string): string => {
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+    if (
+      imageUrl.includes("/images/") &&
+      !imageUrl.includes("/uploads/images/")
+    ) {
+      return imageUrl.replace("/images/", "/uploads/images/");
+    }
+    return imageUrl;
+  }
+
+  if (imageUrl.startsWith("/images/")) {
+    return `http://localhost:8080/uploads${imageUrl}`;
+  }
+
+  if (imageUrl.startsWith("/uploads/images/")) {
+    return `http://localhost:8080${imageUrl}`;
+  }
+
+  return `http://localhost:8080/uploads/images/${imageUrl}`;
 };
 
 const EditAd: React.FC = () => {
@@ -72,33 +96,31 @@ const EditAd: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Loading & error states
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Form states - inicjalizowane danymi ogłoszenia
   const [title, setTitle] = useState<string>("");
   const [price, setPrice] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [images, setImages] = useState<File[]>([]);
+  const [condition, setCondition] = useState<string>("");
+  const [warranty, setWarranty] = useState<string>("");
+  const [includesCharger, setIncludesCharger] = useState<boolean>(false);
+  const [images, setImages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string>("");
 
   // Obowiązkowe pola specyfikacji
   const [brand, setBrand] = useState<string>("");
   const [model, setModel] = useState<string>("");
   const [color, setColor] = useState<string>("");
-  const [osType, setOsType] = useState<OsType>("Android");
+  const [osType, setOsType] = useState<string>("");
   const [osVersion, setOsVersion] = useState<string>("");
   const [storage, setStorage] = useState<string>("");
   const [ram, setRam] = useState<string>("");
   const [rearCameras, setRearCameras] = useState<string>("");
   const [frontCamera, setFrontCamera] = useState<string>("");
   const [batteryCapacity, setBatteryCapacity] = useState<string>("");
-
-  // Opcjonalne pola specyfikacji
-  const [displaySize, setDisplaySize] = useState<string>("");
-  const [displayTech, setDisplayTech] = useState<string>("");
-  const [wifi, setWifi] = useState<string>("");
-  const [bluetooth, setBluetooth] = useState<string>("");
-  const [ipRating, setIpRating] = useState<string>("");
-  const [fastCharging, setFastCharging] = useState<string>("");
-  const [wirelessCharging, setWirelessCharging] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,34 +148,56 @@ const EditAd: React.FC = () => {
 
   // Load ad data on component mount
   useEffect(() => {
-    if (id) {
-      const adId = parseInt(id);
-      const adData = mockAdData[adId as keyof typeof mockAdData];
-
-      if (adData) {
-        setTitle(adData.title);
-        setPrice(adData.price);
-        setDescription(adData.description);
-        setBrand(adData.brand);
-        setModel(adData.model);
-        setColor(adData.color);
-        setOsType(adData.osType);
-        setOsVersion(adData.osVersion);
-        setStorage(adData.storage);
-        setRam(adData.ram);
-        setRearCameras(adData.rearCameras);
-        setFrontCamera(adData.frontCamera);
-        setBatteryCapacity(adData.batteryCapacity);
-        setDisplaySize(adData.displaySize);
-        setDisplayTech(adData.displayTech);
-        setWifi(adData.wifi);
-        setBluetooth(adData.bluetooth);
-        setIpRating(adData.ipRating);
-        setFastCharging(adData.fastCharging);
-        setWirelessCharging(adData.wirelessCharging);
+    const fetchAdvertisement = async () => {
+      if (!id || !token) {
+        setError("Brak ID ogłoszenia lub tokenu autoryzacji");
+        setLoading(false);
+        return;
       }
-    }
-  }, [id]);
+
+      try {
+        const response = await axios.get<Advertisement>(
+          `http://localhost:8080/api/advertisements/${id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const ad = response.data;
+
+        // Populate form fields with ad data
+        setTitle(ad.title);
+        setPrice(ad.price.toString());
+        setDescription(ad.description);
+        setCondition(ad.condition);
+        setWarranty(ad.warranty || "");
+        setIncludesCharger(ad.includesCharger);
+        setImages(ad.imageUrls || []);
+
+        // Specification fields
+        setBrand(ad.specification?.brand || "");
+        setModel(ad.specification?.model || "");
+        setColor(ad.specification?.color || "");
+        setOsType(ad.specification?.osType || "");
+        setOsVersion(ad.specification?.osVersion || "");
+        setStorage(ad.specification?.storage || "");
+        setRam(ad.specification?.ram || "");
+        setRearCameras(ad.specification?.rearCameras || "");
+        setFrontCamera(ad.specification?.frontCamera || "");
+        setBatteryCapacity(ad.specification?.batteryCapacity || "");
+
+        setLoading(false);
+      } catch (err: any) {
+        console.error("Błąd podczas pobierania ogłoszenia:", err);
+        setError(
+          err.response?.data?.message || "Nie udało się pobrać ogłoszenia"
+        );
+        setLoading(false);
+      }
+    };
+
+    fetchAdvertisement();
+  }, [id, token]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -175,10 +219,43 @@ const EditAd: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      const newFiles = Array.from(event.target.files);
-      setImages([...images, ...newFiles]);
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (event.target.files && token) {
+      const files = Array.from(event.target.files);
+
+      // Check limit before upload
+      if (images.length + files.length > 6) {
+        alert(
+          `Możesz dodać maksymalnie 6 zdjęć. Obecnie masz ${images.length} zdjęć.`
+        );
+        return;
+      }
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+          const response = await axios.post<string>(
+            "http://localhost:8080/api/advertisements/upload",
+            formData,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          const imageUrl = response.data;
+          setImages((prevImages) => [...prevImages, imageUrl]);
+        } catch (error) {
+          console.error("Błąd przesyłania zdjęcia:", error);
+          alert("Nie udało się przesłać zdjęcia");
+        }
+      }
     }
   };
 
@@ -186,7 +263,52 @@ const EditAd: React.FC = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const moveImageUp = (index: number) => {
+    if (index > 0) {
+      const newImages = [...images];
+      [newImages[index - 1], newImages[index]] = [
+        newImages[index],
+        newImages[index - 1],
+      ];
+      setImages(newImages);
+    }
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index < images.length - 1) {
+      const newImages = [...images];
+      [newImages[index], newImages[index + 1]] = [
+        newImages[index + 1],
+        newImages[index],
+      ];
+      setImages(newImages);
+    }
+  };
+
+  const handleAddImageFromUrl = () => {
+    if (!imageUrl.trim()) {
+      alert("Proszę wpisać adres URL zdjęcia");
+      return;
+    }
+
+    if (images.length >= 6) {
+      alert("Możesz dodać maksymalnie 6 zdjęć");
+      return;
+    }
+
+    // Basic URL validation
+    try {
+      new URL(imageUrl);
+    } catch {
+      alert("Nieprawidłowy adres URL");
+      return;
+    }
+
+    setImages([...images, imageUrl]);
+    setImageUrl("");
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     // Validation
@@ -195,24 +317,50 @@ const EditAd: React.FC = () => {
       return;
     }
 
-    // W prawdziwej aplikacji wysłalibyśmy dane do API
-    console.log("Aktualizowanie ogłoszenia:", {
-      id,
-      title,
-      price,
-      description,
-      brand,
-      model,
-      color,
-      osType,
-      osVersion,
-      storage,
-      ram,
-      // ... pozostałe pola
-    });
+    if (!id || !token) {
+      alert("Brak ID ogłoszenia lub tokenu autoryzacji");
+      return;
+    }
 
-    alert("Ogłoszenie zostało zaktualizowane!");
-    navigate("/user/your-ads");
+    try {
+      const updateData = {
+        title,
+        description,
+        price: parseFloat(price),
+        condition,
+        warranty: warranty || null,
+        includesCharger,
+        imageUrls: images,
+        specification: {
+          brand,
+          model,
+          color,
+          osType,
+          osVersion,
+          storage,
+          ram,
+          rearCameras,
+          frontCamera,
+          batteryCapacity,
+        },
+      };
+
+      await axios.put(
+        `http://localhost:8080/api/advertisements/${id}`,
+        updateData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      alert("Ogłoszenie zostało zaktualizowane!");
+      navigate("/user/your-ads");
+    } catch (err: any) {
+      console.error("Błąd podczas aktualizacji ogłoszenia:", err);
+      alert(
+        err.response?.data?.message || "Nie udało się zaktualizować ogłoszenia"
+      );
+    }
   };
 
   if (!isAuthenticated) {
@@ -228,6 +376,34 @@ const EditAd: React.FC = () => {
             className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
           >
             Powrót do strony głównej
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Ładowanie ogłoszenia...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4 text-red-600">Błąd</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate("/user/your-ads")}
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Powrót do ogłoszeń
           </button>
         </div>
       </div>
@@ -583,7 +759,7 @@ const EditAd: React.FC = () => {
                   {/* Rear Cameras */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat tylny *
+                      Aparat tylny * (Mpx)
                     </label>
                     <div className="relative">
                       <Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -601,7 +777,7 @@ const EditAd: React.FC = () => {
                   {/* Front Camera */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat przedni *
+                      Aparat przedni * (Mpx)
                     </label>
                     <div className="relative">
                       <Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -619,7 +795,7 @@ const EditAd: React.FC = () => {
                   {/* Battery */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bateria *
+                      Bateria * (mAh)
                     </label>
                     <div className="relative">
                       <Battery className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -636,122 +812,61 @@ const EditAd: React.FC = () => {
                 </div>
               </div>
 
-              {/* Additional Specifications */}
+              {/* Additional Information */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <Shield className="w-5 h-5" />
-                  Dodatkowe specyfikacje (opcjonalne)
+                  Dodatkowe informacje
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Display Size */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Condition */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rozmiar ekranu
+                      Stan *
                     </label>
-                    <div className="relative">
-                      <Monitor className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={displaySize}
-                        onChange={(e) => setDisplaySize(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder='6.1", 6.7"...'
-                      />
-                    </div>
+                    <select
+                      value={condition}
+                      onChange={(e) => setCondition(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Wybierz stan</option>
+                      <option value="NEW">Nowy</option>
+                      <option value="LIKE_NEW">Jak nowy</option>
+                      <option value="VERY_GOOD">Bardzo dobry</option>
+                      <option value="GOOD">Dobry</option>
+                      <option value="ACCEPTABLE">Zadowalający</option>
+                    </select>
                   </div>
 
-                  {/* Display Tech */}
+                  {/* Warranty */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Technologia ekranu
+                      Gwarancja
                     </label>
                     <input
                       type="text"
-                      value={displayTech}
-                      onChange={(e) => setDisplayTech(e.target.value)}
+                      value={warranty}
+                      onChange={(e) => setWarranty(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="OLED, AMOLED, Super Retina..."
+                      placeholder="np. 12 miesięcy"
                     />
                   </div>
 
-                  {/* Wi-Fi */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Wi-Fi
-                    </label>
-                    <div className="relative">
-                      <Wifi className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  {/* Includes Charger */}
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
-                        type="text"
-                        value={wifi}
-                        onChange={(e) => setWifi(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Wi-Fi 6, Wi-Fi 6E..."
+                        type="checkbox"
+                        checked={includesCharger}
+                        onChange={(e) => setIncludesCharger(e.target.checked)}
+                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                       />
-                    </div>
-                  </div>
-
-                  {/* Bluetooth */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bluetooth
+                      <span className="text-sm font-medium text-gray-700">
+                        W zestawie ładowarka z kablem
+                      </span>
                     </label>
-                    <div className="relative">
-                      <Bluetooth className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={bluetooth}
-                        onChange={(e) => setBluetooth(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="5.0, 5.3..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* IP Rating */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Odporność
-                    </label>
-                    <input
-                      type="text"
-                      value={ipRating}
-                      onChange={(e) => setIpRating(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="IP68, IP67..."
-                    />
-                  </div>
-
-                  {/* Fast Charging */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Szybkie ładowanie
-                    </label>
-                    <div className="relative">
-                      <Zap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={fastCharging}
-                        onChange={(e) => setFastCharging(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="20W, 65W, 120W..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* Wireless Charging */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ładowanie bezprzewodowe
-                    </label>
-                    <input
-                      type="text"
-                      value={wirelessCharging}
-                      onChange={(e) => setWirelessCharging(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="15W MagSafe, 10W Qi..."
-                    />
                   </div>
                 </div>
               </div>
@@ -764,6 +879,63 @@ const EditAd: React.FC = () => {
                 </h2>
 
                 <div className="space-y-4">
+                  {/* Existing images grid */}
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                      {images.map((imageUrl, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={normalizeImageUrl(imageUrl)}
+                            alt={`Zdjęcie ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
+                            onError={(e) => {
+                              console.error(
+                                `Błąd ładowania zdjęcia ${index}:`,
+                                imageUrl
+                              );
+                              e.currentTarget.src =
+                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EBrak%3C/text%3E%3C/svg%3E";
+                            }}
+                          />
+
+                          {/* Move up button */}
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => moveImageUp(index)}
+                              className="absolute top-1 left-1 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                              title="Przenieś w górę"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Move down button */}
+                          {index < images.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => moveImageDown(index)}
+                              className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
+                              title="Przenieś w dół"
+                            >
+                              <ChevronDownIcon className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Delete button */}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute bottom-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            title="Usuń zdjęcie"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Upload button */}
                   <div>
                     <input
@@ -777,50 +949,53 @@ const EditAd: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors w-full sm:w-auto"
+                      className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors w-full justify-center"
+                      disabled={images.length >= 6}
                     >
                       <Upload className="w-5 h-5" />
-                      Dodaj zdjęcia
+                      Dodaj zdjęcia z komputera
                     </button>
                     <p className="text-sm text-gray-500 mt-2">
-                      Maksymalnie 10 zdjęć (JPG, PNG, WEBP)
+                      {images.length >= 6
+                        ? "Osiągnięto limit 6 zdjęć"
+                        : `Możesz dodać jeszcze ${
+                            6 - images.length
+                          } zdjęć. Pierwsze zdjęcie będzie zdjęciem głównym.`}
                     </p>
                   </div>
-
-                  {/* Image preview */}
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {images.map((image, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={URL.createObjectURL(image)}
-                            alt={`Zdjęcie ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   {/* URL input */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lub wklej URL zdjęcia
+                      Lub wklej adres URL zdjęcia
                     </label>
-                    <input
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="https://example.com/image.jpg"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddImageFromUrl();
+                          }
+                        }}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="https://example.com/image.jpg"
+                        disabled={images.length >= 6}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImageFromUrl}
+                        disabled={images.length >= 6 || !imageUrl.trim()}
+                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        Dodaj
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Wklej bezpośredni link do zdjęcia (max. 6 zdjęć łącznie)
+                    </p>
                   </div>
                 </div>
               </div>

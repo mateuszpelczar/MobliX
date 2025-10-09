@@ -107,7 +107,7 @@ const AddAdvertisement: React.FC = () => {
   // Dodatkowe informacje
   const [includesCharger, setIncludesCharger] = useState<boolean>(false);
   const [warranty, setWarranty] = useState<string>("");
-  const [condition, setCondition] = useState<string>("nowy");
+  const [condition, setCondition] = useState<string>("NEW");
 
   // Typ sprzedawcy - czy dodajesz jako osoba prywatna czy firma
   const [sellerType, setSellerType] = useState<"personal" | "business">(
@@ -330,7 +330,7 @@ const AddAdvertisement: React.FC = () => {
         // Dodatkowe informacje
         includesCharger: includesCharger,
         warranty: warranty || null,
-        condition: condition || "nowy",
+        condition: condition || "NEW",
         sellerType: sellerType, // Typ sprzedawcy
       };
 
@@ -392,7 +392,7 @@ const AddAdvertisement: React.FC = () => {
         setRefreshRate("");
         setIncludesCharger(false);
         setWarranty("");
-        setCondition("nowy");
+        setCondition("NEW");
       } else {
         const errorText = await response.text();
         console.error("Backend response:", response.status, errorText);
@@ -1290,16 +1290,20 @@ const AddAdvertisement: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Stan urządzenia
+                        Stan urządzenia *
                       </label>
                       <select
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
                         value={condition}
                         onChange={(e) => setCondition(e.target.value)}
+                        required
                       >
-                        <option value="nowy">Nowy</option>
-                        <option value="używany">Używany</option>
-                        <option value="uszkodzony">Uszkodzony</option>
+                        <option value="">Wybierz stan</option>
+                        <option value="NEW">Nowy</option>
+                        <option value="LIKE_NEW">Jak nowy</option>
+                        <option value="VERY_GOOD">Bardzo dobry</option>
+                        <option value="GOOD">Dobry</option>
+                        <option value="ACCEPTABLE">Zadowalający</option>
                       </select>
                     </div>
                     <div>

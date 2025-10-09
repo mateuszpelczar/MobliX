@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
@@ -12,16 +13,12 @@ import {
   LogOut,
   ChevronDown,
   Clock,
-  AlertTriangle,
   CheckCircle,
   XCircle,
-  Filter,
   Search,
-  Flag,
   Calendar,
-  ThumbsUp,
-  ThumbsDown,
   StarHalf,
+  Filter,
 } from "lucide-react";
 
 type JwtPayLoad = {
@@ -30,117 +27,182 @@ type JwtPayLoad = {
   exp: number;
 };
 
+interface Opinion {
+  id: number;
+  userId: number;
+  advertisementId: number;
+  userName: string;
+  rating: number;
+  comment: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  advertisementTitle: string;
+}
+
 const ModeracjaOpinii: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState("wszystkie");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("wszystkie"); // Default: wszystkie
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Przykładowe dane opinii
-  const mockReviews = [
-    {
-      id: 1,
-      reviewer: "Anna Kowalska",
-      reviewee: "Jan Nowak",
-      adTitle: "iPhone 14 Pro Max 256GB",
-      adId: 1,
-      rating: 5,
-      comment:
-        "Bardzo dobra transakcja! Telefon zgodny z opisem, szybka wysyłka. Polecam tego sprzedawcę!",
-      date: "2024-09-03",
-      status: "pending",
-      reports: 0,
-      type: "positive",
-    },
-    {
-      id: 2,
-      reviewer: "Michał Wiśniewski",
-      reviewee: "Maria Kowalczyk",
-      adTitle: "Samsung Galaxy S23 Ultra",
-      adId: 2,
-      rating: 1,
-      comment:
-        "OSZUST! Nie wysłał telefonu mimo otrzymania pieniędzy. Unikajcie tego sprzedawcy!",
-      date: "2024-09-03",
-      status: "flagged",
-      reports: 5,
-      type: "negative",
-    },
-    {
-      id: 3,
-      reviewer: "Katarzyna Nowak",
-      reviewee: "Piotr Jankowski",
-      adTitle: "Google Pixel 8 Pro",
-      adId: 3,
-      rating: 4,
-      comment:
-        "Telefon w dobrym stanie, drobne ślady użytkowania. Sprzedawca kulturalny i pomocny.",
-      date: "2024-09-02",
-      status: "approved",
-      reports: 0,
-      type: "positive",
-    },
-    {
-      id: 4,
-      reviewer: "Spam Bot",
-      reviewee: "Andrzej Kowalski",
-      adTitle: "iPhone 13 128GB",
-      adId: 4,
-      rating: 5,
-      comment:
-        "Najlepszy sprzedawca! Kup teraz! Sprawdź mój profil na www.podejrzana-strona.com",
-      date: "2024-09-01",
-      status: "rejected",
-      reports: 3,
-      type: "spam",
-    },
+  // API state
+  const [opinions, setOpinions] = useState<Opinion[]>([]);
+  const [allOpinions, setAllOpinions] = useState<Opinion[]>([]); // Store all opinions for counting
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedOpinion, setSelectedOpinion] = useState<Opinion | null>(null);
+  const [predefinedReason, setPredefinedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+
+  const token = localStorage.getItem("token");
+  let isAdmin = false;
+  let isUser = false;
+  let isStaff = false;
+
+  if (token) {
+    try {
+      const decoded = jwtDecode<JwtPayLoad>(token);
+      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
+      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
+      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+    } catch (error) {
+      console.error("Error decoding token:", error);
+    }
+  }
+
+  // Fetch opinions from API based on selected filter
+  const fetchOpinions = async () => {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Najpierw pobierz wszystkie opinie dla liczników
+      const pendingRes = await axios.get<Opinion[]>(
+        "http://localhost:8080/api/opinions/pending",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const approvedRes = await axios.get<Opinion[]>(
+        "http://localhost:8080/api/opinions/status/APPROVED",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const rejectedRes = await axios.get<Opinion[]>(
+        "http://localhost:8080/api/opinions/status/REJECTED",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const allOpinionsData = [
+        ...pendingRes.data,
+        ...approvedRes.data,
+        ...rejectedRes.data,
+      ];
+      setAllOpinions(allOpinionsData);
+
+      // Teraz ustaw wyświetlane opinie według filtra
+      if (selectedFilter === "wszystkie") {
+        setOpinions(allOpinionsData);
+      } else if (selectedFilter === "pending") {
+        setOpinions(pendingRes.data);
+      } else if (selectedFilter === "approved") {
+        setOpinions(approvedRes.data);
+      } else if (selectedFilter === "rejected") {
+        setOpinions(rejectedRes.data);
+      }
+    } catch (err) {
+      console.error("Error fetching opinions:", err);
+      setError("Nie udało się pobrać opinii");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Legacy function for backward compatibility
+  const fetchPendingOpinions = () => fetchOpinions();
+
+  // Approve opinion
+  const handleApprove = async (opinionId: number) => {
+    if (!token) return;
+
+    try {
+      await axios.put(
+        `http://localhost:8080/api/opinions/${opinionId}/approve`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Refresh the list after approval
+      await fetchPendingOpinions();
+    } catch (err) {
+      console.error("Error approving opinion:", err);
+      alert("Nie udało się zatwierdzić opinii");
+    }
+  };
+
+  // Open reject modal
+  const handleRejectClick = (opinion: Opinion) => {
+    setSelectedOpinion(opinion);
+    setShowRejectModal(true);
+    setPredefinedReason("");
+    setCustomReason("");
+  };
+
+  // Submit rejection
+  const handleRejectSubmit = async () => {
+    if (!selectedOpinion || !token) return;
+
+    const finalReason =
+      predefinedReason === "Inne" ? customReason.trim() : predefinedReason;
+
+    if (!finalReason) {
+      alert("Wybierz powód odrzucenia");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `http://localhost:8080/api/opinions/${selectedOpinion.id}/reject`,
+        { rejectionReason: finalReason },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Refresh the list after rejection
+      await fetchPendingOpinions();
+      setShowRejectModal(false);
+      setSelectedOpinion(null);
+    } catch (err) {
+      console.error("Error rejecting opinion:", err);
+      alert("Nie udało się odrzucić opinii");
+    }
+  };
+
+  // Fetch opinions on component mount and when filter changes
+  useEffect(() => {
+    if (isAdmin || isStaff) {
+      fetchOpinions();
+    }
+  }, [isAdmin, isStaff, selectedFilter]);
+
+  const predefinedReasons = [
+    "Spam",
+    "Wulgarne treści",
+    "Niewłaściwe treści",
+    "Treści obraźliwe",
+    "Nieprawdziwe informacje",
+    "Inne",
   ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "flagged":
-        return "bg-red-100 text-red-800";
-      case "rejected":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock className="w-4 h-4" />;
-      case "approved":
-        return <CheckCircle className="w-4 h-4" />;
-      case "flagged":
-        return <AlertTriangle className="w-4 h-4" />;
-      case "rejected":
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "Oczekuje";
-      case "approved":
-        return "Zatwierdzona";
-      case "flagged":
-        return "Zgłoszona";
-      case "rejected":
-        return "Odrzucona";
-      default:
-        return "Nieznany";
-    }
-  };
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -163,14 +225,42 @@ const ModeracjaOpinii: React.FC = () => {
     return stars;
   };
 
-  const filteredReviews = mockReviews.filter((review) => {
-    const matchesFilter =
-      selectedFilter === "wszystkie" || review.status === selectedFilter;
+  // Get status badge for opinion
+  const getStatusBadge = (status: "PENDING" | "APPROVED" | "REJECTED") => {
+    switch (status) {
+      case "PENDING":
+        return (
+          <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-yellow-100 text-yellow-800">
+            <Clock className="w-4 h-4" />
+            Oczekuje
+          </div>
+        );
+      case "APPROVED":
+        return (
+          <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-green-100 text-green-800">
+            <CheckCircle className="w-4 h-4" />
+            Zaakceptowane
+          </div>
+        );
+      case "REJECTED":
+        return (
+          <div className="px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-red-100 text-red-800">
+            <XCircle className="w-4 h-4" />
+            Odrzucone
+          </div>
+        );
+    }
+  };
+
+  // Filter opinions based on search
+  const filteredOpinions = opinions.filter((opinion) => {
     const matchesSearch =
-      review.reviewer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.reviewee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+      opinion.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opinion.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opinion.advertisementTitle
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const handleLogout = () => {
@@ -178,23 +268,6 @@ const ModeracjaOpinii: React.FC = () => {
     navigate("/");
     setIsDropdownOpen(false);
   };
-
-  // Check user role from JWT token
-  const token = localStorage.getItem("token");
-  let isAdmin = false;
-  let isUser = false;
-  let isStaff = false;
-
-  if (token) {
-    try {
-      const decoded = jwtDecode<JwtPayLoad>(token);
-      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
-      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
-      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
-    } catch (error) {
-      console.error("Error decoding token:", error);
-    }
-  }
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -334,21 +407,32 @@ const ModeracjaOpinii: React.FC = () => {
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-yellow-50 p-3 rounded-lg text-center border border-yellow-200">
-                  <div className="text-lg font-bold text-yellow-600">1</div>
+                  <div className="text-lg font-bold text-yellow-600">
+                    {loading
+                      ? "..."
+                      : allOpinions.filter((op) => op.status === "PENDING")
+                          .length}
+                  </div>
                   <div className="text-xs text-yellow-500">Oczekujące</div>
                 </div>
-                <div className="bg-red-50 p-3 rounded-lg text-center border border-red-200">
-                  <div className="text-lg font-bold text-red-600">1</div>
-                  <div className="text-xs text-red-500">Zgłoszone</div>
-                </div>
                 <div className="bg-green-50 p-3 rounded-lg text-center border border-green-200">
-                  <div className="text-lg font-bold text-green-600">12</div>
-                  <div className="text-xs text-green-500">Zatwierdzone</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {loading
+                      ? "..."
+                      : allOpinions.filter((op) => op.status === "APPROVED")
+                          .length}
+                  </div>
+                  <div className="text-xs text-green-500">Zaakceptowane</div>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg text-center border border-gray-200">
-                  <div className="text-lg font-bold text-gray-600">3</div>
+                  <div className="text-lg font-bold text-gray-600">
+                    {loading
+                      ? "..."
+                      : allOpinions.filter((op) => op.status === "REJECTED")
+                          .length}
+                  </div>
                   <div className="text-xs text-gray-500">Odrzucone</div>
                 </div>
               </div>
@@ -364,19 +448,28 @@ const ModeracjaOpinii: React.FC = () => {
                   className="border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
                 >
                   <option value="wszystkie" className="text-black">
-                    Wszystkie
+                    Wszystkie [{allOpinions.length}]
                   </option>
                   <option value="pending" className="text-black">
-                    Oczekujące
-                  </option>
-                  <option value="flagged" className="text-black">
-                    Zgłoszone
+                    Oczekujące [
+                    {allOpinions.filter((op) => op.status === "PENDING").length}
+                    ]
                   </option>
                   <option value="approved" className="text-black">
-                    Zatwierdzone
+                    Zaakceptowane [
+                    {
+                      allOpinions.filter((op) => op.status === "APPROVED")
+                        .length
+                    }
+                    ]
                   </option>
                   <option value="rejected" className="text-black">
-                    Odrzucone
+                    Odrzucone [
+                    {
+                      allOpinions.filter((op) => op.status === "REJECTED")
+                        .length
+                    }
+                    ]
                   </option>
                 </select>
               </div>
@@ -394,130 +487,223 @@ const ModeracjaOpinii: React.FC = () => {
             </div>
 
             {/* Reviews List */}
-            <div className="space-y-4">
-              {filteredReviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() =>
-                    navigate(`/smartfon/${review.adId}?reviewId=${review.id}`)
-                  }
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                    {/* Review Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="flex items-center gap-1">
-                              {renderStars(review.rating)}
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">Ładowanie opinii...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-red-500">{error}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredOpinions.map((opinion) => (
+                  <div
+                    key={opinion.id}
+                    onClick={() =>
+                      navigate(`/smartfon/${opinion.advertisementId}#opinie`)
+                    }
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:border-orange-400"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                      {/* Opinion Info */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-1">
+                                {renderStars(opinion.rating)}
+                              </div>
+                              <span className="text-sm font-medium text-gray-700">
+                                {opinion.rating}/5
+                              </span>
                             </div>
-                            <span className="text-sm font-medium text-gray-700">
-                              {review.rating}/5
-                            </span>
+                            <h3 className="font-semibold text-lg text-gray-900 mb-1 hover:text-orange-600 transition-colors">
+                              {opinion.advertisementTitle}
+                            </h3>
                           </div>
-                          <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                            Opinia dla ogłoszenia: {review.adTitle}
-                          </h3>
+                          {getStatusBadge(opinion.status)}
                         </div>
-                        <div
-                          className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(
-                            review.status
-                          )}`}
-                        >
-                          {getStatusIcon(review.status)}
-                          {getStatusText(review.status)}
-                        </div>
-                      </div>
 
-                      {/* Review Comment */}
-                      <div className="bg-gray-50 p-3 rounded-lg mb-3">
-                        <p className="text-gray-700">{review.comment}</p>
-                      </div>
+                        {/* Opinion Comment */}
+                        <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                          <p className="text-gray-700">{opinion.comment}</p>
+                        </div>
 
-                      {/* Review Details */}
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          <span className="font-medium">Od:</span>{" "}
-                          {review.reviewer}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          <span className="font-medium">Dla:</span>{" "}
-                          {review.reviewee}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {review.date}
-                        </div>
-                        {review.reports > 0 && (
-                          <div className="flex items-center gap-1 text-red-500">
-                            <Flag className="w-4 h-4" />
-                            {review.reports} zgłoszeń
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          {review.type === "positive" ? (
-                            <ThumbsUp className="w-4 h-4 text-green-500" />
-                          ) : review.type === "negative" ? (
-                            <ThumbsDown className="w-4 h-4 text-red-500" />
-                          ) : (
-                            <AlertTriangle className="w-4 h-4 text-orange-500" />
+                        {/* Rejection Reason (if rejected) */}
+                        {opinion.status === "REJECTED" &&
+                          opinion.rejectionReason && (
+                            <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-3">
+                              <p className="text-sm font-medium text-red-800 mb-1">
+                                Powód odrzucenia:
+                              </p>
+                              <p className="text-sm text-red-700">
+                                {opinion.rejectionReason}
+                              </p>
+                            </div>
                           )}
-                          <span className="capitalize">
-                            {review.type === "positive"
-                              ? "Pozytywna"
-                              : review.type === "negative"
-                              ? "Negatywna"
-                              : "Spam"}
-                          </span>
+
+                        {/* Opinion Details */}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            <span className="font-medium">
+                              Użytkownik:
+                            </span>{" "}
+                            {opinion.userName}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(opinion.createdAt).toLocaleDateString(
+                              "pl-PL"
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-2 lg:flex-col lg:w-32">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Add approve logic here
-                        }}
-                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-1"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Zatwierdź
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Add reject logic here
-                        }}
-                        className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center justify-center gap-1"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Odrzuć
-                      </button>
+                      {/* Actions - PENDING: Zatwierdź + Odrzuć, APPROVED: tylko Odrzuć */}
+                      {(opinion.status === "PENDING" ||
+                        opinion.status === "APPROVED") && (
+                        <div className="flex flex-col sm:flex-row gap-2 lg:flex-col lg:w-32">
+                          {opinion.status === "PENDING" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(opinion.id);
+                              }}
+                              className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm flex items-center justify-center gap-1"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Zatwierdź
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRejectClick(opinion);
+                            }}
+                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm flex items-center justify-center gap-1"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Odrzuć
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Empty State */}
-            {filteredReviews.length === 0 && (
+            {!loading && !error && filteredOpinions.length === 0 && (
               <div className="text-center py-12">
                 <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                  Brak opinii
+                  {selectedFilter === "wszystkie" && "Brak opinii"}
+                  {selectedFilter === "pending" && "Brak oczekujących opinii"}
+                  {selectedFilter === "approved" &&
+                    "Brak zaakceptowanych opinii"}
+                  {selectedFilter === "rejected" && "Brak odrzuconych opinii"}
                 </h3>
                 <p className="text-gray-500">
-                  Nie znaleziono opinii spełniających kryteria wyszukiwania.
+                  {selectedFilter === "wszystkie" &&
+                    "Nie ma jeszcze żadnych opinii w systemie."}
+                  {selectedFilter === "pending" &&
+                    "Wszystkie opinie zostały już zmoderowane."}
+                  {selectedFilter === "approved" &&
+                    "Nie ma jeszcze zaakceptowanych opinii."}
+                  {selectedFilter === "rejected" &&
+                    "Nie ma jeszcze odrzuconych opinii."}
                 </p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Reject Modal */}
+        {showRejectModal && selectedOpinion && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-900">
+                Odrzuć opinię
+              </h3>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">
+                  Opinia dla:{" "}
+                  <span className="font-medium">
+                    {selectedOpinion.advertisementTitle}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Użytkownik:{" "}
+                  <span className="font-medium">
+                    {selectedOpinion.userName}
+                  </span>
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Powód odrzucenia:
+                </label>
+                <select
+                  value={predefinedReason}
+                  onChange={(e) => setPredefinedReason(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="">Wybierz powód...</option>
+                  {predefinedReasons.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {predefinedReason === "Inne" && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Własny powód (max 500 znaków):
+                  </label>
+                  <textarea
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    maxLength={500}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    placeholder="Wpisz powód odrzucenia..."
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    {customReason.length}/500 znaków
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setSelectedOpinion(null);
+                    setPredefinedReason("");
+                    setCustomReason("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handleRejectSubmit}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Potwierdź odrzucenie
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* White footer bar at bottom */}
         <div className="panel-footer w-full py-2 mt-auto">
