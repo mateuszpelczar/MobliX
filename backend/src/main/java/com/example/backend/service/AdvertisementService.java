@@ -10,8 +10,12 @@ import com.example.backend.dto.CreateAdvertisementDTO;
 import com.example.backend.dto.SellerInfoDTO;
 import com.example.backend.model.*;
 import com.example.backend.repository.*;
-import com.example.backend.model.Role;
-import com.example.backend.model.AdvertisementStatus;
+import com.example.backend.service.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,6 +37,7 @@ public class AdvertisementService {
     private final LocationRepository locationRepository;
     private final ImageRepository imageRepository;
     private final MessageService messageService;
+    private final LogService logService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -42,13 +47,15 @@ public class AdvertisementService {
                                 CategoryRepository categoryRepository,
                                 LocationRepository locationRepository,
                                 ImageRepository imageRepository,
-                                MessageService messageService) {
+                                MessageService messageService,
+                                LogService logService) {
         this.advertisementRepository = advertisementRepository;
         this.userService = userService;
         this.categoryRepository = categoryRepository;
         this.locationRepository = locationRepository;
         this.imageRepository = imageRepository;
         this.messageService = messageService;
+        this.logService = logService;
     }
 
     public SellerInfoDTO getSellerInfo(Long advertisementId, boolean isAuthenticated) {
@@ -90,6 +97,45 @@ public class AdvertisementService {
         
         return sellerInfo;
     }
+
+
+    //zwiekszenie licznika wyswietlen dla ogloszen
+   @Transactional
+public void incrementViewCount(Long advertisementId, HttpServletRequest request) {
+    Advertisement ad = advertisementRepository.findById(advertisementId)
+        .orElseThrow(() -> new RuntimeException("Advertisement not found"));
+    
+    // Zwiększ licznik
+    ad.setViewCount(ad.getViewCount() + 1);
+    advertisementRepository.save(ad);
+    
+    // Zaloguj wyświetlenie
+    User currentUser = null;
+    String userEmail = null;
+    try {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            userEmail = auth.getName();
+            try {
+                currentUser = userService.findByEmail(userEmail);
+            } catch (Exception e) {
+                // jeśli użytkownik nie zostanie znaleziony, currentUser pozostanie null
+            }
+        }
+    } catch (Exception e) {
+        // Użytkownik niezalogowany lub brak kontekstu uwierzytelnienia
+    }
+    
+    logService.saveLog(
+        "INFO",
+        "advertisement",
+        "Wyświetlenie ogłoszenia: " + ad.getTitle(),
+        "ID: " + advertisementId + ", Liczba wyświetleń: " + ad.getViewCount(),
+        "AdvertisementService",
+        currentUser,
+        request != null ? request.getRemoteAddr() : null
+    );
+}
 
     public AdvertisementResponseDTO createAdvertisement(CreateAdvertisementDTO createDto, String userEmail) {
         User user = userService.findByEmail(userEmail);
@@ -422,6 +468,7 @@ public class AdvertisementService {
         dto.setStatus(advertisement.getStatus().toString());
         dto.setCreatedAt(advertisement.getCreatedAt());
         dto.setUpdatedAt(advertisement.getUpdatedAt());
+        dto.setViewCount(advertisement.getViewCount());
         
         if (advertisement.getUser() != null) {
             String fullName = advertisement.getUser().getFirstName() + " " + advertisement.getUser().getLastName();

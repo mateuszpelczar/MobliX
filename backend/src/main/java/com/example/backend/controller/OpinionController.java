@@ -3,13 +3,17 @@ package com.example.backend.controller;
 import com.example.backend.dto.CreateOpinionDTO;
 import com.example.backend.dto.OpinionResponseDTO;
 import com.example.backend.dto.RejectOpinionDTO;
+import com.example.backend.model.Opinion;
 import com.example.backend.model.OpinionStatus;
+import com.example.backend.model.User;
+import com.example.backend.repository.OpinionRepository;
+import com.example.backend.service.LogService;
 import com.example.backend.service.OpinionService;
+import com.example.backend.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -21,66 +25,68 @@ import java.util.List;
 public class OpinionController {
 
     private final OpinionService opinionService;
+    private final LogService logService;
+    private final UserService userService;
+    private final OpinionRepository opinionRepository;
 
-    // Constructor
-    public OpinionController(OpinionService opinionService) {
+    public OpinionController(OpinionService opinionService, LogService logService, UserService userService, OpinionRepository opinionRepository) {
         this.opinionService = opinionService;
+        this.logService = logService;
+        this.userService = userService;
+        this.opinionRepository = opinionRepository;
     }
 
-    /**
-     * Dodaj nową opinię (tylko zalogowani użytkownicy)
-     */
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'STAFF', 'ADMIN')")
-    public ResponseEntity<?> createOpinion(
-            @Valid @RequestBody CreateOpinionDTO dto,
-            Authentication authentication) {
+    public ResponseEntity<OpinionResponseDTO> createOpinion(
+            @Valid @RequestBody CreateOpinionDTO createOpinionDTO,
+            Principal principal,
+            HttpServletRequest httpRequest) {
         try {
-            String userEmail = authentication.getName();
-            OpinionResponseDTO opinion = opinionService.createOpinion(dto, userEmail);
-            return ResponseEntity.status(HttpStatus.CREATED).body(opinion);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            String userEmail = principal.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            OpinionResponseDTO opinion = opinionService.createOpinion(createOpinionDTO, userEmail);
+            
+            // Log INFO - dodanie opinii
+            logService.saveLog(
+                "INFO",
+                "opinion",
+                "Opinia dodana",
+                "ID ogłoszenia: " + createOpinionDTO.getAdvertisementId() + ", Ocena: " + createOpinionDTO.getRating() + "/5, Status: PENDING (oczekuje na moderację)",
+                "OpinionController.createOpinion",
+                user,
+                ipAddress
+            );
+            
+            return ResponseEntity.ok(opinion);
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd dodawania opinii
+            String userEmail = principal.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "opinion",
+                "Błąd dodawania opinii",
+                "ID ogłoszenia: " + createOpinionDTO.getAdvertisementId() + ", Błąd: " + e.getMessage(),
+                "OpinionController.createOpinion",
+                user,
+                ipAddress
+            );
+            
+            throw e;
         }
     }
 
-    /**
-     * Pobierz zatwierdzone opinie dla danego ogłoszenia (publiczne)
-     */
     @GetMapping("/advertisement/{advertisementId}")
-    public ResponseEntity<List<OpinionResponseDTO>> getApprovedOpinionsByAdvertisement(
-            @PathVariable Long advertisementId) {
+    public ResponseEntity<List<OpinionResponseDTO>> getApprovedOpinions(@PathVariable Long advertisementId) {
         List<OpinionResponseDTO> opinions = opinionService.getApprovedOpinionsByAdvertisement(advertisementId);
         return ResponseEntity.ok(opinions);
     }
 
-    /**
-     * Pobierz wszystkie opinie zalogowanego użytkownika
-     */
-    @GetMapping("/user")
-    @PreAuthorize("hasAnyRole('USER', 'STAFF', 'ADMIN')")
-    public ResponseEntity<List<OpinionResponseDTO>> getUserOpinions(Authentication authentication) {
-        String userEmail = authentication.getName();
-        List<OpinionResponseDTO> opinions = opinionService.getUserOpinions(userEmail);
-        return ResponseEntity.ok(opinions);
-    }
-
-    /**
-     * Pobierz opinie użytkownika według statusu
-     */
-    @GetMapping("/user/status/{status}")
-    @PreAuthorize("hasAnyRole('USER', 'STAFF', 'ADMIN')")
-    public ResponseEntity<List<OpinionResponseDTO>> getUserOpinionsByStatus(
-            @PathVariable OpinionStatus status,
-            Authentication authentication) {
-        String userEmail = authentication.getName();
-        List<OpinionResponseDTO> opinions = opinionService.getUserOpinionsByStatus(userEmail, status);
-        return ResponseEntity.ok(opinions);
-    }
-
-    /**
-     * Pobierz wszystkie oczekujące opinie (tylko STAFF i ADMIN)
-     */
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<List<OpinionResponseDTO>> getPendingOpinions() {
@@ -88,9 +94,6 @@ public class OpinionController {
         return ResponseEntity.ok(opinions);
     }
 
-    /**
-     * Pobierz opinie według statusu (tylko STAFF i ADMIN)
-     */
     @GetMapping("/status/{status}")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<List<OpinionResponseDTO>> getOpinionsByStatus(@PathVariable OpinionStatus status) {
@@ -98,74 +101,191 @@ public class OpinionController {
         return ResponseEntity.ok(opinions);
     }
 
-    /**
-     * Zatwierdź opinię (tylko STAFF i ADMIN)
-     */
     @PutMapping("/{opinionId}/approve")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<?> approveOpinion(@PathVariable Long opinionId) {
+    public ResponseEntity<OpinionResponseDTO> approveOpinion(
+            @PathVariable Long opinionId,
+            Principal principal,
+            HttpServletRequest httpRequest) {
         try {
+            String userEmail = principal.getName();
+            User moderator = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
             OpinionResponseDTO opinion = opinionService.approveOpinion(opinionId);
+            
+            // Log INFO - zatwierdzenie opinii
+            logService.saveLog(
+                "INFO",
+                "opinion",
+                "Opinia zatwierdzona przez moderatora",
+                "ID opinii: " + opinionId + ", ID ogłoszenia: " + opinion.getAdvertisementId() + ", Ocena: " + opinion.getRating() + "/5, Moderator: " + userEmail,
+                "OpinionController.approveOpinion",
+                moderator,
+                ipAddress
+            );
+            
             return ResponseEntity.ok(opinion);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd zatwierdzania
+            String userEmail = principal.getName();
+            User moderator = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "opinion",
+                "Błąd zatwierdzania opinii",
+                "ID opinii: " + opinionId + ", Błąd: " + e.getMessage(),
+                "OpinionController.approveOpinion",
+                moderator,
+                ipAddress
+            );
+            
+            throw e;
         }
     }
 
-    /**
-     * Odrzuć opinię (tylko STAFF i ADMIN)
-     */
     @PutMapping("/{opinionId}/reject")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<?> rejectOpinion(
+    public ResponseEntity<OpinionResponseDTO> rejectOpinion(
             @PathVariable Long opinionId,
-            @Valid @RequestBody RejectOpinionDTO dto) {
+            @RequestBody RejectOpinionDTO rejectDTO,
+            Principal principal,
+            HttpServletRequest httpRequest) {
         try {
-            OpinionResponseDTO opinion = opinionService.rejectOpinion(opinionId, dto);
+            String userEmail = principal.getName();
+            User moderator = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            OpinionResponseDTO opinion = opinionService.rejectOpinion(opinionId, rejectDTO);
+            
+            // Log WARN - odrzucenie opinii
+            logService.saveLog(
+                "WARN",
+                "opinion",
+                "Opinia odrzucona przez moderatora",
+                "ID opinii: " + opinionId + ", Powód: " + rejectDTO.getRejectionReason() + ", Moderator: " + userEmail,
+                "OpinionController.rejectOpinion",
+                moderator,
+                ipAddress
+            );
+            
             return ResponseEntity.ok(opinion);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd odrzucania
+            String userEmail = principal.getName();
+            User moderator = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "opinion",
+                "Błąd odrzucania opinii",
+                "ID opinii: " + opinionId + ", Błąd: " + e.getMessage(),
+                "OpinionController.rejectOpinion",
+                moderator,
+                ipAddress
+            );
+            
+            throw e;
         }
     }
 
-    /**
-     * Edytuj własną opinię (wymaga uwierzytelnienia)
-     */
     @PutMapping("/{opinionId}")
-    public ResponseEntity<?> updateOpinion(
+    public ResponseEntity<OpinionResponseDTO> updateOpinion(
             @PathVariable Long opinionId,
-            @Valid @RequestBody CreateOpinionDTO dto,
-            Principal principal) {
+            @Valid @RequestBody CreateOpinionDTO updateDTO,
+            Principal principal,
+            HttpServletRequest httpRequest) {
         try {
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-            }
-            
             String userEmail = principal.getName();
-            OpinionResponseDTO opinion = opinionService.updateOpinion(opinionId, dto, userEmail);
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            OpinionResponseDTO opinion = opinionService.updateOpinion(opinionId, updateDTO, userEmail);
+            
+            // Log INFO - edycja opinii
+            logService.saveLog(
+                "INFO",
+                "opinion",
+                "Opinia edytowana",
+                "ID opinii: " + opinionId + ", Nowa ocena: " + updateDTO.getRating() + "/5, Status zmieniony na PENDING (wymaga ponownej moderacji)",
+                "OpinionController.updateOpinion",
+                user,
+                ipAddress
+            );
+            
             return ResponseEntity.ok(opinion);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd edycji
+            String userEmail = principal.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "opinion",
+                "Błąd edycji opinii",
+                "ID opinii: " + opinionId + ", Błąd: " + e.getMessage(),
+                "OpinionController.updateOpinion",
+                user,
+                ipAddress
+            );
+            
+            throw e;
         }
     }
 
-    /**
-     * Usuń własną opinię (wymaga uwierzytelnienia)
-     */
     @DeleteMapping("/{opinionId}")
-    public ResponseEntity<?> deleteOpinion(
+    public ResponseEntity<Void> deleteOpinion(
             @PathVariable Long opinionId,
-            Principal principal) {
+            Principal principal,
+            HttpServletRequest httpRequest) {
         try {
-            if (principal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required");
-            }
-            
             String userEmail = principal.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            // Pobierz dane opinii przed usunięciem
+            Opinion opinion = opinionRepository.findById(opinionId)
+                .orElseThrow(() -> new RuntimeException("Nie znaleziono opinii o ID: " + opinionId));
+            
             opinionService.deleteOpinion(opinionId, userEmail);
-            return ResponseEntity.ok("Opinion deleted successfully");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            
+            // Log INFO - usunięcie opinii
+            logService.saveLog(
+                "INFO",
+                "opinion",
+                "Opinia usunięta",
+                "ID opinii: " + opinionId + ", ID ogłoszenia: " + opinion.getAdvertisementId(),
+                "OpinionController.deleteOpinion",
+                user,
+                ipAddress
+            );
+            
+            return ResponseEntity.noContent().build();
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd usuwania
+            String userEmail = principal.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "opinion",
+                "Błąd usuwania opinii",
+                "ID opinii: " + opinionId + ", Błąd: " + e.getMessage(),
+                "OpinionController.deleteOpinion",
+                user,
+                ipAddress
+            );
+            
+            throw e;
         }
     }
 }

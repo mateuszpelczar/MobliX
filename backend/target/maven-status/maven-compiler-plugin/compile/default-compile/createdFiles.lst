@@ -33,6 +33,7 @@ com\example\backend\config\SecurityConfig.class
 com\example\backend\model\Review.class
 com\example\backend\model\Conversation.class
 com\example\backend\repository\ImageRepository.class
+com\example\backend\service\LogService.class
 com\example\backend\controller\MessageController.class
 com\example\backend\dto\UserRoleChangeRequest.class
 com\example\backend\repository\RegulationRepository.class
@@ -49,8 +50,10 @@ com\example\backend\model\OpinionStatus.class
 com\example\backend\repository\UserRepository.class
 com\example\backend\model\Advertisement.class
 com\example\backend\repository\ConversationRepository.class
+com\example\backend\controller\LogController.class
 com\example\backend\model\SmartphoneSpecification.class
 com\example\backend\dto\RegisterRequest.class
+com\example\backend\dto\LogDTO.class
 com\example\backend\model\Image.class
 com\example\backend\repository\MessageRepository.class
 com\example\backend\controller\AdminController.class

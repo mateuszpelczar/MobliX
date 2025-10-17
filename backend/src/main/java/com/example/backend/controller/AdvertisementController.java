@@ -12,8 +12,12 @@ import com.example.backend.dto.CreateAdvertisementDTO;
 import com.example.backend.dto.SellerInfoDTO;
 import com.example.backend.model.Advertisement;
 import com.example.backend.model.AdvertisementStatus;
+import com.example.backend.model.User;
 import com.example.backend.service.AdvertisementService;
+import com.example.backend.service.LogService;
+import com.example.backend.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +28,13 @@ import java.util.Map;
 public class AdvertisementController {
 
     private final AdvertisementService advertisementService;
+    private final LogService logService;
+    private final UserService userService;
 
-    public AdvertisementController(AdvertisementService advertisementService) {
+    public AdvertisementController(AdvertisementService advertisementService, LogService logService, UserService userService) {
         this.advertisementService = advertisementService;
+        this.logService = logService;
+        this.userService = userService;
     }
 
     @GetMapping("/{id}/seller")
@@ -39,12 +47,80 @@ public class AdvertisementController {
     @PostMapping
     public ResponseEntity<AdvertisementResponseDTO> createAdvertisement(
             @Valid @RequestBody CreateAdvertisementDTO createDto,
-            Authentication authentication) {
-        String userEmail = authentication.getName();
-        AdvertisementResponseDTO createdAd = advertisementService.createAdvertisement(createDto, userEmail);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdAd);
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        try {
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            AdvertisementResponseDTO createdAd = advertisementService.createAdvertisement(createDto, userEmail);
+            
+            // Log INFO - pomyślne utworzenie ogłoszenia
+            logService.saveLog(
+                "INFO",
+                "advertisement",
+                "Ogłoszenie utworzone",
+                "Tytuł: " + createDto.getTitle() + ", Model: " + createDto.getModel() + ", Cena: " + createDto.getPrice() + " PLN, Status: PENDING (oczekuje na moderację)",
+                "AdvertisementController.createAdvertisement",
+                user,
+                ipAddress
+            );
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdAd);
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd tworzenia ogłoszenia
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "advertisement",
+                "Błąd tworzenia ogłoszenia",
+                "Błąd: " + e.getMessage(),
+                "AdvertisementController.createAdvertisement",
+                user,
+                ipAddress
+            );
+            
+            throw e;
+        }
     }
 
+    //pobranie szczegolow ogloszenia po ID
+
+    @GetMapping("/{id}")
+public ResponseEntity<AdvertisementResponseDTO> getAdvertisementById(
+        @PathVariable Long id,
+        HttpServletRequest request) { // ⭐ DODAJ TEN PARAMETR
+    try {
+        AdvertisementResponseDTO ad = advertisementService.getAdvertisementById(id);
+        
+        // Zwiększ licznik wyświetleń
+        advertisementService.incrementViewCount(id, request); // ⭐ TERAZ request ISTNIEJE
+        
+        return ResponseEntity.ok(ad);
+    } catch (RuntimeException e) {
+        return ResponseEntity.notFound().build();
+    }
+}
+
+/**
+ * Zwiększa licznik wyświetleń dla ogłoszenia (opcjonalny osobny endpoint)
+ */
+@PostMapping("/{id}/view")
+public ResponseEntity<Void> incrementViewCount(
+        @PathVariable Long id,
+        HttpServletRequest request) {
+    try {
+        advertisementService.incrementViewCount(id, request);
+        return ResponseEntity.ok().build();
+    } catch (RuntimeException e) {
+        return ResponseEntity.notFound().build();
+    }
+}
     @GetMapping
     public ResponseEntity<List<AdvertisementResponseDTO>> getAllActiveAdvertisements() {
         List<AdvertisementResponseDTO> advertisements = advertisementService.getAllActiveAdvertisements();
@@ -84,22 +160,77 @@ public class AdvertisementController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<AdvertisementResponseDTO> getAdvertisementById(@PathVariable Long id) {
-        AdvertisementResponseDTO advertisement = advertisementService.getAdvertisementById(id);
-        return ResponseEntity.ok(advertisement);
-    }
-
     @PatchMapping("/{id}/status")
     public ResponseEntity<AdvertisementResponseDTO> updateAdvertisementStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> request,
-            Authentication authentication) {
-        String status = request.get("status");
-        String rejectReason = request.get("rejectReason"); // Opcjonalne pole dla statusu REJECTED
-        String userEmail = authentication.getName();
-        AdvertisementResponseDTO updated = advertisementService.updateAdvertisementStatus(id, status, rejectReason, userEmail);
-        return ResponseEntity.ok(updated);
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        try {
+            String status = request.get("status");
+            String rejectReason = request.get("rejectReason");
+            String userEmail = authentication.getName();
+            User moderator = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            AdvertisementResponseDTO updated = advertisementService.updateAdvertisementStatus(id, status, rejectReason, userEmail);
+            
+            // Logowanie zależnie od akcji moderacji
+            if (status.equals("APPROVED")) {
+                // Log INFO - zatwierdzenie ogłoszenia
+                logService.saveLog(
+                    "INFO",
+                    "advertisement",
+                    "Ogłoszenie zatwierdzone przez moderatora",
+                    "ID ogłoszenia: " + id + ", Tytuł: " + updated.getTitle() + ", Moderator: " + userEmail,
+                    "AdvertisementController.updateAdvertisementStatus",
+                    moderator,
+                    ipAddress
+                );
+            } else if (status.equals("REJECTED")) {
+                // Log WARN - odrzucenie ogłoszenia
+                logService.saveLog(
+                    "WARN",
+                    "advertisement",
+                    "Ogłoszenie odrzucone przez moderatora",
+                    "ID ogłoszenia: " + id + ", Tytuł: " + updated.getTitle() + ", Powód: " + rejectReason + ", Moderator: " + userEmail,
+                    "AdvertisementController.updateAdvertisementStatus",
+                    moderator,
+                    ipAddress
+                );
+            } else {
+                // Log INFO - zmiana statusu (np. SOLD, PAUSED przez użytkownika)
+                logService.saveLog(
+                    "INFO",
+                    "advertisement",
+                    "Status ogłoszenia zmieniony",
+                    "ID ogłoszenia: " + id + ", Nowy status: " + status + ", Użytkownik: " + userEmail,
+                    "AdvertisementController.updateAdvertisementStatus",
+                    moderator,
+                    ipAddress
+                );
+            }
+            
+            return ResponseEntity.ok(updated);
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd zmiany statusu
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "advertisement",
+                "Błąd zmiany statusu ogłoszenia",
+                "ID ogłoszenia: " + id + ", Błąd: " + e.getMessage(),
+                "AdvertisementController.updateAdvertisementStatus",
+                user,
+                ipAddress
+            );
+            
+            throw e;
+        }
     }
 
     @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -125,19 +256,96 @@ public class AdvertisementController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAdvertisement(@PathVariable Long id, Authentication authentication) {
-        String userEmail = authentication.getName();
-        advertisementService.deleteAdvertisement(id, userEmail);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> deleteAdvertisement(
+            @PathVariable Long id, 
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        try {
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            // Pobierz dane ogłoszenia przed usunięciem (do logowania)
+            AdvertisementResponseDTO ad = advertisementService.getAdvertisementById(id);
+            
+            advertisementService.deleteAdvertisement(id, userEmail);
+            
+            // Log INFO - usunięcie ogłoszenia
+            logService.saveLog(
+                "INFO",
+                "advertisement",
+                "Ogłoszenie usunięte",
+                "ID: " + id + ", Tytuł: " + ad.getTitle() + ", Model: " + (ad.getSpecification() != null ? ad.getSpecification().getModel() : "N/A"),
+                "AdvertisementController.deleteAdvertisement",
+                user,
+                ipAddress
+            );
+            
+            return ResponseEntity.noContent().build();
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd usuwania
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "advertisement",
+                "Błąd usuwania ogłoszenia",
+                "ID: " + id + ", Błąd: " + e.getMessage(),
+                "AdvertisementController.deleteAdvertisement",
+                user,
+                ipAddress
+            );
+            
+            throw e;
+        }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<AdvertisementResponseDTO> updateAdvertisement(
             @PathVariable Long id,
             @Valid @RequestBody CreateAdvertisementDTO updateDto,
-            Authentication authentication) {
-        String userEmail = authentication.getName();
-        AdvertisementResponseDTO updated = advertisementService.updateAdvertisement(id, updateDto, userEmail);
-        return ResponseEntity.ok(updated);
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        try {
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            AdvertisementResponseDTO updated = advertisementService.updateAdvertisement(id, updateDto, userEmail);
+            
+            // Log INFO - edycja ogłoszenia
+            logService.saveLog(
+                "INFO",
+                "advertisement",
+                "Ogłoszenie edytowane",
+                "ID: " + id + ", Tytuł: " + updateDto.getTitle() + ", Status zmieniony na PENDING (wymaga ponownej moderacji)",
+                "AdvertisementController.updateAdvertisement",
+                user,
+                ipAddress
+            );
+            
+            return ResponseEntity.ok(updated);
+            
+        } catch (Exception e) {
+            // Log ERROR - błąd edycji
+            String userEmail = authentication.getName();
+            User user = userService.getCurrentUser(userEmail);
+            String ipAddress = logService.getClientIP(httpRequest);
+            
+            logService.saveLog(
+                "ERROR",
+                "advertisement",
+                "Błąd edycji ogłoszenia",
+                "ID: " + id + ", Błąd: " + e.getMessage(),
+                "AdvertisementController.updateAdvertisement",
+                user,
+                ipAddress
+            );
+            
+            throw e;
+        }
     }
 }

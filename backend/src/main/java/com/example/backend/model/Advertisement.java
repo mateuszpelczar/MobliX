@@ -72,8 +72,13 @@ public class Advertisement {
     @Column(name = "seller_type")
     private String sellerType; // "personal" lub "business"
 
+    @Column(name="view_count", columnDefinition = "BIGINT DEFAULT 0")
+    private Long viewCount = 0L;
+
     // Konstruktory
-    public Advertisement() {}
+    public Advertisement() {
+        this.viewCount = 0L;
+    }
 
     // Gettery i Settery
     public Long getId() { return id; }
@@ -136,6 +141,16 @@ public class Advertisement {
     public String getSellerType() { return sellerType; }
     public void setSellerType(String sellerType) { this.sellerType = sellerType; }
 
+    public Long getViewCount(){
+        return viewCount;
+    }
+
+    public void setViewCount(Long viewCount){
+        this.viewCount = viewCount;
+    }
+
+
+    //methods
     @PrePersist
     protected void onCreate() {
         createdAt = java.time.LocalDateTime.now();

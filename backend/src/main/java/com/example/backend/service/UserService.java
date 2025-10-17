@@ -25,42 +25,40 @@ public class UserService {
         this.jwtService = jwtService;
     }
  
-
     // === METODY AUTORYZACJI ===
     
     public String register(RegisterRequest request) {
-    User user = new User();
-    user.setUsername(request.getUsername());
-    user.setEmail(request.getEmail());
-    user.setPassword(passwordEncoder.encode(request.getPassword()));
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-    // Ustawienie nowych pól
-    user.setAccountType(request.getAccountType());
-    user.setFirstName(request.getFirstName());
-    user.setLastName(request.getLastName());
-    user.setPhone(request.getPhone());
-    
-    // Pola firmowe (tylko dla kont business)
-    if ("business".equals(request.getAccountType())) {
-        user.setCompanyName(request.getCompanyName());
-        user.setNip(request.getNip());
-        user.setRegon(request.getRegon());
-        user.setAddress(request.getAddress());
-        user.setWebsite(request.getWebsite());
+        // Ustawienie nowych pól
+        user.setAccountType(request.getAccountType());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhone(request.getPhone());
+        
+        // Pola firmowe (tylko dla kont business)
+        if ("business".equals(request.getAccountType())) {
+            user.setCompanyName(request.getCompanyName());
+            user.setNip(request.getNip());
+            user.setRegon(request.getRegon());
+            user.setAddress(request.getAddress());
+            user.setWebsite(request.getWebsite());
+        }
+
+        long userCount = userRepository.count();
+
+        if (userCount == 0) {
+            user.setRole(Role.ADMIN);  
+        } else {
+            user.setRole(Role.USER);  
+        }
+
+        userRepository.save(user);
+        return jwtService.generateToken(user);
     }
-
-  
-    long userCount = userRepository.count();
-
-    if (userCount == 0) {
-        user.setRole(Role.ADMIN);  
-    } else {
-        user.setRole(Role.USER);  
-    }
-
-    userRepository.save(user);
-    return jwtService.generateToken(user);
-}
 
     public String login(LoginRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
@@ -130,6 +128,58 @@ public class UserService {
         
         return userRepository.save(user);
     }
-}
 
+    // === METODY DLA ADMINA (używane w AdminController) ===
     
+    /**
+     * Pobiera wszystkich użytkowników z bazy danych
+     * Używane w AdminController.getAllUsers()
+     */
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    /**
+     * Pobiera użytkownika po ID
+     * Używane w AdminController.changeUserRole() i deleteUser()
+     */
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    }
+
+    /**
+     * Zmienia rolę użytkownika
+     * Używane w AdminController.changeUserRole()
+     */
+    public User changeUserRole(Long userId, String newRole) {
+        User user = getUserById(userId);
+        
+        // Walidacja - konwersja String na enum Role
+        try {
+            Role role = Role.valueOf(newRole.toUpperCase());
+            user.setRole(role);
+            return userRepository.save(user);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid role: " + newRole + ". Available roles: USER, STAFF, ADMIN");
+        }
+    }
+
+    /**
+     * Usuwa użytkownika z bazy danych
+     * Używane w AdminController.deleteUser()
+     */
+    public void deleteUser(Long userId) {
+        User user = getUserById(userId);
+        
+        // Zabezpieczenie - nie można usunąć ostatniego admina
+        if (user.getRole() == Role.ADMIN) {
+            long adminCount = userRepository.countByRole(Role.ADMIN);
+            if (adminCount <= 1) {
+                throw new RuntimeException("Cannot delete the last admin user");
+            }
+        }
+        
+        userRepository.delete(user);
+    }
+}

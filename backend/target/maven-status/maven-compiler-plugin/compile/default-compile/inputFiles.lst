@@ -4,12 +4,14 @@ C:\MobliX\backend\src\main\java\com\example\backend\config\WebConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdvertisementController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\LogController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\MessageController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\OpinionController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateOpinionDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\LogDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LoginRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\OpinionResponseDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\RegisterRequest.java
@@ -59,6 +61,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\service\AdminService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\LogService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\MessageService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\OpinionService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java

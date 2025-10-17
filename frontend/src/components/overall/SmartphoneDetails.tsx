@@ -329,6 +329,22 @@ const SmartphoneDetails: React.FC = () => {
     }
   }, [reviewId, reviews]);
 
+  useEffect(() => {
+    const incrementViewCount = async () => {
+      if (!id) return;
+
+      try {
+        await axios.post(`http://localhost:8080/api/advertisements/${id}/view`);
+        console.log("View count incremented");
+      } catch (error) {
+        console.error("Error incrementing view count:", error);
+      }
+    };
+
+    // Wywołaj tylko raz przy montowaniu komponentu
+    incrementViewCount();
+  }, [id]);
+
   const phone = smartphones.find((p) => p.id === parseInt(id || "0"));
 
   // Stan dla smartfona - dynamiczne pobieranie z API
@@ -377,7 +393,7 @@ const SmartphoneDetails: React.FC = () => {
             sellerPhone: "Dostępny po zalogowaniu",
             sellerEmail: "Dostępny po zalogowaniu",
             dateAdded: ad.createdAt || ad.dateAdded,
-            views: 0,
+            views: ad.viewCount || 0,
             likes: 0,
             description: ad.description,
             specifications: {

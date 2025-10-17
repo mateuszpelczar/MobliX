@@ -22,6 +22,7 @@ public class AdvertisementResponseDTO {
     private String condition; // stan urządzenia
     private String imageUrl;
     private Long imageId;
+    private Long viewCount;
     
     // Dodatkowe informacje
     private Boolean includesCharger;
@@ -121,6 +122,14 @@ public class AdvertisementResponseDTO {
 
     public SmartphoneSpecificationDTO getSpecification() { return specification; }
     public void setSpecification(SmartphoneSpecificationDTO specification) { this.specification = specification; }
+
+    public Long getViewCount(){
+        return viewCount;
+    }
+
+    public void setViewCount(Long viewCount){
+        this.viewCount = viewCount;
+    }
 
     public static class SmartphoneSpecificationDTO {
         private String brand;
