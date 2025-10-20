@@ -19,4 +19,6 @@ public interface OpinionRepository extends JpaRepository<Opinion, Long> {
     List<Opinion> findByUserIdAndStatus(Long userId, OpinionStatus status);
     
     boolean existsByUserIdAndAdvertisementIdAndStatus(Long userId, Long advertisementId, OpinionStatus status);
+    
+    List<Opinion> findByAdvertisementIdInAndStatus(List<Long> advertisementIds, OpinionStatus status);
 }

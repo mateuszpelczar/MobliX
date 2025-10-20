@@ -241,5 +241,33 @@ public class OpinionService {
         
         opinionRepository.delete(opinion);
     }
+
+    public List<OpinionResponseDTO> getOpinionsForUserAdvertisements(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Znajdź wszystkie ogłoszenia użytkownika
+        List<Advertisement> userAds = advertisementRepository.findByUserId(user.getId());
+        
+        // Zbierz ID wszystkich ogłoszeń użytkownika
+        List<Long> adIds = userAds.stream()
+                .map(Advertisement::getId)
+                .collect(Collectors.toList());
+        
+        if (adIds.isEmpty()) {
+            return List.of();
+        }
+        
+        // Znajdź wszystkie zatwierdzone opinie dla tych ogłoszeń
+        return opinionRepository.findByAdvertisementIdInAndStatus(adIds, OpinionStatus.APPROVED)
+                .stream()
+                .map(opinion -> {
+                    String adTitle = advertisementRepository.findById(opinion.getAdvertisementId())
+                            .map(Advertisement::getTitle)
+                            .orElse("Unknown");
+                    return mapToDTO(opinion, adTitle);
+                })
+                .collect(Collectors.toList());
+    }
 }
 

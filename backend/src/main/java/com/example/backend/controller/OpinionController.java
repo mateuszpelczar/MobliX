@@ -101,6 +101,22 @@ public class OpinionController {
         return ResponseEntity.ok(opinions);
     }
 
+    @GetMapping("/user/status/{status}")
+    public ResponseEntity<List<OpinionResponseDTO>> getUserOpinionsByStatus(
+            @PathVariable OpinionStatus status,
+            Principal principal) {
+        String userEmail = principal.getName();
+        List<OpinionResponseDTO> opinions = opinionService.getUserOpinionsByStatus(userEmail, status);
+        return ResponseEntity.ok(opinions);
+    }
+
+    @GetMapping("/user/received")
+    public ResponseEntity<List<OpinionResponseDTO>> getReceivedOpinions(Principal principal) {
+        String userEmail = principal.getName();
+        List<OpinionResponseDTO> opinions = opinionService.getOpinionsForUserAdvertisements(userEmail);
+        return ResponseEntity.ok(opinions);
+    }
+
     @PutMapping("/{opinionId}/approve")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<OpinionResponseDTO> approveOpinion(

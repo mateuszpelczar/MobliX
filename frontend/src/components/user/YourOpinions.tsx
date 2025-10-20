@@ -90,10 +90,27 @@ const YourOpinions: React.FC = () => {
         }
       );
 
+      // Jeśli odpowiedź jest pusta, to nie jest błąd - użytkownik po prostu nie ma opinii
       setOpinions(response.data);
     } catch (error: any) {
       console.error("Error fetching opinions:", error);
-      setError("Nie udało się pobrać opinii. Spróbuj ponownie.");
+
+      // Rozróżnij błędy sieciowe od innych błędów
+      if (error.code === "ERR_NETWORK" || !error.response) {
+        setError(
+          "Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe i spróbuj ponownie."
+        );
+      } else if (error.response?.status === 401) {
+        // Token wygasł - przekieruj do logowania
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else if (error.response?.status === 403) {
+        setError("Brak uprawnień do przeglądania opinii.");
+      } else {
+        setError(
+          "Wystąpił błąd podczas pobierania opinii. Spróbuj ponownie później."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -373,8 +390,22 @@ const YourOpinions: React.FC = () => {
 
             {/* Error State */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-800">{error}</p>
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-6 shadow-md">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-red-800 font-semibold mb-1">
+                      Wystąpił problem
+                    </h3>
+                    <p className="text-red-700 text-sm mb-3">{error}</p>
+                    <button
+                      onClick={() => fetchOpinions(activeTab)}
+                      className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Spróbuj ponownie
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -383,19 +414,23 @@ const YourOpinions: React.FC = () => {
               <div className="grid gap-6">
                 {opinions.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Star className="w-12 h-12 text-gray-400" />
+                    <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                      <MessageSquare className="w-12 h-12 text-purple-500" />
                     </div>
-                    <p className="text-gray-500 text-lg">
-                      Brak opinii w tej kategorii
-                    </p>
-                    <p className="text-gray-400 text-sm mt-2">
-                      {activeTab === "PENDING" &&
-                        "Nie masz oczekujących opinii"}
+                    <p className="text-gray-700 text-xl font-semibold mb-2">
+                      {activeTab === "PENDING" && "Brak oczekujących opinii"}
                       {activeTab === "APPROVED" &&
-                        "Nie masz zatwierdzonych opinii"}
+                        "Nie dodałeś jeszcze żadnych opinii"}
                       {activeTab === "REJECTED" &&
                         "Nie masz odrzuconych opinii"}
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      {activeTab === "PENDING" &&
+                        "Wszystkie Twoje opinie zostały już zweryfikowane"}
+                      {activeTab === "APPROVED" &&
+                        "Wystawiaj opinie po zakupie smartfona, aby pomóc innym użytkownikom"}
+                      {activeTab === "REJECTED" &&
+                        "Twoje opinie spełniają wymagania moderacji"}
                     </p>
                   </div>
                 ) : (

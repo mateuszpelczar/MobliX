@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
   Star,
@@ -12,100 +13,37 @@ import {
   Users,
   LogOut,
   Calendar,
-  TrendingUp,
   Award,
   Eye,
-  Edit,
-  Trash2,
-  Plus,
   ThumbsUp,
-  ThumbsDown,
-  Clock,
   CheckCircle,
   AlertCircle,
+  Loader,
 } from "lucide-react";
 
-type Rating = {
+type Opinion = {
   id: number;
-  title: string;
-  user: string;
-  date: string;
-  status: "received" | "to-rate" | "rated";
-  value?: number;
-  comment?: string;
+  advertisementId: number;
+  advertisementTitle: string;
+  userId: number;
+  userName: string;
+  rating: number;
+  comment: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 };
-
-const mockRatings: Rating[] = [
-  {
-    id: 1,
-    title: "iPhone 13 128GB",
-    user: "Jan Kowalski",
-    date: "2025-08-20",
-    status: "received",
-    value: 5,
-    comment: "Wszystko OK!",
-  },
-  {
-    id: 2,
-    title: "Samsung S22 Ultra",
-    user: "Anna Nowak",
-    date: "2025-08-18",
-    status: "to-rate",
-  },
-  {
-    id: 3,
-    title: "Pixel 7 Pro",
-    user: "Marek Testowy",
-    date: "2025-08-15",
-    status: "rated",
-    value: 4,
-    comment: "Dobry kontakt.",
-  },
-  {
-    id: 4,
-    title: "Xiaomi 12",
-    user: "Kasia Test",
-    date: "2025-08-10",
-    status: "to-rate",
-  },
-  {
-    id: 5,
-    title: "iPhone 12 Pro",
-    user: "Jan Kowalski",
-    date: "2025-08-05",
-    status: "received",
-    value: 3,
-    comment: "Mogło być szybciej.",
-  },
-  {
-    id: 6,
-    title: "Samsung S21",
-    user: "Anna Nowak",
-    date: "2025-08-01",
-    status: "rated",
-    value: 5,
-    comment: "Super!",
-  },
-];
 
 const tabLabels = [
   {
     key: "received",
     label: "Otrzymane oceny",
     icon: ThumbsUp,
-    count: mockRatings.filter((r) => r.status === "received").length,
-  },
-  {
-    key: "to-rate",
-    label: "Do oceny",
-    icon: Clock,
-    count: mockRatings.filter((r) => r.status === "to-rate").length,
   },
   {
     key: "rated",
-    label: "Wystawione",
+    label: "Oceniono",
     icon: CheckCircle,
-    count: mockRatings.filter((r) => r.status === "rated").length,
   },
 ];
 
@@ -113,9 +51,11 @@ const Ratings: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<"received" | "to-rate" | "rated">(
-    "received"
-  );
+  const [activeTab, setActiveTab] = useState<"received" | "rated">("received");
+  const [receivedOpinions, setReceivedOpinions] = useState<Opinion[]>([]);
+  const [ratedOpinions, setRatedOpinions] = useState<Opinion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -133,6 +73,69 @@ const Ratings: React.FC = () => {
   const isUser = userRole === "USER";
   const isStaff = userRole === "STAFF";
 
+  useEffect(() => {
+    fetchOpinions();
+  }, [activeTab]);
+
+  const fetchOpinions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      if (activeTab === "received") {
+        // Pobierz opinie wystawione pod naszymi ogłoszeniami
+        const response = await axios.get<Opinion[]>(
+          "http://localhost:8080/api/opinions/user/received",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setReceivedOpinions(response.data);
+      } else if (activeTab === "rated") {
+        // Pobierz opinie które my napisaliśmy (APPROVED)
+        const response = await axios.get<Opinion[]>(
+          "http://localhost:8080/api/opinions/user/status/APPROVED",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setRatedOpinions(response.data);
+      }
+    } catch (error: any) {
+      console.error("Error fetching opinions:", error);
+
+      if (error.code === "ERR_NETWORK" || !error.response) {
+        setError(
+          "Nie udało się połączyć z serwerem. Sprawdź połączenie internetowe."
+        );
+      } else if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else if (error.response?.status === 403) {
+        setError("Brak uprawnień do przeglądania opinii.");
+      } else {
+        setError(
+          "Wystąpił błąd podczas pobierania opinii. Spróbuj ponownie później."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentOpinions =
+    activeTab === "received" ? receivedOpinions : ratedOpinions;
+
   // Funkcja do renderowania gwiazdek
   const renderStars = (rating: number) => {
     const stars = [];
@@ -147,36 +150,6 @@ const Ratings: React.FC = () => {
     }
     return stars;
   };
-
-  // Funkcja do określenia koloru statusu
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "received":
-        return "bg-green-100 text-green-800";
-      case "to-rate":
-        return "bg-yellow-100 text-yellow-800";
-      case "rated":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Funkcja do określenia ikony statusu
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "received":
-        return <ThumbsUp className="w-4 h-4" />;
-      case "to-rate":
-        return <Clock className="w-4 h-4" />;
-      case "rated":
-        return <CheckCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
-    }
-  };
-
-  const filtered = mockRatings.filter((r) => r.status === activeTab);
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -324,6 +297,10 @@ const Ratings: React.FC = () => {
             <div className="flex gap-2 sm:gap-4 mb-4 overflow-x-auto">
               {tabLabels.map((tab) => {
                 const IconComponent = tab.icon;
+                const count =
+                  tab.key === "received"
+                    ? receivedOpinions.length
+                    : ratedOpinions.length;
                 return (
                   <button
                     key={tab.key}
@@ -343,130 +320,161 @@ const Ratings: React.FC = () => {
                           : "bg-purple-100 text-purple-600"
                       }`}
                     >
-                      {tab.count}
+                      {count}
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Lista ocen */}
-            <div className="flex flex-col gap-4">
-              {filtered.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-8 h-8 text-gray-400" />
+            {/* Error State */}
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-6 shadow-md mb-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-red-800 font-semibold mb-1">
+                      Wystąpił problem
+                    </h3>
+                    <p className="text-red-700 text-sm mb-3">{error}</p>
+                    <button
+                      onClick={() => fetchOpinions()}
+                      className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Spróbuj ponownie
+                    </button>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                    Brak ocen w tej kategorii
-                  </h3>
-                  <p className="text-gray-500">
-                    {activeTab === "to-rate"
-                      ? "Nie masz użytkowników do oceny"
-                      : "Nie masz jeszcze żadnych ocen w tej kategorii"}
-                  </p>
                 </div>
-              )}
-              {filtered.map((r) => (
-                <div
-                  key={r.id}
-                  className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200"
-                >
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    {/* Lewa część - informacje o transakcji */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <ShoppingBag className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate text-lg">
-                            {r.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <User className="w-4 h-4 text-gray-500" />
-                            <span className="text-gray-600 text-sm">
-                              {r.user}
-                            </span>
-                            <span className="text-gray-400">•</span>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4 text-gray-500" />
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loading && (
+              <div className="flex justify-center items-center py-12">
+                <Loader className="w-8 h-8 text-purple-600 animate-spin" />
+              </div>
+            )}
+
+            {/* Lista ocen */}
+            {!loading && !error && (
+              <div className="flex flex-col gap-4">
+                {currentOpinions.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Star className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      {activeTab === "received"
+                        ? "Brak otrzymanych ocen"
+                        : "Nie wystawiłeś jeszcze żadnych ocen"}
+                    </h3>
+                    <p className="text-gray-500">
+                      {activeTab === "received"
+                        ? "Nikt jeszcze nie ocenił Twoich ogłoszeń"
+                        : "Dodaj opinię pod ogłoszeniem aby zobaczyć ją tutaj"}
+                    </p>
+                  </div>
+                )}
+                {currentOpinions.map((opinion) => (
+                  <div
+                    key={opinion.id}
+                    className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
+                    onClick={() =>
+                      navigate(`/smartfon/${opinion.advertisementId}`)
+                    }
+                  >
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                      {/* Lewa część - informacje o opinii */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <ShoppingBag className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate text-lg">
+                              {opinion.advertisementTitle}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <User className="w-4 h-4 text-gray-500" />
                               <span className="text-gray-600 text-sm">
-                                {r.date}
+                                {activeTab === "received"
+                                  ? `Opinia od: ${opinion.userName}`
+                                  : "Twoja opinia"}
                               </span>
-                            </div>
-                          </div>
-
-                          {/* Status badge */}
-                          <div className="mt-2">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                r.status
-                              )}`}
-                            >
-                              {getStatusIcon(r.status)}
-                              {r.status === "received" && "Otrzymano ocenę"}
-                              {r.status === "to-rate" && "Do oceny"}
-                              {r.status === "rated" && "Oceniono"}
-                            </span>
-                          </div>
-
-                          {/* Ocena gwiazdkowa */}
-                          {r.value && (
-                            <div className="flex items-center gap-2 mt-3">
-                              <div className="flex">{renderStars(r.value)}</div>
-                              <span className="text-lg font-bold text-yellow-600">
-                                {r.value}/5
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Komentarz */}
-                          {r.comment && (
-                            <div className="mt-3 bg-white p-3 rounded-lg border border-gray-200">
-                              <div className="flex items-start gap-2">
-                                <MessageSquare className="w-4 h-4 text-gray-500 mt-0.5" />
-                                <p className="text-gray-700 text-sm italic">
-                                  "{r.comment}"
-                                </p>
+                              <span className="text-gray-400">•</span>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4 text-gray-500" />
+                                <span className="text-gray-600 text-sm">
+                                  {new Date(
+                                    opinion.createdAt
+                                  ).toLocaleDateString("pl-PL")}
+                                </span>
                               </div>
                             </div>
-                          )}
+
+                            {/* Status badge */}
+                            <div className="mt-2">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                  activeTab === "received"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }`}
+                              >
+                                {activeTab === "received" ? (
+                                  <ThumbsUp className="w-4 h-4" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                                {activeTab === "received"
+                                  ? "Otrzymano ocenę"
+                                  : "Oceniono"}
+                              </span>
+                            </div>
+
+                            {/* Ocena gwiazdkowa */}
+                            <div className="flex items-center gap-2 mt-3">
+                              <div className="flex">
+                                {renderStars(opinion.rating)}
+                              </div>
+                              <span className="text-lg font-bold text-yellow-600">
+                                {opinion.rating}/5
+                              </span>
+                            </div>
+
+                            {/* Komentarz */}
+                            {opinion.comment && (
+                              <div className="mt-3 bg-white p-3 rounded-lg border border-gray-200">
+                                <div className="flex items-start gap-2">
+                                  <MessageSquare className="w-4 h-4 text-gray-500 mt-0.5" />
+                                  <p className="text-gray-700 text-sm italic">
+                                    "{opinion.comment}"
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Prawa część - przyciski akcji */}
-                    <div className="flex flex-row sm:flex-col gap-2">
-                      {activeTab === "to-rate" && (
-                        <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                          <Plus className="w-4 h-4" />
-                          Oceń
-                        </button>
-                      )}
-                      {activeTab === "rated" && (
-                        <>
-                          <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            <Edit className="w-4 h-4" />
-                            Edytuj
-                          </button>
-                          <button className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                            Usuń
-                          </button>
-                        </>
-                      )}
-                      {activeTab === "received" && (
-                        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                      {/* Prawa część - przycisk akcji */}
+                      <div className="flex flex-row sm:flex-col gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/smartfon/${opinion.advertisementId}`);
+                          }}
+                          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
                           <Eye className="w-4 h-4" />
-                          Zobacz
+                          Zobacz ogłoszenie
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
