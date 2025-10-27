@@ -1,9 +1,11 @@
 com\example\backend\service\AdvertisementService.class
+com\example\backend\service\FavoriteAdService.class
 com\example\backend\dto\UserDto.class
 com\example\backend\dto\AdvertisementResponseDTO$SmartphoneSpecificationDTO.class
 com\example\backend\security\CustomUserDetails.class
 com\example\backend\dto\LoginRequest.class
 com\example\backend\controller\AuthController.class
+com\example\backend\dto\SendMessageRequest.class
 com\example\backend\model\Category.class
 com\example\backend\dto\RejectOpinionDTO.class
 com\example\backend\repository\OpinionRepository.class
@@ -20,7 +22,11 @@ com\example\backend\model\Moderation.class
 com\example\backend\service\MessageService.class
 com\example\backend\dto\CreateOpinionDTO.class
 com\example\backend\service\UserService.class
+com\example\backend\controller\NotificationController.class
 com\example\backend\controller\OpinionController.class
+com\example\backend\dto\NotificationType.class
+com\example\backend\model\Notification.class
+com\example\backend\dto\NotificationDTO.class
 com\example\backend\model\Opinion.class
 com\example\backend\BackendApplication.class
 com\example\backend\repository\FavoriteAdRepository.class
@@ -28,8 +34,11 @@ com\example\backend\repository\AdvertisementRepository.class
 com\example\backend\model\AdvertisementStatus.class
 com\example\backend\service\OpinionService.class
 com\example\backend\model\Report.class
+com\example\backend\repository\NotificationRepository.class
+com\example\backend\dto\MessageDTO.class
 com\example\backend\repository\LocationRepository.class
 com\example\backend\config\SecurityConfig.class
+com\example\backend\service\NotificationService.class
 com\example\backend\model\Review.class
 com\example\backend\model\Conversation.class
 com\example\backend\repository\ImageRepository.class
@@ -39,6 +48,7 @@ com\example\backend\dto\UserRoleChangeRequest.class
 com\example\backend\repository\RegulationRepository.class
 com\example\backend\controller\UserController.class
 com\example\backend\dto\AdvertisementResponseDTO.class
+com\example\backend\dto\ConversationDTO.class
 com\example\backend\dto\OpinionResponseDTO.class
 com\example\backend\repository\CategoryRepository.class
 com\example\backend\model\FavoriteAd.class
@@ -53,6 +63,7 @@ com\example\backend\repository\ConversationRepository.class
 com\example\backend\controller\LogController.class
 com\example\backend\model\SmartphoneSpecification.class
 com\example\backend\dto\RegisterRequest.class
+com\example\backend\controller\FavoriteAdController.class
 com\example\backend\dto\LogDTO.class
 com\example\backend\model\Image.class
 com\example\backend\repository\MessageRepository.class

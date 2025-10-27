@@ -508,6 +508,28 @@ const SmartphoneDetails: React.FC = () => {
     }
   }, [id]); // Re-run when id changes
 
+  // Sprawdź czy ogłoszenie jest w ulubionych
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      const token = localStorage.getItem("token");
+      if (!token || !id) return;
+
+      try {
+        const response = await axios.get(
+          `http://localhost:8080/api/favorites/${id}/check`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setIsLiked(response.data.isFavorite);
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [id]);
+
   const getUserRole = () => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -639,12 +661,51 @@ const SmartphoneDetails: React.FC = () => {
   };
 
   const handleContactSeller = () => {
-    if (phoneData) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (phoneData && sellerInfo?.email && id) {
       navigate(
-        `/user/message?seller=${encodeURIComponent(
-          phoneData.seller
-        )}&product=${encodeURIComponent(phoneData.title)}`
+        `/user/message?adId=${id}&seller=${encodeURIComponent(
+          sellerInfo.email
+        )}`
       );
+    }
+  };
+
+  // Przełącz stan ulubionych
+  const handleToggleFavorite = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (!id) return;
+
+    try {
+      if (isLiked) {
+        // Usuń z ulubionych
+        await axios.delete(`http://localhost:8080/api/favorites/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsLiked(false);
+      } else {
+        // Dodaj do ulubionych
+        await axios.post(
+          `http://localhost:8080/api/favorites/${id}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setIsLiked(true);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
     }
   };
 
@@ -1084,7 +1145,7 @@ const SmartphoneDetails: React.FC = () => {
                       </h1>
                       <div className="flex items-center gap-2 ml-4">
                         <button
-                          onClick={() => setIsLiked(!isLiked)}
+                          onClick={handleToggleFavorite}
                           className={`p-2 rounded-full transition-colors ${
                             isLiked
                               ? "bg-red-100 text-red-600"
@@ -1578,7 +1639,7 @@ const SmartphoneDetails: React.FC = () => {
                           Gwarancja:
                         </span>
                         <span className="text-sm font-medium text-gray-900">
-                          {phoneData.additionalInfo.warranty || "Brak danych"}
+                          {phoneData.additionalInfo?.warranty || "Brak danych"}
                         </span>
                       </div>
 
@@ -1586,7 +1647,7 @@ const SmartphoneDetails: React.FC = () => {
                       <div className="space-y-1">
                         <div className="text-sm text-gray-600">W zestawie:</div>
                         <div className="flex flex-wrap gap-2">
-                          {phoneData.additionalInfo.includesCharger ? (
+                          {phoneData.additionalInfo?.includesCharger ? (
                             <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                               <Check className="w-3 h-3" /> Ładowarka z kablem
                             </span>

@@ -1,19 +1,20 @@
 package com.example.backend.service;
 
-import com.example.backend.model.Message;
-import com.example.backend.model.User;
-import com.example.backend.model.Advertisement;
-import com.example.backend.model.Role;
-import com.example.backend.repository.MessageRepository;
-import com.example.backend.repository.UserRepository;
+import com.example.backend.dto.ConversationDTO;
+import com.example.backend.dto.MessageDTO;
+import com.example.backend.model.*;
+import com.example.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class MessageService {
     
     @Autowired
@@ -24,6 +25,15 @@ public class MessageService {
     
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ConversationRepository conversationRepository;
+
+    @Autowired
+    private AdvertisementRepository advertisementRepository;
+
+    @Autowired
+    private LogService logService;
 
     public void sendRejectionMessage(Advertisement ad, String rejectReason, String moderatorEmail) {
         User systemUser = userRepository.findByEmail("system@moblix.pl")
@@ -77,5 +87,192 @@ public class MessageService {
         systemUser.setPassword(passwordEncoder.encode("SYSTEM_USER_PASSWORD_NOT_FOR_LOGIN"));
         systemUser.setRole(Role.ADMIN);
         return userRepository.save(systemUser);
+    }
+
+    // ============ NOWE METODY DLA SYSTEMU WIADOMOŚCI ============
+
+    /**
+     * Pobierz wszystkie konwersacje użytkownika
+     */
+    public List<ConversationDTO> getUserConversations(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Conversation> conversations = conversationRepository
+                .findByUser1OrUser2OrderByUpdatedAtDesc(user, user);
+
+        return conversations.stream()
+                .map(conv -> mapToConversationDTO(conv, user))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Pobierz lub utwórz konwersację
+     */
+    public ConversationDTO getOrCreateConversation(String userEmail, String otherUserEmail, Long advertisementId) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        User otherUser = userRepository.findByEmail(otherUserEmail)
+                .orElseThrow(() -> new RuntimeException("Other user not found"));
+        Advertisement advertisement = advertisementRepository.findById(advertisementId)
+                .orElseThrow(() -> new RuntimeException("Advertisement not found"));
+
+        // Sprawdź czy konwersacja już istnieje
+        Conversation conversation = conversationRepository
+                .findByAdvertisementAndUser1AndUser2(advertisement, user, otherUser)
+                .or(() -> conversationRepository.findByAdvertisementAndUser1AndUser2(advertisement, otherUser, user))
+                .orElseGet(() -> {
+                    // Utwórz nową konwersację
+                    Conversation newConv = new Conversation();
+                    newConv.setAdvertisement(advertisement);
+                    newConv.setUser1(user);
+                    newConv.setUser2(otherUser);
+                    newConv.setCreatedAt(LocalDateTime.now());
+                    newConv.setUpdatedAt(LocalDateTime.now());
+                    return conversationRepository.save(newConv);
+                });
+
+        return mapToConversationDTO(conversation, user);
+    }
+
+    /**
+     * Pobierz wiadomości z konwersacji
+     */
+    public List<MessageDTO> getConversationMessages(Long conversationId, String userEmail) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Sprawdź czy użytkownik ma dostęp do konwersacji
+        if (!conversation.getUser1().equals(user) && !conversation.getUser2().equals(user)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        List<Message> messages = messageRepository.findByConversationOrderByCreatedAtAsc(conversation);
+
+        return messages.stream()
+                .map(this::mapToMessageDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Wyślij wiadomość
+     */
+    public MessageDTO sendMessage(String senderEmail, String receiverEmail, Long advertisementId, String content) {
+        User sender = userRepository.findByEmail(senderEmail)
+                .orElseThrow(() -> new RuntimeException("Sender not found"));
+        User receiver = userRepository.findByEmail(receiverEmail)
+                .orElseThrow(() -> new RuntimeException("Receiver not found"));
+        Advertisement advertisement = advertisementRepository.findById(advertisementId)
+                .orElseThrow(() -> new RuntimeException("Advertisement not found"));
+
+        // Pobierz lub utwórz konwersację
+        Conversation conversation = conversationRepository
+                .findByAdvertisementAndUser1AndUser2(advertisement, sender, receiver)
+                .or(() -> conversationRepository.findByAdvertisementAndUser1AndUser2(advertisement, receiver, sender))
+                .orElseGet(() -> {
+                    Conversation newConv = new Conversation();
+                    newConv.setAdvertisement(advertisement);
+                    newConv.setUser1(sender);
+                    newConv.setUser2(receiver);
+                    newConv.setCreatedAt(LocalDateTime.now());
+                    newConv.setUpdatedAt(LocalDateTime.now());
+                    return conversationRepository.save(newConv);
+                });
+
+        // Utwórz wiadomość
+        Message message = new Message();
+        message.setConversation(conversation);
+        message.setSender(sender);
+        message.setReceiver(receiver);
+        message.setContent(content);
+        message.setIsRead(false);
+        message.setCreatedAt(LocalDateTime.now());
+        message = messageRepository.save(message);
+
+        // Zaktualizuj czas ostatniej aktualizacji konwersacji
+        conversation.setUpdatedAt(LocalDateTime.now());
+        conversationRepository.save(conversation);
+
+        // Loguj wysłanie wiadomości
+        logService.saveLog(
+            "INFO",
+            "message",
+            "Wysłano wiadomość",
+            "Od: " + senderEmail + " do: " + receiverEmail + " w sprawie: " + advertisement.getTitle(),
+            "MessageService",
+            sender,
+            null
+        );
+
+        return mapToMessageDTO(message);
+    }
+
+    /**
+     * Oznacz wiadomości jako przeczytane
+     */
+    public void markMessagesAsRead(Long conversationId, String userEmail) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Message> unreadMessages = messageRepository
+                .findByConversationAndReceiverAndIsReadFalse(conversation, user);
+
+        unreadMessages.forEach(msg -> msg.setIsRead(true));
+        messageRepository.saveAll(unreadMessages);
+    }
+
+    // Mapowanie do DTO
+    private ConversationDTO mapToConversationDTO(Conversation conversation, User currentUser) {
+        ConversationDTO dto = new ConversationDTO();
+        dto.setId(conversation.getId());
+        dto.setAdvertisementId(conversation.getAdvertisement().getId());
+        dto.setAdvertisementTitle(conversation.getAdvertisement().getTitle());
+
+        // Pobierz pierwsze zdjęcie ogłoszenia
+        if (conversation.getAdvertisement().getImages() != null && 
+            !conversation.getAdvertisement().getImages().isEmpty()) {
+            dto.setAdvertisementImageUrl(conversation.getAdvertisement().getImages().get(0).getUrl());
+        }
+
+        // Określ drugiego użytkownika
+        User otherUser = conversation.getUser1().equals(currentUser) 
+                ? conversation.getUser2() 
+                : conversation.getUser1();
+        dto.setOtherUserName(otherUser.getFirstName() + " " + otherUser.getLastName());
+        dto.setOtherUserEmail(otherUser.getEmail());
+
+        // Pobierz ostatnią wiadomość
+        List<Message> messages = messageRepository.findByConversationOrderByCreatedAtDesc(conversation);
+        if (!messages.isEmpty()) {
+            Message lastMessage = messages.get(0);
+            dto.setLastMessage(lastMessage.getContent());
+            dto.setLastMessageTime(lastMessage.getCreatedAt());
+        }
+
+        // Policz nieprzeczytane wiadomości
+        int unreadCount = messageRepository.countByConversationAndReceiverAndIsReadFalse(conversation, currentUser);
+        dto.setUnreadCount(unreadCount);
+
+        return dto;
+    }
+
+    private MessageDTO mapToMessageDTO(Message message) {
+        MessageDTO dto = new MessageDTO();
+        dto.setId(message.getId());
+        dto.setConversationId(message.getConversation().getId());
+        dto.setSenderEmail(message.getSender().getEmail());
+        dto.setSenderName(message.getSender().getFirstName() + " " + message.getSender().getLastName());
+        dto.setReceiverEmail(message.getReceiver().getEmail());
+        dto.setReceiverName(message.getReceiver().getFirstName() + " " + message.getReceiver().getLastName());
+        dto.setContent(message.getContent());
+        dto.setIsRead(message.getIsRead());
+        dto.setCreatedAt(message.getCreatedAt());
+        return dto;
     }
 }

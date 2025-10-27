@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
@@ -19,18 +20,28 @@ import {
   X,
   CheckCircle,
   AlertCircle,
-  Info,
   Eye,
+  Loader,
+  Trash2,
 } from "lucide-react";
 
 type Notification = {
   id: number;
-  type: "price_drop" | "new_photos" | "platform" | "ad_ended" | "new_message";
+  type:
+    | "PRICE_CHANGE"
+    | "IMAGES_CHANGED"
+    | "DESCRIPTION_CHANGED"
+    | "AD_DELETED"
+    | "AD_ENDED"
+    | "TERMS_UPDATED"
+    | "NEW_MESSAGE";
   title: string;
   message: string;
-  timestamp: string;
+  createdAt: string;
   isRead: boolean;
-  icon?: string;
+  advertisementId: number | null;
+  oldValue: string | null;
+  newValue: string | null;
 };
 
 type JwtPayLoad = {
@@ -39,54 +50,43 @@ type JwtPayLoad = {
   exp: number;
 };
 
-const EditAd: React.FC = () => {
+const Notifications: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock notifications data
-  const [notifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "price_drop",
-      title: "iPhone 13 128GB",
-      message: "Cena ogłoszenia została obniżona z 3200 zł na 2999 zł.",
-      timestamp: "2 godziny temu",
-      isRead: false,
-    },
-    {
-      id: 2,
-      type: "new_photos",
-      title: "MacBook Pro 2021",
-      message: "Sprzedający dodał nowe zdjęcia do ogłoszenia.",
-      timestamp: "Wczoraj",
-      isRead: false,
-    },
-    {
-      id: 3,
-      type: "platform",
-      title: "Platforma MobliX",
-      message: "Zmieniono regulamin platformy. Zapoznaj się z nowymi zasadami.",
-      timestamp: "3 dni temu",
-      isRead: true,
-    },
-    {
-      id: 4,
-      type: "ad_ended",
-      title: "Dell XPS 15",
-      message: "Ogłoszenie zostało zakończone przez sprzedawcę.",
-      timestamp: "5 dni temu",
-      isRead: true,
-    },
-    {
-      id: 5,
-      type: "new_message",
-      title: "Samsung S22 Ultra",
-      message: "Otrzymałeś nową wiadomość od kupującego.",
-      timestamp: "1 dzień temu",
-      isRead: false,
-    },
-  ]);
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await axios.get<Notification[]>(
+          "http://localhost:8080/api/notifications",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setNotifications(response.data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setError("Nie udało się pobrać powiadomień");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -111,28 +111,107 @@ const EditAd: React.FC = () => {
     }
   }
 
-  const handleMarkAsRead = (id: number) => {
-    console.log(`Oznacz jako przeczytane: ${id}`);
+  const handleMarkAsRead = async (id: number) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      await axios.put(
+        `http://localhost:8080/api/notifications/${id}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === id ? { ...notif, isRead: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error("Error marking as read:", error);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    console.log("Oznacz wszystkie jako przeczytane");
+  const handleMarkAllAsRead = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      await axios.put(
+        "http://localhost:8080/api/notifications/read-all",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setNotifications((prev) =>
+        prev.map((notif) => ({ ...notif, isRead: true }))
+      );
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      await axios.delete(`http://localhost:8080/api/notifications/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (notification.advertisementId) {
+      navigate(`/smartfon/${notification.advertisementId}`);
+    } else if (notification.type === "TERMS_UPDATED") {
+      navigate("/regulamin");
+    }
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "price_drop":
+      case "PRICE_CHANGE":
         return <TrendingDown className="w-5 h-5 text-green-500" />;
-      case "new_photos":
+      case "IMAGES_CHANGED":
         return <Camera className="w-5 h-5 text-blue-500" />;
-      case "platform":
+      case "DESCRIPTION_CHANGED":
+        return <FileText className="w-5 h-5 text-blue-500" />;
+      case "TERMS_UPDATED":
         return <FileText className="w-5 h-5 text-purple-500" />;
-      case "ad_ended":
+      case "AD_DELETED":
+      case "AD_ENDED":
         return <X className="w-5 h-5 text-red-500" />;
-      case "new_message":
+      case "NEW_MESSAGE":
         return <MessageSquare className="w-5 h-5 text-orange-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      return `${diffMins} minut temu`;
+    } else if (diffHours < 24) {
+      return `${diffHours} godzin temu`;
+    } else if (diffDays === 1) {
+      return "Wczoraj";
+    } else if (diffDays < 7) {
+      return `${diffDays} dni temu`;
+    } else {
+      return date.toLocaleDateString("pl-PL");
     }
   };
 
@@ -299,7 +378,17 @@ const EditAd: React.FC = () => {
             </div>
 
             {/* Notifications list */}
-            {notifications.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <Loader className="w-8 h-8 mx-auto mb-4 text-blue-500 animate-spin" />
+                <p className="text-gray-500">Ładowanie powiadomień...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-500" />
+                <p className="text-red-500 font-medium">{error}</p>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
                   <Bell className="w-8 h-8 text-blue-500" />
@@ -316,7 +405,8 @@ const EditAd: React.FC = () => {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`bg-gradient-to-br from-white to-gray-50 border rounded-xl p-4 transition-all duration-300 hover:shadow-lg group ${
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`bg-gradient-to-br from-white to-gray-50 border rounded-xl p-4 transition-all duration-300 hover:shadow-lg group cursor-pointer ${
                       !notification.isRead
                         ? "border-blue-300 bg-gradient-to-br from-blue-50 to-white"
                         : "border-gray-200"
@@ -348,21 +438,34 @@ const EditAd: React.FC = () => {
                         <div className="flex items-center justify-between pt-2">
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Clock className="w-3 h-3" />
-                            <span>{notification.timestamp}</span>
+                            <span>
+                              {formatTimestamp(notification.createdAt)}
+                            </span>
                           </div>
 
                           <div className="flex gap-2">
                             {!notification.isRead && (
                               <button
-                                onClick={() =>
-                                  handleMarkAsRead(notification.id)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notification.id);
+                                }}
                                 className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
                               >
                                 <Eye className="w-3 h-3" />
                                 Oznacz jako przeczytane
                               </button>
                             )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteNotification(notification.id);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Usuń
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -420,4 +523,4 @@ const EditAd: React.FC = () => {
   );
 };
 
-export default EditAd;
+export default Notifications;

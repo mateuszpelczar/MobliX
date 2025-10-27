@@ -19,6 +19,10 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     List<Advertisement> findByUser(User user);
     List<Advertisement> findByUserOrderByCreatedAtAsc(User user);
     
+    // Liczenie ogłoszeń według statusu dla użytkownika
+    long countByUserAndStatus(User user, AdvertisementStatus status);
+    long countByUser(User user);
+    
     // Zapytania związane ze specyfikacją smartfona
     @Query("SELECT a FROM Advertisement a WHERE a.smartphoneSpecification.status = ?1")
     List<Advertisement> findBySmartphoneSpecificationStatus(String status);

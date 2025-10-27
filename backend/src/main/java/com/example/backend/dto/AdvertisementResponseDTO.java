@@ -10,7 +10,9 @@ public class AdvertisementResponseDTO {
     private String description;
     private Double price;
     private String userName;
+    private Long categoryId;
     private String categoryName;
+    private Long locationId;
     private String locationName;
     private String location; // pełna lokalizacja "Miasto, Województwo"
     private String voivodeship; // województwo
@@ -78,8 +80,14 @@ public class AdvertisementResponseDTO {
     public String getUserName() { return userName; }
     public void setUserName(String userName) { this.userName = userName; }
 
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+
+    public Long getLocationId() { return locationId; }
+    public void setLocationId(Long locationId) { this.locationId = locationId; }
 
     public String getLocationName() { return locationName; }
     public void setLocationName(String locationName) { this.locationName = locationName; }

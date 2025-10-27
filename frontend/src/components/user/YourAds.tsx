@@ -52,6 +52,12 @@ const YourAds: React.FC = () => {
     "pending" | "active" | "sold" | "paused" | "rejected"
   >("pending");
   const [adDropdownOpen, setAdDropdownOpen] = useState<number | null>(null);
+  const [stats, setStats] = useState<{
+    total: number;
+    active: number;
+    pending: number;
+    rejected: number;
+  }>({ total: 0, active: 0, pending: 0, rejected: 0 });
 
   // Debug adDropdownOpen changes
   useEffect(() => {
@@ -246,7 +252,7 @@ const YourAds: React.FC = () => {
               | "sold"
               | "paused"
               | "rejected",
-            views: 0, // Backend nie ma jeszcze tego pola
+            views: ad.viewCount || 0,
             images:
               ad.imageUrls && ad.imageUrls.length > 0
                 ? ad.imageUrls
@@ -272,6 +278,34 @@ const YourAds: React.FC = () => {
 
     fetchUserAds();
   }, [navigate]);
+
+  // Pobieranie statystyk ogłoszeń użytkownika
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(
+          "http://localhost:8080/api/advertisements/user/stats",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Błąd podczas pobierania statystyk:", error);
+      }
+    };
+
+    fetchStats();
+  }, [ads]); // Odświeżaj statystyki gdy zmienią się ogłoszenia
 
   const filtered = ads.filter((ad) => ad.status === activeTab);
   console.log("Filtered ads for tab", activeTab, ":", filtered);
@@ -418,19 +452,39 @@ const YourAds: React.FC = () => {
 
             {/* Tabs with modern design */}
             <div className="flex flex-wrap justify-center gap-2 bg-gray-50 p-2 rounded-xl">
-              {tabLabels.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                    activeTab === tab.key
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-md"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+              {tabLabels.map((tab) => {
+                // Mapowanie klucza zakładki na klucz statystyk
+                const getCount = () => {
+                  switch (tab.key) {
+                    case "pending":
+                      return stats.pending;
+                    case "active":
+                      return stats.active;
+                    case "rejected":
+                      return stats.rejected;
+                    case "sold":
+                    case "paused":
+                      // Backend nie ma jeszcze tych statusów w statystykach
+                      return ads.filter((ad) => ad.status === tab.key).length;
+                    default:
+                      return 0;
+                  }
+                };
+
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                      activeTab === tab.key
+                        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105"
+                        : "text-gray-600 hover:text-blue-600 hover:bg-white hover:shadow-md"
+                    }`}
+                  >
+                    {tab.label} ({getCount()})
+                  </button>
+                );
+              })}
             </div>
 
             {/* Add new ad button with icon */}

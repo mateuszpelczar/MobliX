@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
@@ -13,27 +14,19 @@ import {
   ChevronDown,
   Eye,
   Heart,
-  Clock,
-  Calendar,
-  Tag,
+  Trash2,
   MapPin,
-  DollarSign,
-  Search,
-  Filter,
-  Bookmark,
+  AlertCircle,
+  Loader,
 } from "lucide-react";
 
-type WatchedAd = {
+type FavoriteAd = {
   id: number;
   title: string;
   price: number;
-  category: string;
   location: string;
-  dateAdded: string;
-  views: number;
-  isFavorite: boolean;
-  imageUrl: string;
-  seller: string;
+  imageUrls: string[];
+  condition: string;
 };
 
 type JwtPayLoad = {
@@ -42,62 +35,70 @@ type JwtPayLoad = {
   exp: number;
 };
 
-const EditAd: React.FC = () => {
+const WatchedAds: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Mock data - watched ads
-  const [watchedAds] = useState<WatchedAd[]>([
-    {
-      id: 1,
-      title: "iPhone 14 Pro 128GB Space Black",
-      price: 4200,
-      category: "Telefony",
-      location: "Warszawa",
-      dateAdded: "2025-08-28",
-      views: 156,
-      isFavorite: true,
-      imageUrl: "/api/placeholder/400/300",
-      seller: "TechStore_PL",
-    },
-    {
-      id: 2,
-      title: 'MacBook Air M2 13" 256GB',
-      price: 5800,
-      category: "Komputery",
-      location: "Kraków",
-      dateAdded: "2025-08-25",
-      views: 89,
-      isFavorite: true,
-      imageUrl: "/api/placeholder/400/300",
-      seller: "AppleCenter",
-    },
-    {
-      id: 3,
-      title: "Samsung Galaxy S23 Ultra 512GB",
-      price: 3900,
-      category: "Telefony",
-      location: "Gdańsk",
-      dateAdded: "2025-08-22",
-      views: 203,
-      isFavorite: false,
-      imageUrl: "/api/placeholder/400/300",
-      seller: "SamsungOfficial",
-    },
-    {
-      id: 4,
-      title: "Nintendo Switch OLED + gry",
-      price: 1450,
-      category: "Konsole",
-      location: "Wrocław",
-      dateAdded: "2025-08-20",
-      views: 67,
-      isFavorite: true,
-      imageUrl: "/api/placeholder/400/300",
-      seller: "GameHub",
-    },
-  ]);
+  const [favoriteAds, setFavoriteAds] = useState<FavoriteAd[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+
+  // Pobierz ulubione ogłoszenia
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await axios.get<FavoriteAd[]>(
+          "http://localhost:8080/api/favorites",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setFavoriteAds(response.data);
+        setFavoriteCount(response.data.length);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching favorites:", err);
+        setError("Nie udało się pobrać ulubionych ogłoszeń");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFavorites();
+  }, [navigate]);
+
+  // Usuń z ulubionych
+  const handleRemoveFavorite = async (adId: number) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      await axios.delete(`http://localhost:8080/api/favorites/${adId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Odśwież listę
+      setFavoriteAds((prev) => prev.filter((ad) => ad.id !== adId));
+      setFavoriteCount((prev) => prev - 1);
+    } catch (err) {
+      console.error("Error removing favorite:", err);
+      alert("Nie udało się usunąć ogłoszenia z ulubionych");
+    }
+  };
+
+  // Przejdź do szczegółów ogłoszenia
+  const handleViewAd = (adId: number) => {
+    navigate(`/smartfon/${adId}`);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -121,14 +122,6 @@ const EditAd: React.FC = () => {
       console.error("Error decoding token:", error);
     }
   }
-
-  const handleRemoveFromWatched = (id: number) => {
-    console.log(`Usuń z obserwowanych: ${id}`);
-  };
-
-  const handleToggleFavorite = (id: number) => {
-    console.log(`Przełącz ulubione: ${id}`);
-  };
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -259,63 +252,61 @@ const EditAd: React.FC = () => {
             <div className="text-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg -z-10"></div>
               <div className="flex items-center justify-center gap-2 py-4">
-                <Eye className="w-6 h-6 text-purple-600" />
+                <Heart className="w-6 h-6 text-red-600" />
                 <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Obserwowane Ogłoszenia
+                  Ulubione Ogłoszenia
                 </h2>
               </div>
             </div>
 
-            {/* Stats and filters */}
+            {/* Stats */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Bookmark className="w-4 h-4 text-purple-600" />
-                  <span className="text-gray-700 font-medium text-sm">
-                    {watchedAds.length} obserwowanych
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-red-500" />
-                  <span className="text-gray-700 font-medium text-sm">
-                    {watchedAds.filter((ad) => ad.isFavorite).length} ulubionych
-                  </span>
-                </div>
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5 text-red-500" />
+                <span className="text-gray-700 font-medium">
+                  {favoriteCount}{" "}
+                  {favoriteCount === 1
+                    ? "ulubione ogłoszenie"
+                    : "ulubionych ogłoszeń"}
+                </span>
               </div>
-              {/* <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-500" />
-                <select className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
-                  <option>Wszystkie kategorie</option>
-                  <option>Telefony</option>
-                  <option>Komputery</option>
-                  <option>Konsole</option>
-                </select>
-              </div> */}
             </div>
 
-            {/* Watched ads grid */}
-            {watchedAds.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                  <Eye className="w-8 h-8 text-purple-500" />
+            {/* Content */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader className="w-12 h-12 text-purple-600 animate-spin" />
+                <p className="text-gray-600 mt-4">
+                  Ładowanie ulubionych ogłoszeń...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <AlertCircle className="w-12 h-12 text-red-500" />
+                <p className="text-gray-600 mt-4">{error}</p>
+              </div>
+            ) : favoriteAds.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-red-100 to-pink-100 rounded-full flex items-center justify-center">
+                  <Heart className="w-8 h-8 text-red-500" />
                 </div>
                 <p className="text-gray-500 text-lg font-medium">
-                  Nie obserwujesz jeszcze żadnych ogłoszeń
+                  Nie masz jeszcze żadnych ulubionych ogłoszeń
                 </p>
                 <p className="text-gray-400 text-sm mt-2">
-                  Zacznij obserwować interesujące Cię oferty
+                  Dodaj ogłoszenia do ulubionych klikając ikonę serduszka
                 </p>
                 <button
                   onClick={() => navigate("/")}
                   className="mt-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200"
                 >
-                  <Search className="w-4 h-4 inline mr-2" />
+                  <Eye className="w-4 h-4 inline mr-2" />
                   Przeglądaj ogłoszenia
                 </button>
               </div>
             ) : (
               <div className="grid gap-4">
-                {watchedAds.map((ad) => (
+                {favoriteAds.map((ad) => (
                   <div
                     key={ad.id}
                     className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-xl transition-all duration-300 hover:border-purple-300 group"
@@ -323,78 +314,64 @@ const EditAd: React.FC = () => {
                     <div className="flex flex-col lg:flex-row gap-4">
                       {/* Image */}
                       <div className="flex-shrink-0">
-                        <div className="relative overflow-hidden rounded-xl">
+                        <div
+                          className="relative overflow-hidden rounded-xl cursor-pointer"
+                          onClick={() => handleViewAd(ad.id)}
+                        >
                           <img
-                            src={ad.imageUrl}
+                            src={
+                              ad.imageUrls && ad.imageUrls.length > 0
+                                ? ad.imageUrls[0]
+                                : "/api/placeholder/400/300"
+                            }
                             alt={ad.title}
                             className="w-full lg:w-32 h-32 object-cover bg-gray-200 group-hover:scale-105 transition-transform duration-300"
                           />
-                          <button
-                            onClick={() => handleToggleFavorite(ad.id)}
-                            className={`absolute top-2 right-2 p-1 rounded-full transition-all duration-200 ${
-                              ad.isFavorite
-                                ? "bg-red-500 text-white hover:bg-red-600"
-                                : "bg-white text-gray-400 hover:text-red-500 hover:bg-red-50"
-                            }`}
-                          >
-                            <Heart
-                              className={`w-3 h-3 ${
-                                ad.isFavorite ? "fill-current" : ""
-                              }`}
-                            />
-                          </button>
                         </div>
                       </div>
 
                       {/* Content */}
                       <div className="flex-grow space-y-3">
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">
+                          <h3
+                            className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors cursor-pointer"
+                            onClick={() => handleViewAd(ad.id)}
+                          >
                             {ad.title}
                           </h3>
-                          <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                            {ad.price.toLocaleString()} zł
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Tag className="w-4 h-4 text-purple-500" />
-                            <span>{ad.category}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <MapPin className="w-4 h-4 text-blue-500" />
-                            <span>{ad.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Calendar className="w-4 h-4 text-green-500" />
-                            <span>{ad.dateAdded}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Eye className="w-4 h-4 text-orange-500" />
-                            <span>{ad.views} wyświetleń</span>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4 text-blue-500" />
+                              <span>{ad.location || "Brak lokalizacji"}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                {ad.condition || "Nie podano"}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <User className="w-4 h-4" />
-                            <span>{ad.seller}</span>
+                        {/* Price and Actions */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                          <div className="text-2xl font-bold text-purple-600">
+                            {ad.price
+                              ? `${ad.price.toLocaleString()} zł`
+                              : "Cena do ustalenia"}
                           </div>
-
-                          <div className="flex gap-3">
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => navigate(`/ad/${ad.id}`)}
-                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm rounded-lg hover:shadow-lg transition-all duration-200"
+                              onClick={() => handleViewAd(ad.id)}
+                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 flex items-center gap-2 text-sm"
                             >
                               <Eye className="w-4 h-4" />
                               Zobacz
                             </button>
                             <button
-                              onClick={() => handleRemoveFromWatched(ad.id)}
-                              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-all duration-200 hover:shadow-md"
+                              onClick={() => handleRemoveFavorite(ad.id)}
+                              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 flex items-center gap-2 text-sm"
                             >
-                              <Bookmark className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" />
                               Usuń
                             </button>
                           </div>
@@ -454,4 +431,4 @@ const EditAd: React.FC = () => {
   );
 };
 
-export default EditAd;
+export default WatchedAds;

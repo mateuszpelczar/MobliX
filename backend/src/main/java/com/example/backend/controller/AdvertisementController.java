@@ -331,8 +331,7 @@ public ResponseEntity<Void> incrementViewCount(
             
         } catch (Exception e) {
             // Log ERROR - błąd edycji
-            String userEmail = authentication.getName();
-            User user = userService.getCurrentUser(userEmail);
+            User user = userService.getCurrentUser(authentication.getName());
             String ipAddress = logService.getClientIP(httpRequest);
             
             logService.saveLog(
@@ -347,5 +346,12 @@ public ResponseEntity<Void> incrementViewCount(
             
             throw e;
         }
+    }
+
+    @GetMapping("/user/stats")
+    public ResponseEntity<Map<String, Long>> getUserAdvertisementStats(Authentication authentication) {
+        String userEmail = authentication.getName();
+        Map<String, Long> stats = advertisementService.getUserAdvertisementStats(userEmail);
+        return ResponseEntity.ok(stats);
     }
 }

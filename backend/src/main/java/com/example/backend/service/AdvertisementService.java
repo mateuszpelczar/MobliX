@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ public class AdvertisementService {
     private final ImageRepository imageRepository;
     private final MessageService messageService;
     private final LogService logService;
+    private NotificationService notificationService;
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -56,6 +59,12 @@ public class AdvertisementService {
         this.imageRepository = imageRepository;
         this.messageService = messageService;
         this.logService = logService;
+    }
+
+    // Setter injection to avoid circular dependency
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
     public SellerInfoDTO getSellerInfo(Long advertisementId, boolean isAuthenticated) {
@@ -332,6 +341,23 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             throw new RuntimeException("Unauthorized to update this advertisement");
         }
         
+        // Track changes for notifications
+        boolean priceChanged = false;
+        boolean imagesChanged = false;
+        boolean descriptionChanged = false;
+        Double oldPrice = advertisement.getPrice();
+        int oldImageCount = advertisement.getImages() != null ? advertisement.getImages().size() : 0;
+        
+        // Check for price change
+        if (!advertisement.getPrice().equals(updateDto.getPrice())) {
+            priceChanged = true;
+        }
+        
+        // Check for description change
+        if (!advertisement.getDescription().equals(updateDto.getDescription())) {
+            descriptionChanged = true;
+        }
+        
         // Update basic fields
         advertisement.setTitle(updateDto.getTitle());
         advertisement.setDescription(updateDto.getDescription());
@@ -385,6 +411,11 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         
         // Update images if provided
         if (updateDto.getImageUrls() != null && !updateDto.getImageUrls().isEmpty()) {
+            int newImageCount = updateDto.getImageUrls().size();
+            if (oldImageCount != newImageCount) {
+                imagesChanged = true;
+            }
+            
             // Remove old images
             if (advertisement.getImages() != null) {
                 imageRepository.deleteAll(advertisement.getImages());
@@ -402,6 +433,20 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
         
         advertisement = advertisementRepository.save(advertisement);
+        
+        // Create notifications for users who favorited this ad
+        if (notificationService != null) {
+            if (priceChanged) {
+                notificationService.createPriceChangeNotification(advertisement, oldPrice, updateDto.getPrice());
+            }
+            if (imagesChanged) {
+                notificationService.createImagesChangedNotification(advertisement);
+            }
+            if (descriptionChanged) {
+                notificationService.createDescriptionChangedNotification(advertisement);
+            }
+        }
+        
         return convertToResponseDTO(advertisement);
     }
 
@@ -416,6 +461,11 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             user.getRole() != Role.ADMIN && 
             user.getRole() != Role.STAFF) {
             throw new RuntimeException("Unauthorized to delete this advertisement");
+        }
+        
+        // Create notification before deleting
+        if (notificationService != null) {
+            notificationService.createAdDeletedNotification(advertisement);
         }
         
         advertisementRepository.delete(advertisement);
@@ -458,7 +508,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         return advertisementRepository.save(advertisement);
     }
 
-    private AdvertisementResponseDTO convertToResponseDTO(Advertisement advertisement) {
+    public AdvertisementResponseDTO convertToResponseDTO(Advertisement advertisement) {
         AdvertisementResponseDTO dto = new AdvertisementResponseDTO();
         dto.setId(advertisement.getId());
         dto.setTitle(advertisement.getTitle());
@@ -476,10 +526,12 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
         
         if (advertisement.getCategory() != null) {
+            dto.setCategoryId(advertisement.getCategory().getId());
             dto.setCategoryName(advertisement.getCategory().getName());
         }
         
         if (advertisement.getLocation() != null) {
+            dto.setLocationId(advertisement.getLocation().getId());
             dto.setLocationName(advertisement.getLocation().getCity());
             dto.setLocation(advertisement.getLocation().getCity() + ", " + advertisement.getLocation().getRegion());
             dto.setVoivodeship(advertisement.getLocation().getRegion());
@@ -525,5 +577,17 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
         
         return dto;
+    }
+
+    public Map<String, Long> getUserAdvertisementStats(String userEmail) {
+        User user = userService.findByEmail(userEmail);
+        
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", advertisementRepository.countByUser(user));
+        stats.put("active", advertisementRepository.countByUserAndStatus(user, AdvertisementStatus.ACTIVE));
+        stats.put("pending", advertisementRepository.countByUserAndStatus(user, AdvertisementStatus.PENDING));
+        stats.put("rejected", advertisementRepository.countByUserAndStatus(user, AdvertisementStatus.REJECTED));
+        
+        return stats;
     }
 }

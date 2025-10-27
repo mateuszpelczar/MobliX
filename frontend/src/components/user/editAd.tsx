@@ -48,7 +48,9 @@ interface Advertisement {
   warranty?: string;
   includesCharger: boolean;
   userName: string;
+  categoryId: number;
   categoryName: string;
+  locationId: number;
   locationName: string;
   location: string;
   voivodeship: string;
@@ -122,6 +124,10 @@ const EditAd: React.FC = () => {
   const [frontCamera, setFrontCamera] = useState<string>("");
   const [batteryCapacity, setBatteryCapacity] = useState<string>("");
 
+  // Category and Location IDs
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [locationId, setLocationId] = useState<number | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Authentication logic
@@ -173,6 +179,10 @@ const EditAd: React.FC = () => {
         setWarranty(ad.warranty || "");
         setIncludesCharger(ad.includesCharger);
         setImages(ad.imageUrls || []);
+
+        // Category and Location IDs
+        setCategoryId(ad.categoryId);
+        setLocationId(ad.locationId);
 
         // Specification fields
         setBrand(ad.specification?.brand || "");
@@ -322,6 +332,11 @@ const EditAd: React.FC = () => {
       return;
     }
 
+    if (!categoryId || !locationId) {
+      alert("Brak danych kategorii lub lokalizacji");
+      return;
+    }
+
     try {
       const updateData = {
         title,
@@ -330,19 +345,19 @@ const EditAd: React.FC = () => {
         condition,
         warranty: warranty || null,
         includesCharger,
+        categoryId,
+        locationId,
+        brand,
+        model,
+        color,
+        osType,
+        osVersion,
+        storage,
+        ram,
+        rearCameras,
+        frontCamera,
+        batteryCapacity,
         imageUrls: images,
-        specification: {
-          brand,
-          model,
-          color,
-          osType,
-          osVersion,
-          storage,
-          ram,
-          rearCameras,
-          frontCamera,
-          batteryCapacity,
-        },
       };
 
       await axios.put(
