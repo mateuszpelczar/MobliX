@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -20,6 +20,19 @@ import {
 } from "lucide-react";
 import "../styles/MobileResponsive.css";
 import "../styles/UserPanel.css";
+import axios from "axios";
+
+interface UserActivity {
+  id: number;
+  timestamp: string;
+  level: string;
+  category: string;
+  message: string;
+  details: string;
+  source: string;
+  userEmail: string;
+  ipAddress: string;
+}
 
 const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -41,6 +54,140 @@ const UserPanel: React.FC = () => {
   const isAdmin = userRole === "ADMIN";
   const isUser = userRole === "USER";
   const isStaff = userRole === "STAFF";
+
+  const [stats, setStats] = useState({
+    activeAds: 0,
+    totalViews: 0,
+    favorites: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState<UserActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+        //pobranie statystyk aktywnych ogloszen i wszystkich wyswietlen danego uzytkownika
+        const dashboardResponse = await axios.get<{
+          activeAds: number;
+          totalViews: number;
+        }>("http://localhost:8080/api/advertisements/user/dashboard-stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        //pobranie liczby ulubionych ogloszen
+        const favoritesResponse = await axios.get<{ count: number }>(
+          "http://localhost:8080/api/favorites/count",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        setStats({
+          activeAds: dashboardResponse.data?.activeAds || 0,
+          totalViews: dashboardResponse.data?.totalViews || 0,
+          favorites: favoritesResponse.data?.count || 0,
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [navigate]);
+
+  //pobranie ostatnich aktywnosci uzytkownika
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setActivitiesLoading(true);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+        const response = await axios.get<UserActivity[]>(
+          "http://localhost:8080/api/logs/activities?limit=5",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setActivities(response.data || []);
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+        setActivities([]);
+      } finally {
+        setActivitiesLoading(false);
+      }
+    };
+    fetchActivities();
+  }, [navigate]);
+
+  //formatowanie czasu
+  const formatActivityTime = (timestamp: string) => {
+    const now = new Date();
+    const activityDate = new Date(timestamp);
+    const diffMs = now.getTime() - activityDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Przed chwila";
+    if (diffMins < 60) return `${diffMins} min temu`;
+    if (diffHours < 24) return `${diffHours} godz. temu`;
+    if (diffDays < 7) return `${diffDays} dni temu`;
+    return activityDate.toLocaleDateString();
+  };
+
+  //wybor ikony na podstawie tresci wiadomosci
+  const getActivityIcon = (message: string) => {
+    if (message.includes("Dodano do ulubionych")) {
+      return <Heart className="w-5 h-5 text-red-500 fill-red-500" />;
+    } else if (message.includes("Usunięto z ulubionych")) {
+      return <Heart className="w-5 h-5 text-gray-400" />;
+    } else if (message.includes("Utworzono ogłoszenie")) {
+      return <Plus className="w-5 h-5 text-green-600" />;
+    } else if (message.includes("Zaktualizowano ogłoszenie")) {
+      return <Edit3 className="w-5 h-5 text-blue-600" />;
+    } else if (message.includes("Usunięto ogłoszenie")) {
+      return <ShoppingBag className="w-5 h-5 text-red-600" />;
+    } else if (message.includes("Dodano opinię")) {
+      return <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
+    } else if (message.includes("Zaktualizowano dane")) {
+      return <User className="w-5 h-5 text-purple-600" />;
+    }
+    return <Clock className="w-5 h-5 text-gray-500" />;
+  };
+
+  // Parsuj advertisementId z details
+  const parseAdvertisementId = (details: string): number | null => {
+    const match = details?.match(/advertisementId:(\d+)/);
+    return match ? parseInt(match[1]) : null;
+  };
+
+  // Parsuj rating z details
+  const parseRating = (details: string): number | null => {
+    const match = details?.match(/rating:(\d+)/);
+    return match ? parseInt(match[1]) : null;
+  };
+
+  // Kliknięcie w aktywność
+  const handleActivityClick = (activity: UserActivity) => {
+    const adId = parseAdvertisementId(activity.details);
+    if (adId && !activity.message.includes("Usunięto")) {
+      navigate(`/smartfon/${adId}`);
+    }
+  };
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -197,36 +344,37 @@ const UserPanel: React.FC = () => {
 
             <div className="p-6 sm:p-8 user-content max-h-[calc(100vh-320px)] overflow-y-auto">
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl text-center border border-blue-200">
                   <div className="flex items-center justify-center mb-2">
                     <ShoppingBag className="h-6 w-6 text-blue-600" />
                   </div>
-                  <div className="text-xl font-bold text-blue-600">0</div>
+                  <div className="text-xl font-bold text-blue-600">
+                    {loading ? "..." : stats.activeAds}
+                  </div>
                   <div className="text-xs text-blue-500">
                     Aktywne ogłoszenia
                   </div>
                 </div>
+
                 <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl text-center border border-green-200">
                   <div className="flex items-center justify-center mb-2">
                     <BarChart3 className="h-6 w-6 text-green-600" />
                   </div>
-                  <div className="text-xl font-bold text-green-600">0</div>
+                  <div className="text-xl font-bold text-green-600">
+                    {loading ? "..." : stats.totalViews}
+                  </div>
                   <div className="text-xs text-green-500">Wyświetlenia</div>
                 </div>
+
                 <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl text-center border border-purple-200">
                   <div className="flex items-center justify-center mb-2">
                     <Heart className="h-6 w-6 text-purple-600" />
                   </div>
-                  <div className="text-xl font-bold text-purple-600">0</div>
-                  <div className="text-xs text-purple-500">Obserwowane</div>
-                </div>
-                <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-xl text-center border border-orange-200">
-                  <div className="flex items-center justify-center mb-2">
-                    <Star className="h-6 w-6 text-orange-600" />
+                  <div className="text-xl font-bold text-purple-600">
+                    {loading ? "..." : stats.favorites}
                   </div>
-                  <div className="text-xl font-bold text-orange-600">5.0</div>
-                  <div className="text-xs text-orange-500">Ocena</div>
+                  <div className="text-xs text-purple-500">Obserwowane</div>
                 </div>
               </div>
 
@@ -403,12 +551,65 @@ const UserPanel: React.FC = () => {
                   Ostatnia aktywność
                 </h3>
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
-                  <div className="text-gray-600 text-center py-8">
-                    <p>Brak ostatniej aktywności</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Dodaj swoje pierwsze ogłoszenie!
-                    </p>
-                  </div>
+                  {activitiesLoading ? (
+                    <div className="text-gray-600 text-center py-8">
+                      <p>Ładowanie aktywności...</p>
+                    </div>
+                  ) : activities.length === 0 ? (
+                    <div className="text-gray-600 text-center py-8">
+                      <p>Brak ostatniej aktywności</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Dodaj swoje pierwsze ogłoszenie!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {activities.map((activity) => {
+                        const rating = parseRating(activity.details);
+                        const adId = parseAdvertisementId(activity.details);
+                        const isClickable =
+                          adId && !activity.message.includes("Usunięto");
+
+                        return (
+                          <div
+                            key={activity.id}
+                            onClick={() => handleActivityClick(activity)}
+                            className={`flex items-start gap-4 p-4 bg-white rounded-lg border border-gray-200 transition-all ${
+                              isClickable
+                                ? "hover:shadow-md hover:border-blue-300 cursor-pointer"
+                                : ""
+                            }`}
+                          >
+                            <div className="flex-shrink-0 mt-1">
+                              {getActivityIcon(activity.message)}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <p className="text-sm font-medium text-gray-900">
+                                {activity.message}
+                              </p>
+                              {rating && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3 h-3 ${
+                                        i < rating
+                                          ? "text-yellow-400 fill-yellow-400"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-shrink-0 text-xs text-gray-500">
+                              {formatActivityTime(activity.timestamp)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

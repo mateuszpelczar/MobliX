@@ -2,6 +2,10 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.LogDTO;
 import com.example.backend.service.LogService;
+
+import java.util.List;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -57,7 +61,21 @@ public class LogController {
         Page<LogDTO> logs = logService.getLogsByCategory(category, page, size);
         return ResponseEntity.ok(logs);
     }
-  
-  
+
+    //pobierz ostatnie aktywnosci uzytkownika (userpanel)
+    @GetMapping("/activities")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<LogDTO>> getUserActivities(
+        @RequestParam(defaultValue = "10") int limit,
+        Authentication authentication) {
+            try{
+                String userEmail = authentication.getName();
+                List<LogDTO> activities = logService.getUserActivities(userEmail, limit);
+                return ResponseEntity.ok(activities);
+            } catch (Exception e){
+                return ResponseEntity.badRequest().build();
+            }
+            
+        }
 
 }

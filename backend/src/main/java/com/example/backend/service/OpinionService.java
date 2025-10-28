@@ -23,14 +23,17 @@ public class OpinionService {
     private final OpinionRepository opinionRepository;
     private final UserRepository userRepository;
     private final AdvertisementRepository advertisementRepository;
+    private final LogService logService;
 
     // Constructor
     public OpinionService(OpinionRepository opinionRepository, 
                          UserRepository userRepository,
-                         AdvertisementRepository advertisementRepository) {
+                         AdvertisementRepository advertisementRepository,
+                         LogService logService) {
         this.opinionRepository = opinionRepository;
         this.userRepository = userRepository;
         this.advertisementRepository = advertisementRepository;
+        this.logService = logService;
     }
 
     @Transactional
@@ -58,6 +61,9 @@ public class OpinionService {
         opinion.setStatus(OpinionStatus.PENDING);
 
         Opinion saved = opinionRepository.save(opinion);
+
+        logService.logUserActivity(user, "Dodano opinie z ocena " + saved.getRating() + "/5", "opinionId: " + saved.getId() + ",advertisementId: " + advertisement.getId() + ",rating:" + saved.getRating());
+
         return mapToDTO(saved, advertisement.getTitle());
     }
 

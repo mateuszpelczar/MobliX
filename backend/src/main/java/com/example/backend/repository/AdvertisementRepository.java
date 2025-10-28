@@ -18,6 +18,7 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     List<Advertisement> findByStatusOrderByCreatedAtDesc(AdvertisementStatus status);
     List<Advertisement> findByUser(User user);
     List<Advertisement> findByUserOrderByCreatedAtAsc(User user);
+    List<Advertisement> findByUserAndStatus(User user, AdvertisementStatus status);
     
     // Liczenie ogłoszeń według statusu dla użytkownika
     long countByUserAndStatus(User user, AdvertisementStatus status);

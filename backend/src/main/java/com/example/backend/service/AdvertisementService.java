@@ -41,6 +41,8 @@ public class AdvertisementService {
     private final MessageService messageService;
     private final LogService logService;
     private NotificationService notificationService;
+    private final UserRepository userRepository;
+    
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -51,7 +53,8 @@ public class AdvertisementService {
                                 LocationRepository locationRepository,
                                 ImageRepository imageRepository,
                                 MessageService messageService,
-                                LogService logService) {
+                                LogService logService,
+                                UserRepository userRepository) {
         this.advertisementRepository = advertisementRepository;
         this.userService = userService;
         this.categoryRepository = categoryRepository;
@@ -59,6 +62,7 @@ public class AdvertisementService {
         this.imageRepository = imageRepository;
         this.messageService = messageService;
         this.logService = logService;
+        this.userRepository = userRepository;
     }
 
     // Setter injection to avoid circular dependency
@@ -217,7 +221,11 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             }
             advertisement.setImages(images);
         }
-        
+        // Logowanie utworzenia ogłoszenia do pliku userpanel
+         logService.logUserActivity(user, 
+        "Utworzono ogłoszenie: " + advertisement.getTitle(), 
+        "advertisementId:" + advertisement.getId());
+
         return convertToResponseDTO(advertisement);
     }
 
@@ -433,6 +441,8 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
         
         advertisement = advertisementRepository.save(advertisement);
+
+        logService.logUserActivity(user, "Zaktualizowano ogloszenie: " + advertisement.getTitle(), "advertisementId:" + advertisement.getId());
         
         // Create notifications for users who favorited this ad
         if (notificationService != null) {
@@ -469,6 +479,21 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
         
         advertisementRepository.delete(advertisement);
+
+        logService.logUserActivity(user, "Usunieto ogloszenie: " + advertisement.getTitle(), "advertisementId:" + id);
+    }
+
+    //metoda ktora sumuje wszystkie aktywne ogloszenia danego uzytkownika
+    public long getTotalViewsForActiveAds(String email){
+        User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+             
+
+        List<Advertisement> activeAds = advertisementRepository.findByUserAndStatus(user, AdvertisementStatus.ACTIVE);
+
+        return activeAds.stream()
+                .mapToLong(ad -> ad.getViewCount() != null ? ad.getViewCount() : 0)
+                .sum();
     }
 
     public void rejectAdvertisement(Long advertisementId, String reason, String rejectedByUsername) {

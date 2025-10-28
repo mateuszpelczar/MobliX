@@ -5,6 +5,10 @@ import com.example.backend.model.Log;
 import com.example.backend.model.User;
 import com.example.backend.repository.LogRepository;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +35,25 @@ public class LogService {
             System.err.println("Błąd podczas zapisywania logu: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    // zapisanie aktywnosci uzytkownika (userpanel)
+    public void logUserActivity(User user, String message, String details){
+        try{
+            Log log = new Log("INFO", "user_activity", message, details, "User_ACTION",user,null );
+            logRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("Błąd podczas zapisywania aktywności: " + e.getMessage());
+        }
+    }
+
+    // pobranie ostatnich aktywnosci uzytkownika do userpanel
+    public List<LogDTO> getUserActivities(String userEmail, int limit){
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Log> activities = logRepository.findUserActivities(userEmail, pageable);
+        return activities.stream()
+         .map(this::convertToDTO)
+         .collect(Collectors.toList());
     }
 
     // Pobierz wszystkie logi z paginacją (najnowsze pierwsze)

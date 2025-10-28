@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +20,8 @@ import com.example.backend.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -352,6 +355,19 @@ public ResponseEntity<Void> incrementViewCount(
     public ResponseEntity<Map<String, Long>> getUserAdvertisementStats(Authentication authentication) {
         String userEmail = authentication.getName();
         Map<String, Long> stats = advertisementService.getUserAdvertisementStats(userEmail);
+        return ResponseEntity.ok(stats);
+    }
+
+    //Pobranie statystyki(wszystkie aktywne ogloszenie danego uzytkownika) w userpanel
+    @GetMapping("/user/dashboard-stats")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, Long>>getUserDashboardStats(Authentication authenctication){
+        String userEmail = authenctication.getName();
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("activeAds", advertisementService.getUserAdvertisementStats(userEmail).get("active"));
+        stats.put("totalViews", advertisementService.getTotalViewsForActiveAds(userEmail));
+
         return ResponseEntity.ok(stats);
     }
 }

@@ -67,6 +67,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/opinions/*/approve").hasAnyRole("STAFF", "ADMIN") // Zatwierdzanie
                 .requestMatchers(HttpMethod.PUT, "/api/opinions/*/reject").hasAnyRole("STAFF", "ADMIN") // Odrzucanie
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/logs/activities").authenticated()
                 .requestMatchers("/api/logs/**").hasRole("ADMIN") // Logi systemowe tylko dla ADMIN
                 .anyRequest().authenticated())
             .sessionManagement(session -> session

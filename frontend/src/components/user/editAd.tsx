@@ -774,7 +774,7 @@ const EditAd: React.FC = () => {
                   {/* Rear Cameras */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat tylny * (Mpx)
+                      Aparat tylny * (MP)
                     </label>
                     <div className="relative">
                       <Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -792,7 +792,7 @@ const EditAd: React.FC = () => {
                   {/* Front Camera */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat przedni * (Mpx)
+                      Aparat przedni * (MP)
                     </label>
                     <div className="relative">
                       <Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />

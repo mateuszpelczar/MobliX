@@ -30,6 +30,9 @@ public class FavoriteAdService {
     @Autowired
     private AdvertisementService advertisementService;
 
+    @Autowired
+    private LogService logService;
+
     /**
      * Dodaj ogłoszenie do ulubionych
      */
@@ -46,6 +49,8 @@ public class FavoriteAdService {
             favorite.setAdvertisement(advertisement);
             favoriteAdRepository.save(favorite);
         }
+
+        logService.logUserActivity(user, "Dodano do ulubionych: " + advertisement.getTitle(), "advertisementId:" + advertisement.getId());
     }
 
     /**
@@ -58,7 +63,9 @@ public class FavoriteAdService {
                 .orElseThrow(() -> new RuntimeException("Advertisement not found"));
 
         favoriteAdRepository.deleteByUserAndAdvertisement(user, advertisement);
-    }
+
+        logService.logUserActivity(user, "Usunieto z ulubionych: " + advertisement.getTitle(), "advertisementId:" + advertisement.getId());
+}
 
     /**
      * Sprawdź czy ogłoszenie jest w ulubionych
@@ -95,4 +102,6 @@ public class FavoriteAdService {
 
         return favoriteAdRepository.countByUser(user);
     }
+
+
 }
