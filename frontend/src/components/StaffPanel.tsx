@@ -90,16 +90,7 @@ const StaffPanel: React.FC = () => {
                     <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
                   </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
+
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
@@ -185,7 +176,7 @@ const StaffPanel: React.FC = () => {
             </div>
 
             <div className="p-6 sm:p-8 staff-content max-h-[calc(100vh-320px)] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                 {/* Moderacja ogłoszeń */}
                 <button
                   onClick={() => navigate("/staff/moderacja-ogloszen")}
@@ -207,32 +198,6 @@ const StaffPanel: React.FC = () => {
                       </h3>
                       <p className="text-blue-100 text-sm">
                         Przeglądaj i zatwierdzaj nowe ogłoszenia
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Moderacja opinii */}
-                <button
-                  onClick={() => navigate("/staff/moderacja-opinii")}
-                  className="staff-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#10b981",
-                      "--card-color-2": "#059669",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="staff-card-icon bg-white/20 p-4 rounded-full">
-                      <UserCheck className="w-8 h-8" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">
-                        Moderacja opinii
-                      </h3>
-                      <p className="text-green-100 text-sm">
-                        Sprawdzaj i moderuj opinie użytkowników
                       </p>
                     </div>
                   </div>

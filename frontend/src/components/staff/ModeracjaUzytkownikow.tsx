@@ -1,35 +1,36 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import "../../styles/MobileResponsive.css";
+import axios from "axios";
 import {
-  MessageSquare,
-  ShoppingBag,
-  Star,
   User,
   Shield,
   Users,
   LogOut,
   ChevronDown,
   Search,
-  Filter,
-  Calendar,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Ban,
-  UserCheck,
   Eye,
+  Ban,
+  Unlock,
+  Activity,
+  Calendar,
   Mail,
   Phone,
-  MapPin,
-  TrendingUp,
-  UserX,
+  Building,
+  Clock,
+  X,
+  MessageSquare,
+  ShoppingBag,
+  Star,
+  Save,
   Edit,
-  MoreHorizontal,
-  Flag,
+  Globe,
+  MapPin,
+  FileText,
+  Hash,
 } from "lucide-react";
+import "../../styles/MobileResponsive.css";
+import "../../styles/UserPanel.css";
 
 type JwtPayLoad = {
   sub: string;
@@ -37,234 +38,315 @@ type JwtPayLoad = {
   exp: number;
 };
 
+interface UserModeration {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  companyName: string;
+  lastActivity: string | null;
+  createdAt: string;
+  advertisementCount: number;
+  blocked: boolean;
+  blockedUntil: string | null;
+  blockReason: string | null;
+}
+
+interface UserDetails {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  accountType: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  companyName: string;
+  nip: string;
+  regon: string;
+  address: string;
+  website: string;
+  lastActivity: string | null;
+  createdAt: string;
+  advertisementCount: number;
+  blocked: boolean;
+  blockedUntil: string | null;
+  blockReason: string | null;
+}
+
+interface UserActivity {
+  id: number;
+  timestamp: string;
+  level: string;
+  category: string;
+  message: string;
+  details: string;
+  source: string;
+  userEmail: string;
+  ipAddress: string;
+}
+
 const ModeracjaUzytkownikow: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState("wszystkie");
   const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState<UserModeration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<UserModeration | null>(null);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
+  const [blockDuration, setBlockDuration] = useState(15);
+  const [blockReason, setBlockReason] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Przykładowe dane użytkowników
-  const mockUsers = [
-    {
-      id: 1,
-      username: "jan.kowalski",
-      email: "jan.kowalski@email.com",
-      firstName: "Jan",
-      lastName: "Kowalski",
-      joinDate: "2024-01-15",
-      lastActive: "2024-09-04",
-      status: "aktywny",
-      adsCount: 12,
-      rating: 4.8,
-      reportsCount: 0,
-      location: "Warszawa",
-      phone: "+48 123 456 789",
-      verificationLevel: "zweryfikowany",
-      accountType: "premium",
-    },
-    {
-      id: 2,
-      username: "anna.nowak",
-      email: "anna.nowak@email.com",
-      firstName: "Anna",
-      lastName: "Nowak",
-      joinDate: "2024-02-20",
-      lastActive: "2024-09-03",
-      status: "ostrzeżenie",
-      adsCount: 8,
-      rating: 4.2,
-      reportsCount: 2,
-      location: "Kraków",
-      phone: "+48 987 654 321",
-      verificationLevel: "częściowo",
-      accountType: "standard",
-    },
-    {
-      id: 3,
-      username: "spam.bot.123",
-      email: "spambot@suspicious.com",
-      firstName: "Spam",
-      lastName: "Bot",
-      joinDate: "2024-09-01",
-      lastActive: "2024-09-02",
-      status: "podejrzany",
-      adsCount: 25,
-      rating: 2.1,
-      reportsCount: 8,
-      location: "Nieznana",
-      phone: "Brak",
-      verificationLevel: "niezweryfikowany",
-      accountType: "standard",
-    },
-    {
-      id: 4,
-      username: "maria.kowalczyk",
-      email: "maria.kowalczyk@email.com",
-      firstName: "Maria",
-      lastName: "Kowalczyk",
-      joinDate: "2023-11-10",
-      lastActive: "2024-08-15",
-      status: "zablokowany",
-      adsCount: 5,
-      rating: 1.5,
-      reportsCount: 12,
-      location: "Gdańsk",
-      phone: "+48 555 666 777",
-      verificationLevel: "zweryfikowany",
-      accountType: "standard",
-    },
-    {
-      id: 5,
-      username: "piotr.jankowski",
-      email: "piotr.jankowski@email.com",
-      firstName: "Piotr",
-      lastName: "Jankowski",
-      joinDate: "2024-03-05",
-      lastActive: "2024-09-04",
-      status: "aktywny",
-      adsCount: 18,
-      rating: 4.9,
-      reportsCount: 0,
-      location: "Wrocław",
-      phone: "+48 111 222 333",
-      verificationLevel: "zweryfikowany",
-      accountType: "premium",
-    },
-    {
-      id: 6,
-      username: "katarzyna.nowacka",
-      email: "katarzyna.nowacka@email.com",
-      firstName: "Katarzyna",
-      lastName: "Nowacka",
-      joinDate: "2024-06-12",
-      lastActive: "2024-09-03",
-      status: "aktywny",
-      adsCount: 3,
-      rating: 5.0,
-      reportsCount: 0,
-      location: "Poznań",
-      phone: "+48 444 555 666",
-      verificationLevel: "zweryfikowany",
-      accountType: "standard",
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "aktywny":
-        return "bg-green-100 text-green-800";
-      case "ostrzeżenie":
-        return "bg-yellow-100 text-yellow-800";
-      case "podejrzany":
-        return "bg-orange-100 text-orange-800";
-      case "zablokowany":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "aktywny":
-        return <CheckCircle className="w-4 h-4" />;
-      case "ostrzeżenie":
-        return <AlertTriangle className="w-4 h-4" />;
-      case "podejrzany":
-        return <Eye className="w-4 h-4" />;
-      case "zablokowany":
-        return <Ban className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getVerificationIcon = (level: string) => {
-    switch (level) {
-      case "zweryfikowany":
-        return <UserCheck className="w-4 h-4 text-green-600" />;
-      case "częściowo":
-        return <Clock className="w-4 h-4 text-yellow-600" />;
-      case "niezweryfikowany":
-        return <UserX className="w-4 h-4 text-red-600" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-600" />;
-    }
-  };
-
-  const getAccountTypeIcon = (type: string) => {
-    switch (type) {
-      case "premium":
-        return <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />;
-      case "standard":
-        return <User className="w-4 h-4 text-gray-500" />;
-      default:
-        return <User className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      if (i <= rating) {
-        stars.push(
-          <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-        );
-      } else {
-        stars.push(<Star key={i} className="w-4 h-4 text-gray-300" />);
-      }
-    }
-    return stars;
-  };
-
-  const filteredUsers = mockUsers.filter((user) => {
-    const matchesFilter =
-      selectedFilter === "wszystkie" || user.status === selectedFilter;
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${user.firstName} ${user.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    accountType: "private",
+    companyName: "",
+    nip: "",
+    regon: "",
+    address: "",
+    website: "",
   });
 
-  const handleUserAction = (userId: number, action: string) => {
-    console.log(`Akcja ${action} dla użytkownika ${userId}`);
-    // Tutaj można dodać logikę dla różnych akcji
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-    setIsDropdownOpen(false);
-  };
-
-  // Check user role from JWT token
-  const token = localStorage.getItem("token");
-  let isAdmin = false;
-  let isUser = false;
-  let isStaff = false;
-
-  if (token) {
+  const getUserRole = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
     try {
-      const decoded = jwtDecode<JwtPayLoad>(token);
-      isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
-      isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
-      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+      const decoded: JwtPayLoad = jwtDecode(token);
+      return decoded.role;
     } catch (error) {
-      console.error("Error decoding token:", error);
+      return null;
     }
-  }
+  };
+
+  const userRole = getUserRole();
+  const isAdmin = userRole === "ADMIN";
+  const isStaff = userRole === "STAFF";
+  const isUser = userRole === "USER";
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      console.log("Token:", token);
+      console.log("User role:", getUserRole());
+      const response = await axios.get<UserModeration[]>(
+        "http://localhost:8080/api/admin/users/moderation",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // ✅ DEBUG - sprawdź dane user@user.pl
+      const blockedUser = response.data.find((u) => u.email === "user@user.pl");
+      if (blockedUser) {
+        console.log("=== USER@USER.PL DEBUG ===");
+        console.log("Raw data from backend:", blockedUser);
+        console.log("isBlocked:", blockedUser.blocked);
+        console.log("blockedUntil:", blockedUser.blockedUntil);
+        console.log("blockReason:", blockedUser.blockReason);
+
+        const now = new Date();
+        const blockedUntil = blockedUser.blockedUntil
+          ? new Date(blockedUser.blockedUntil)
+          : null;
+        console.log("Current time:", now);
+        console.log("Blocked until:", blockedUntil);
+        console.log(
+          "Is still blocked? (blockedUntil > now):",
+          blockedUntil ? blockedUntil > now : false
+        );
+        console.log("isUserBlocked() result:", isUserBlocked(blockedUser));
+        console.log("========================");
+      }
+
+      setUsers(response.data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserDetails = async (userId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get<UserDetails>(
+        `http://localhost:8080/api/admin/users/${userId}/details`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUserDetails(response.data);
+      setEditForm({
+        firstName: response.data.firstName || "",
+        lastName: response.data.lastName || "",
+        phone: response.data.phone || "",
+        email: response.data.email || "",
+        accountType: response.data.accountType || "private",
+        companyName: response.data.companyName || "",
+        nip: response.data.nip || "",
+        regon: response.data.regon || "",
+        address: response.data.address || "",
+        website: response.data.website || "",
+      });
+      setShowDetailsModal(true);
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      alert("Błąd podczas pobierania szczegółów użytkownika");
+    }
+  };
+
+  const handleSaveUserDetails = async () => {
+    if (!userDetails) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `http://localhost:8080/api/admin/users/${userDetails.id}`,
+        editForm,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      alert("Dane użytkownika zostały zaktualizowane");
+      setIsEditing(false);
+      await fetchUserDetails(userDetails.id);
+      await fetchUsers();
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("Błąd podczas aktualizacji danych użytkownika");
+    }
+  };
+
+  const fetchUserActivities = async (userId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get<UserActivity[]>(
+        `http://localhost:8080/api/admin/users/${userId}/activity-logs?limit=4`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUserActivities(response.data);
+      setShowActivityModal(true);
+    } catch (error) {
+      console.error("Error fetching user activities:", error);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:8080/api/admin/users/${selectedUser.id}/block`,
+        {
+          durationMinutes: blockDuration,
+          reason: blockReason,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setShowBlockModal(false);
+      setBlockReason("");
+      await fetchUsers();
+      alert("Użytkownik został zablokowany");
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      alert("Błąd podczas blokowania użytkownika");
+    }
+  };
+
+  const handleUnblockUser = async (userId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:8080/api/admin/users/${userId}/unblock`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      fetchUsers();
+      alert("Użytkownik został odblokowany");
+    } catch (error) {
+      console.error("Error unblocking user:", error);
+      alert("Błąd podczas odblokowywania użytkownika");
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Nigdy";
+    const date = new Date(dateString);
+    return date.toLocaleString("pl-PL");
+  };
+
+  const formatRelativeTime = (dateString: string | null) => {
+    if (!dateString) return "Nigdy";
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Przed chwilą";
+    if (diffMins < 60) return `${diffMins} min temu`;
+    if (diffHours < 24) return `${diffHours} godz. temu`;
+    if (diffDays < 7) return `${diffDays} dni temu`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} tyg. temu`;
+    return date.toLocaleDateString("pl-PL");
+  };
+
+  //funkcja sprawdzajaca czy uzytkownik jest zablokowany
+  const isUserBlocked = (user: UserModeration): boolean => {
+    if (!user.blocked) return false;
+    if (!user.blockedUntil) return true;
+    const now = new Date();
+    const blockedUntil = new Date(user.blockedUntil);
+    return blockedUntil > now;
+  };
+
+  const roleFilteredUsers = users.filter((user) => {
+    if (isAdmin) return true;
+    if (isStaff) return user.role === "USER";
+    return false;
+  });
+
+  const filteredUsers = roleFilteredUsers.filter(
+    (user) =>
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header like AdminPanel */}
+      {/* White header bar at top */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
           onClick={() => navigate("/main")}
+          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
           style={{ userSelect: "none" }}
         >
           MobliX
@@ -273,7 +355,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button flex items-center gap-2"
+              className="account-dropdown-button"
             >
               <User className="w-4 h-4" />
               Twoje konto
@@ -284,7 +366,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
               />
             </button>
             {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
+              <div className="dropdown-menu">
                 <div className="py-1">
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
@@ -315,6 +397,16 @@ const ModeracjaUzytkownikow: React.FC = () => {
                   >
                     <Star className="w-4 h-4 text-yellow-500" />
                     Oceny
+                  </button>
+                  <button
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate("/user/your-opinions");
+                    }}
+                  >
+                    <MessageSquare className="w-4 h-4 text-orange-500" />
+                    Twoje opinie
                   </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
@@ -362,9 +454,13 @@ const ModeracjaUzytkownikow: React.FC = () => {
                       Panel użytkownika
                     </button>
                   )}
+                  <div className="border-t my-1"></div>
                   <button
-                    onClick={handleLogout}
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                    onClick={() => {
+                      localStorage.removeItem("token");
+                      window.location.href = "/";
+                    }}
+                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
                   >
                     <LogOut className="w-4 h-4 text-red-600" />
                     Wyloguj
@@ -376,343 +472,726 @@ const ModeracjaUzytkownikow: React.FC = () => {
         </div>
       </div>
 
-      {/* Content*/}
+      {/* Main Content */}
       <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-96 pb-12 max-w-6xl">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6">
-            {/* Nagłówek */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
-                <Users className="w-8 h-8 text-purple-600" />
-                Moderacja Użytkowników
-              </h1>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <TrendingUp className="w-4 h-4" />
-                <span>
-                  Aktywnych użytkowników:{" "}
-                  {filteredUsers.filter((u) => u.status === "aktywny").length}
-                </span>
+        <div className="container mx-auto px-4 relative pt-[80px] sm:pt-[100px] pb-16 max-w-6xl">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <Users className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold">
+                    Moderacja Użytkowników
+                  </h1>
+                  <p className="text-blue-100">
+                    {isAdmin
+                      ? "Zarządzaj wszystkimi użytkownikami systemu"
+                      : "Moderuj użytkowników z rolą USER"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Filtry i wyszukiwanie */}
-            <div className="flex flex-col gap-4">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Szukaj użytkowników..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
+            <div className="p-6 sm:p-8">
+              {/* Search */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Szukaj użytkownika..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
 
-              {/* Filtry jako przyciski */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSelectedFilter("wszystkie")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    selectedFilter === "wszystkie"
-                      ? "bg-purple-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  <Filter className="w-4 h-4" />
-                  Wszyscy
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedFilter === "wszystkie"
-                        ? "bg-white bg-opacity-20 text-white"
-                        : "bg-purple-100 text-purple-600"
-                    }`}
-                  >
-                    {mockUsers.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setSelectedFilter("aktywny")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    selectedFilter === "aktywny"
-                      ? "bg-green-600 text-white shadow-md"
-                      : "bg-green-50 text-green-700 hover:bg-green-100"
-                  }`}
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Aktywni
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedFilter === "aktywny"
-                        ? "bg-white bg-opacity-20 text-white"
-                        : "bg-green-100 text-green-600"
-                    }`}
-                  >
-                    {mockUsers.filter((u) => u.status === "aktywny").length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setSelectedFilter("ostrzeżenie")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    selectedFilter === "ostrzeżenie"
-                      ? "bg-yellow-600 text-white shadow-md"
-                      : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                  }`}
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  Ostrzeżeni
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedFilter === "ostrzeżenie"
-                        ? "bg-white bg-opacity-20 text-white"
-                        : "bg-yellow-100 text-yellow-600"
-                    }`}
-                  >
-                    {mockUsers.filter((u) => u.status === "ostrzeżenie").length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setSelectedFilter("podejrzany")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    selectedFilter === "podejrzany"
-                      ? "bg-orange-600 text-white shadow-md"
-                      : "bg-orange-50 text-orange-700 hover:bg-orange-100"
-                  }`}
-                >
-                  <Eye className="w-4 h-4" />
-                  Podejrzani
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedFilter === "podejrzany"
-                        ? "bg-white bg-opacity-20 text-white"
-                        : "bg-orange-100 text-orange-600"
-                    }`}
-                  >
-                    {mockUsers.filter((u) => u.status === "podejrzany").length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setSelectedFilter("zablokowany")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    selectedFilter === "zablokowany"
-                      ? "bg-red-600 text-white shadow-md"
-                      : "bg-red-50 text-red-700 hover:bg-red-100"
-                  }`}
-                >
-                  <Ban className="w-4 h-4" />
-                  Zablokowani
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedFilter === "zablokowany"
-                        ? "bg-white bg-opacity-20 text-white"
-                        : "bg-red-100 text-red-600"
-                    }`}
-                  >
-                    {mockUsers.filter((u) => u.status === "zablokowany").length}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Lista użytkowników */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Użytkownik
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Ogłoszenia
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Ocena
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Zgłoszenia
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Ostatnia aktywność
-                    </th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700">
-                      Akcje
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr
-                      key={user.id}
-                      className="border-b border-gray-100 hover:bg-gray-50"
-                    >
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">
-                                {user.username}
-                              </span>
-                              {getAccountTypeIcon(user.accountType)}
-                              {getVerificationIcon(user.verificationLevel)}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {user.email}
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-gray-400">
-                              <MapPin className="w-3 h-3" />
-                              {user.location}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            user.status
-                          )}`}
-                        >
-                          {getStatusIcon(user.status)}
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-1">
-                          <ShoppingBag className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium">{user.adsCount}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-1">
-                          <div className="flex">{renderStars(user.rating)}</div>
-                          <span className="text-sm font-medium ml-1">
-                            {user.rating}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-1">
-                          <Flag className="w-4 h-4 text-gray-500" />
-                          <span
-                            className={`font-medium ${
-                              user.reportsCount > 0
-                                ? "text-red-600"
-                                : "text-gray-600"
-                            }`}
-                          >
-                            {user.reportsCount}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4" />
-                          {user.lastActive}
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleUserAction(user.id, "view")}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Zobacz szczegóły"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleUserAction(user.id, "edit")}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                            title="Edytuj"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          {user.status !== "zablokowany" && (
-                            <button
-                              onClick={() => handleUserAction(user.id, "block")}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Zablokuj"
-                            >
-                              <Ban className="w-4 h-4" />
-                            </button>
+              {/* Users Table */}
+              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                {loading ? (
+                  <div className="p-12 text-center">
+                    <p className="text-gray-500">Ładowanie użytkowników...</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <p className="text-gray-500">
+                      Brak użytkowników do wyświetlenia
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Użytkownik
+                          </th>
+                          {isAdmin && (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Rola
+                            </th>
                           )}
-                          <button
-                            onClick={() => handleUserAction(user.id, "more")}
-                            className="p-1 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                            title="Więcej opcji"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {filteredUsers.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-600 mb-2">
-                  Brak użytkowników
-                </h3>
-                <p className="text-gray-500">
-                  Nie znaleziono użytkowników spełniających kryteria
-                  wyszukiwania.
-                </p>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Ostatnia aktywność
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Akcje
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredUsers.map((user) => (
+                          <tr key={user.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <User className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {user.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            {isAdmin && (
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    user.role === "ADMIN"
+                                      ? "bg-red-100 text-red-800"
+                                      : user.role === "STAFF"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : "bg-blue-100 text-blue-800"
+                                  }`}
+                                >
+                                  {user.role}
+                                </span>
+                              </td>
+                            )}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatRelativeTime(user.lastActivity)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {isUserBlocked(user) ? (
+                                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 flex items-center gap-1 w-fit">
+                                  <Ban className="w-3 h-3" />
+                                  Zablokowany
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  Aktywny
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                              <button
+                                onClick={() => fetchUserDetails(user.id)}
+                                className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
+                                title="Podgląd/Edycja profilu"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              {isUserBlocked(user) ? (
+                                <button
+                                  onClick={() => handleUnblockUser(user.id)}
+                                  className="text-green-600 hover:text-green-900 inline-flex items-center gap-1"
+                                  title="Odblokuj"
+                                >
+                                  <Unlock className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setShowBlockModal(true);
+                                  }}
+                                  className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
+                                  title="Zablokuj"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => fetchUserActivities(user.id)}
+                                className="text-purple-600 hover:text-purple-900 inline-flex items-center gap-1"
+                                title="Aktywność"
+                              >
+                                <Activity className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* White footer bar at bottom */}
-        <div className="panel-footer w-full py-2 mt-auto">
-          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-            <a
-              href="/zasady-bezpieczenstwa"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Zasady bezpieczeństwa
-            </a>
-            <a
-              href="/popularne-wyszukiwania"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Popularne wyszukiwania
-            </a>
-            <a
-              href="/jak-dziala-moblix"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Jak działa MobliX
-            </a>
-            <a
-              href="/regulamin"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Regulamin
-            </a>
-            <a
-              href="/polityka-cookies"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Polityka cookies
-            </a>
-            <a
-              href="/ustawienia-plikow-cookies"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Ustawienia plików cookies
-            </a>
+      {/* Modal - Szczegóły/Edycja użytkownika */}
+      {showDetailsModal && userDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {isEditing ? "Edycja użytkownika" : "Szczegóły użytkownika"}
+              </h2>
+              <div className="flex gap-2">
+                {!isEditing && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="text-blue-600 hover:text-blue-800 p-2"
+                    title="Edytuj"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setIsEditing(false);
+                    setUserDetails(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Typ konta */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-blue-800">
+                  Typ konta:{" "}
+                  {userDetails.accountType === "business"
+                    ? "Firmowe"
+                    : "Prywatne"}
+                </p>
+              </div>
+
+              {/* Dane podstawowe */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  Dane podstawowe
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Typ konta */}
+                  <div className="md:col-span-2">
+                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                      <Building className="w-4 h-4" />
+                      Typ konta
+                    </label>
+                    {isEditing ? (
+                      <select
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        value={editForm.accountType}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            accountType: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="private">Konto prywatne</option>
+                        <option value="business">Konto firmowe</option>
+                      </select>
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        {userDetails.accountType === "business"
+                          ? "Konto firmowe"
+                          : "Konto prywatne"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                      <User className="w-4 h-4" />
+                      Imię
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        value={editForm.firstName}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            firstName: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        {userDetails.firstName || "Brak"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                      <User className="w-4 h-4" />
+                      Nazwisko
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        value={editForm.lastName}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, lastName: e.target.value })
+                        }
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        {userDetails.lastName || "Brak"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </label>
+                    <p className="font-medium text-gray-900">
+                      {userDetails.email}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                      <Phone className="w-4 h-4" />
+                      Telefon
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        value={editForm.phone}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, phone: e.target.value })
+                        }
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900">
+                        {userDetails.phone || "Brak"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dane firmowe - pokazuj gdy edytujemy i wybrano "business" LUB gdy nie edytujemy i użytkownik ma "business" */}
+              {(isEditing
+                ? editForm.accountType === "business"
+                : userDetails.accountType === "business") && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Building className="w-5 h-5 text-blue-600" />
+                    Dane firmowe
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                        <Building className="w-4 h-4" />
+                        Nazwa firmy
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          value={editForm.companyName}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              companyName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900">
+                          {userDetails.companyName || "Brak"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                        <Hash className="w-4 h-4" />
+                        NIP
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          value={editForm.nip}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, nip: e.target.value })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900">
+                          {userDetails.nip || "Brak"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                        <FileText className="w-4 h-4" />
+                        REGON
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          value={editForm.regon}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, regon: e.target.value })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900">
+                          {userDetails.regon || "Brak"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                        <MapPin className="w-4 h-4" />
+                        Adres
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          value={editForm.address}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              address: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900">
+                          {userDetails.address || "Brak"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
+                        <Globe className="w-4 h-4" />
+                        Strona www
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="url"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          value={editForm.website}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              website: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900">
+                          {userDetails.website ? (
+                            <a
+                              href={userDetails.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              {userDetails.website}
+                            </a>
+                          ) : (
+                            "Brak"
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Informacje systemowe */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  Informacje systemowe
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {isAdmin && (
+                    <div>
+                      <label className="text-sm text-gray-500">Rola</label>
+                      <p className="font-medium text-gray-900">
+                        {userDetails.role}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-sm text-gray-500 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Data rejestracji
+                    </label>
+                    <p className="font-medium text-gray-900">
+                      {formatDate(userDetails.createdAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Ostatnia aktywność
+                    </label>
+                    <p className="font-medium text-gray-900">
+                      {formatRelativeTime(userDetails.lastActivity)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500">
+                      Liczba ogłoszeń
+                    </label>
+                    <p className="font-medium text-gray-900">
+                      {userDetails.advertisementCount}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status blokady */}
+              {userDetails.blocked && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-red-800">
+                    Konto zablokowane
+                  </p>
+                  <p className="text-sm text-red-600">
+                    Do: {formatDate(userDetails.blockedUntil)}
+                  </p>
+                  <p className="text-sm text-red-600 mt-2">
+                    Powód: {userDetails.blockReason}
+                  </p>
+                </div>
+              )}
+
+              {/* Przyciski akcji */}
+              {isEditing && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <button
+                    onClick={handleSaveUserDetails}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                  >
+                    <Save className="w-4 h-4" />
+                    Zapisz zmiany
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditForm({
+                        firstName: userDetails.firstName || "",
+                        lastName: userDetails.lastName || "",
+                        phone: userDetails.phone || "",
+                        email: userDetails.email || "",
+                        accountType: userDetails.accountType || "private",
+                        companyName: userDetails.companyName || "",
+                        nip: userDetails.nip || "",
+                        regon: userDetails.regon || "",
+                        address: userDetails.address || "",
+                        website: userDetails.website || "",
+                      });
+                    }}
+                    className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Anuluj
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal - Blokowanie */}
+      {showBlockModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                Zablokuj użytkownika
+              </h2>
+              <button
+                onClick={() => {
+                  setShowBlockModal(false);
+                  setBlockReason("");
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-gray-700">
+                Zablokuj użytkownika: {selectedUser.email}
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Czas blokady
+                </label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={blockDuration}
+                  onChange={(e) => setBlockDuration(parseInt(e.target.value))}
+                >
+                  <option value={15}>15 minut</option>
+                  <option value={1440}>24 godziny</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Powód blokady
+                </label>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2"
+                  rows={3}
+                  placeholder="Opisz powód blokady..."
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleBlockUser}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                  disabled={!blockReason.trim()}
+                >
+                  Zablokuj
+                </button>
+                <button
+                  onClick={() => {
+                    setShowBlockModal(false);
+                    setBlockReason("");
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Anuluj
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Aktywność */}
+      {showActivityModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Historia aktywności
+              </h2>
+              <button
+                onClick={() => setShowActivityModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              {userActivities.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  Brak aktywności użytkownika
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {userActivities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {activity.message}
+                          </p>
+                          {activity.details && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {activity.details}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(activity.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* White footer bar at bottom */}
+      <div className="panel-footer w-full py-2 mt-auto">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
+          <a
+            href="/zasady-bezpieczenstwa"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Zasady bezpieczeństwa
+          </a>
+          <a
+            href="/popularne-wyszukiwania"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Popularne wyszukiwania
+          </a>
+          <a
+            href="/jak-dziala-moblix"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Jak działa MobliX
+          </a>
+          <a
+            href="/regulamin"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Regulamin
+          </a>
+          <a
+            href="/polityka-cookies"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Polityka cookies
+          </a>
+          <a
+            href="/ustawienia-plikow-cookies"
+            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+          >
+            Ustawienia plików cookies
+          </a>
         </div>
       </div>
     </div>

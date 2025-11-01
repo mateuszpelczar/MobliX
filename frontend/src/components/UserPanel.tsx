@@ -117,7 +117,7 @@ const UserPanel: React.FC = () => {
           return;
         }
         const response = await axios.get<UserActivity[]>(
-          "http://localhost:8080/api/logs/activities?limit=5",
+          "http://localhost:8080/api/logs/activities?limit=3",
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -151,20 +151,46 @@ const UserPanel: React.FC = () => {
 
   //wybor ikony na podstawie tresci wiadomosci
   const getActivityIcon = (message: string) => {
-    if (message.includes("Dodano do ulubionych")) {
+    const lowerMessage = message.toLowerCase();
+
+    if (
+      lowerMessage.includes("dodano do ulubionych") ||
+      lowerMessage.includes("ulubione")
+    ) {
       return <Heart className="w-5 h-5 text-red-500 fill-red-500" />;
-    } else if (message.includes("Usunięto z ulubionych")) {
+    } else if (
+      lowerMessage.includes("usunięto z ulubionych") ||
+      lowerMessage.includes("usunieto z ulubionych")
+    ) {
       return <Heart className="w-5 h-5 text-gray-400" />;
-    } else if (message.includes("Utworzono ogłoszenie")) {
+    } else if (
+      lowerMessage.includes("utworzono ogłoszenie") ||
+      lowerMessage.includes("utworzono ogloszenie") ||
+      lowerMessage.includes("dodano ogłoszenie")
+    ) {
       return <Plus className="w-5 h-5 text-green-600" />;
-    } else if (message.includes("Zaktualizowano ogłoszenie")) {
+    } else if (
+      lowerMessage.includes("zaktualizowano ogłoszenie") ||
+      lowerMessage.includes("zaktualizowano ogloszenie") ||
+      lowerMessage.includes("edytowano")
+    ) {
       return <Edit3 className="w-5 h-5 text-blue-600" />;
-    } else if (message.includes("Usunięto ogłoszenie")) {
+    } else if (
+      lowerMessage.includes("usunięto ogłoszenie") ||
+      lowerMessage.includes("usunieto ogloszenie")
+    ) {
       return <ShoppingBag className="w-5 h-5 text-red-600" />;
-    } else if (message.includes("Dodano opinię")) {
-      return <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />;
-    } else if (message.includes("Zaktualizowano dane")) {
+    } else if (
+      lowerMessage.includes("zaktualizowano dane") ||
+      lowerMessage.includes("zmieniono dane") ||
+      lowerMessage.includes("profil")
+    ) {
       return <User className="w-5 h-5 text-purple-600" />;
+    } else if (
+      lowerMessage.includes("logowanie") ||
+      lowerMessage.includes("zalogowano")
+    ) {
+      return <LogOut className="w-5 h-5 text-blue-500" />;
     }
     return <Clock className="w-5 h-5 text-gray-500" />;
   };
@@ -236,26 +262,6 @@ const UserPanel: React.FC = () => {
                   >
                     <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-opinions");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-orange-500" />
-                    Twoje opinie
                   </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
@@ -432,29 +438,6 @@ const UserPanel: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => navigate("/user/your-opinions")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#f97316",
-                      "--card-color-2": "#ea580c",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <MessageSquare className="w-8 h-8" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">Twoje opinie</h3>
-                      <p className="text-pink-100 text-sm">
-                        Zarządzaj swoimi opiniami
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
                   onClick={() => navigate("/user/message")}
                   className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
                   style={
@@ -550,7 +533,7 @@ const UserPanel: React.FC = () => {
                   <Clock className="w-5 h-5 text-blue-600" />
                   Ostatnia aktywność
                 </h3>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
                   {activitiesLoading ? (
                     <div className="text-gray-600 text-center py-8">
                       <p>Ładowanie aktywności...</p>
@@ -563,7 +546,7 @@ const UserPanel: React.FC = () => {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {activities.map((activity) => {
                         const rating = parseRating(activity.details);
                         const adId = parseAdvertisementId(activity.details);
@@ -574,7 +557,7 @@ const UserPanel: React.FC = () => {
                           <div
                             key={activity.id}
                             onClick={() => handleActivityClick(activity)}
-                            className={`flex items-start gap-4 p-4 bg-white rounded-lg border border-gray-200 transition-all ${
+                            className={`flex items-start gap-3 p-3 min-h-[72px] bg-white rounded-lg border border-gray-200 transition-all ${
                               isClickable
                                 ? "hover:shadow-md hover:border-blue-300 cursor-pointer"
                                 : ""

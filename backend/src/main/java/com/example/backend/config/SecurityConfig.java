@@ -66,9 +66,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/opinions/pending").hasAnyRole("STAFF", "ADMIN") // Oczekujące opinie
                 .requestMatchers(HttpMethod.PUT, "/api/opinions/*/approve").hasAnyRole("STAFF", "ADMIN") // Zatwierdzanie
                 .requestMatchers(HttpMethod.PUT, "/api/opinions/*/reject").hasAnyRole("STAFF", "ADMIN") // Odrzucanie
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                
+                // New admin and log endpoints
+                .requestMatchers("/api/admin/users/moderation").hasAnyRole("STAFF","ADMIN")
+                .requestMatchers("/api/admin/users/*/details").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/api/admin/users/*/block").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/api/admin/users/*/unblock").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/api/admin/users/*/activity-logs").hasAnyRole("STAFF", "ADMIN")       
+                .requestMatchers(HttpMethod.PUT, "/api/admin/users/*").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/logs/activities").authenticated()
                 .requestMatchers("/api/logs/**").hasRole("ADMIN") // Logi systemowe tylko dla ADMIN
+                .requestMatchers("/api/admin/**").hasRole("ADMIN") // Catch-all dla pozostałych admin endpoints
                 .anyRequest().authenticated())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -99,6 +107,7 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        return source;
+        return source; 
+        
     }
 }

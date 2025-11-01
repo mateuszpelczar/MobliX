@@ -12,6 +12,7 @@ import com.example.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.format.DateTimeFormatter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -223,5 +224,28 @@ public class NotificationService {
         }
         
         notificationRepository.delete(notification);
+    }
+
+    //utworz powiadomienie o zablokowaniu konta
+    public void createAccountBlockedNotification(User user, String reason, String blockedBy, java.time.LocalDateTime blockedUntil){
+
+        Notification notification  = new Notification();
+        notification.setUser(user);
+        notification.setAdvertisement(null); //nie dotyczy konkretnego ogloszenia
+        notification.setType(NotificationType.ACCOUNT_BLOCKED);
+        notification.setTitle("Twoje konto zostalo zablokowane");
+
+        String message = "Administrator: " + blockedBy + " zablokowal Twoje konto";
+        if(blockedUntil !=null){
+            message += " do " + blockedUntil.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+        }
+        message += ". Powod: " + (reason != null && !reason.isEmpty() ? reason : "Nie podano powodu");
+
+        notification.setMessage(message);
+        notification.setOldValue(blockedBy);
+        notification.setNewValue(reason);
+
+        notificationRepository.save(notification);
+
     }
 }

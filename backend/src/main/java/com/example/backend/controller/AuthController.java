@@ -74,6 +74,9 @@ public class AuthController {
             // Pobierz użytkownika do logowania
             User user = userService.getCurrentUser(request.getEmail());
             String ipAddress = logService.getClientIP(httpRequest);
+
+            //aktualizuj ostatnia aktywnosc uzytkownika przy logowaniu
+            userService.updateLastActivity(request.getEmail());
             
             // Log SUCCESS - pomyślne logowanie
             logService.saveLog(

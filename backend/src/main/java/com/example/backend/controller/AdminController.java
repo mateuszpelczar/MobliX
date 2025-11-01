@@ -1,13 +1,21 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.UpdateUserRequest;
 import com.example.backend.dto.UserDto;
+import com.example.backend.dto.UserModerationDTO;
 import com.example.backend.dto.UserRoleChangeRequest;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.service.LogService;
+import com.example.backend.service.NotificationService;
 import com.example.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,15 +25,18 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "http://localhost:5173")
 public class AdminController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
     
     private final UserService userService;
     private final LogService logService;
+    private final NotificationService notificationService;
 
-    public AdminController(UserService userService, LogService logService) {
+    public AdminController(UserService userService, LogService logService, NotificationService notificationService) {
         this.userService = userService;
         this.logService = logService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/users")
@@ -169,4 +180,149 @@ public class AdminController {
             throw e;
         }
     }
+
+    /**
+     * Pobierz wszystkich użytkowników do moderacji
+     * STAFF widzi tylko USER, ADMIN widzi wszystkich
+     */
+    @GetMapping("/users/moderation")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<List<com.example.backend.dto.UserModerationDTO>> getUsersForModeration(Principal principal) {
+        String currentUserEmail = principal.getName();
+        List<com.example.backend.dto.UserModerationDTO> users = userService.getUsersForModeration(currentUserEmail);
+        return ResponseEntity.ok(users);
+    }
+    
+    /**
+     * Zablokuj użytkownika
+     */
+    @PostMapping("/users/{userId}/block")
+@PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
+        @PathVariable Long userId,
+        @RequestBody com.example.backend.dto.BlockUserRequest request,
+        Principal principal,
+        HttpServletRequest httpRequest) {
+    
+    String adminEmail = principal.getName();
+    User admin = userService.getCurrentUser(adminEmail);
+    String ipAddress = logService.getClientIP(httpRequest);
+    
+    User blockedUser = userService.blockUser(userId, request.getDurationMinutes(), request.getReason());
+    
+    // UTWÓRZ POWIADOMIENIE o zablokowaniu konta
+    notificationService.createAccountBlockedNotification(
+        blockedUser, 
+        request.getReason(), 
+        adminEmail,
+        blockedUser.getBlockedUntil()
+    );
+    
+    logService.saveLog(
+        "WARN",
+        "admin",
+        "Użytkownik zablokowany",
+        "Email: " + blockedUser.getEmail() + ", Czas: " + request.getDurationMinutes() + " min, Powód: " + request.getReason(),
+        "AdminController.blockUser",
+        admin,
+        ipAddress
+    );
+    
+    return ResponseEntity.ok(userService.convertToModerationDTO(blockedUser));
 }
+    
+    /**
+     * Odblokuj użytkownika
+     */
+    @PostMapping("/users/{userId}/unblock")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<com.example.backend.dto.UserModerationDTO> unblockUser(
+            @PathVariable Long userId,
+            Principal principal,
+            HttpServletRequest httpRequest) {
+        
+        String adminEmail = principal.getName();
+        User admin = userService.getCurrentUser(adminEmail);
+        String ipAddress = logService.getClientIP(httpRequest);
+        
+        User unblockedUser = userService.unblockUser(userId);
+        
+        logService.saveLog(
+            "INFO",
+            "admin",
+            "Użytkownik odblokowany",
+            "Email: " + unblockedUser.getEmail(),
+            "AdminController.unblockUser",
+            admin,
+            ipAddress
+        );
+        
+        return ResponseEntity.ok(userService.convertToModerationDTO(unblockedUser));
+    }
+    
+    /**
+     * Pobierz logi aktywności użytkownika
+     */
+    @GetMapping("/users/{userId}/activity-logs")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<List<com.example.backend.dto.LogDTO>> getUserActivityLogs(@PathVariable Long userId, @RequestParam(defaultValue="10")int limit) {
+        User user = userService.getUserById(userId);
+        List<com.example.backend.dto.LogDTO> logDTOs = logService.getUserActivities(user.getEmail(),limit);
+        
+        return ResponseEntity.ok(logDTOs);
+    }
+
+    /**
+     * Pobierz szczegóły użytkownika do moderacji
+     */
+    @GetMapping("/users/{userId}/details")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<UserModerationDTO> getUserModerationDetails(@PathVariable Long userId) {
+        logger.info("Fetching moderation details for user ID: {}", userId);
+        
+        User user = userService.getUserById(userId);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        UserModerationDTO dto = userService.convertToModerationDTOWithFullDetails(user);
+        return ResponseEntity.ok(dto);
+    }
+
+    @PutMapping("/users/{userId}")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<?> updateUser(
+            @PathVariable Long userId,
+            @RequestBody UpdateUserRequest request,
+            Authentication authentication) {
+        
+        logger.info("Updating user ID: {} by: {}", userId, authentication.getName());
+        
+        try {
+            userService.updateUserByAdmin(userId, request);
+            
+            // Log do systemu
+            User adminUser = userService.getCurrentUser(authentication.getName());
+            logService.saveLog(
+                "INFO",
+                "USER_MANAGEMENT",
+                "Admin/Staff updated user data: " + userId,
+                "Updated by: " + authentication.getName(),
+                "AdminController.updateUser",
+                adminUser,
+                null
+            );
+            
+            return ResponseEntity.ok().body(Map.of("message", "User updated successfully"));
+        } catch (Exception e) {
+            logger.error("Error updating user: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+        
+    
+        }
+
+        
+        
+    }
+

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
 import "../styles/Auth.css";
 
 const Login: React.FC = () => {
@@ -85,17 +84,6 @@ const Login: React.FC = () => {
                 required
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-10 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
             </div>
           </div>
 

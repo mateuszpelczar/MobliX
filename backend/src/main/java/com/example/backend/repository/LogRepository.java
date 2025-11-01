@@ -30,7 +30,7 @@ public interface LogRepository extends  JpaRepository<Log,Long>{
   List<Log> findByUserId(Long userId);
 
   //pobranie ostatnich aktywnosci danego uzytkwonika do pliku userpanel(sekcja ostatnia aktywnosc)
-  @Query("SELECT l FROM Log l WHERE l.userEmail = :userEmail AND l.category = 'user_activity' ORDER BY l.timestamp DESC")
+  @Query("SELECT l FROM Log l WHERE l.userEmail = :userEmail ORDER BY l.timestamp DESC")
   List<Log> findUserActivities(@Param("userEmail") String userEmail, Pageable pageable);
 
   

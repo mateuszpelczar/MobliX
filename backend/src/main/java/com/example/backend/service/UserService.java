@@ -3,6 +3,7 @@ package com.example.backend.service;
 import com.example.backend.dto.LoginRequest;
 import com.example.backend.dto.RegisterRequest;
 import com.example.backend.dto.UpdateUserRequest;
+import com.example.backend.dto.UserModerationDTO;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.repository.UserRepository;
@@ -62,10 +63,43 @@ public class UserService {
 
     public String login(LoginRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isPresent() && passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
-            return jwtService.generateToken(userOpt.get());
+   
+        if(userOpt.isEmpty()){
+            throw new RuntimeException("Invalid credentials");
         }
-        throw new RuntimeException("Invalid credentials");
+
+        User user = userOpt.get();
+
+        //sprawdzenie hasla
+        if(!passwordEncoder.matches(request.getPassword(),user.getPassword())){
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        //sprawdzenie czy uzytkownik jest zablokowany
+        if(user.isBlocked()){
+            //sprawdzenie czy blokada juz wygasla
+            if(user.getBlockedUntil() !=null && user.getBlockedUntil().isBefore(java.time.LocalDateTime.now())){
+                //automatycznie odblokuj
+                user.setBlocked(false);
+                user.setBlockedUntil(null)
+;               user.setBlockReason(null);
+                userRepository.save(user);
+
+                return jwtService.generateToken(user);
+            }else{
+                //konto jest nadal zablokowane
+                String blockMessage = "Twoje konto zostalo zablokowane";
+                if(user.getBlockReason() != null){
+                    blockMessage += " do " + user.getBlockedUntil();
+                }
+                if(user.getBlockReason() != null && !user.getBlockReason().isEmpty()){
+                    blockMessage += ". Powod: " + user.getBlockReason();
+                }
+            throw new RuntimeException(blockMessage);
+            }
+            
+        }
+        return jwtService.generateToken(user);
     }
 
     public User getCurrentUser(String username) {
@@ -182,4 +216,181 @@ public class UserService {
         
         userRepository.delete(user);
     }
+
+    /**
+     * pobrania wszystkich uzytkownikow dla moderacji
+     * staff widzi tylko user, admin widzi wszystkich
+     */
+
+     public List<com.example.backend.dto.UserModerationDTO> getUsersForModeration(String currentUserEmail){
+        User currentUser = findByEmail(currentUserEmail);
+        List<User> users;
+
+        if(currentUser.getRole() == Role.ADMIN){
+            //admin widzi wszystkich
+            users = userRepository.findAll();
+        } else if(currentUser.getRole()== Role.STAFF){
+            //staff widzi tylko user
+            users = userRepository.findByRole(Role.USER);
+
+        } else {
+            throw new RuntimeException("Unauthorized access");
+            
+        }
+
+
+        //automatyczne odblokowanie uzytkownikow z wygasla blokada
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        for(User user : users){
+            if(user.isBlocked() != null && user.isBlocked() &&
+                user.getBlockedUntil() !=null &&
+                user.getBlockedUntil().isBefore(now)
+            ){
+                user.setBlocked(false);
+                user.setBlockedUntil(null);
+                user.setBlockReason(null);
+                userRepository.save(user);
+
+            }
+        }
+
+    
+
+        return users.stream()
+            .map(this::convertToModerationDTO)
+            .collect(java.util.stream.Collectors.toList());
+     }
+
+     /**
+     * Zablokuj użytkownika na określony czas
+     */
+    public User blockUser(Long userId, int durationMinutes, String reason) {
+        User user = getUserById(userId);
+        user.setBlocked(true);
+        user.setBlockedUntil(java.time.LocalDateTime.now().plusMinutes(durationMinutes));
+        user.setBlockReason(reason);
+        return userRepository.save(user);
+    }
+    
+    /**
+     * Odblokuj użytkownika
+     */
+    public User unblockUser(Long userId) {
+        User user = getUserById(userId);
+        user.setBlocked(false);
+        user.setBlockedUntil(null);
+        user.setBlockReason(null);
+        return userRepository.save(user);
+    }
+    
+    /**
+     * Aktualizuj ostatnią aktywność użytkownika
+     */
+    public void updateLastActivity(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setLastActivity(java.time.LocalDateTime.now());
+            userRepository.save(user);
+        });
+    }
+    
+    /**
+     * Konwersja User na UserModerationDTO
+     */
+    public  com.example.backend.dto.UserModerationDTO convertToModerationDTO(User user) {
+        com.example.backend.dto.UserModerationDTO dto = new com.example.backend.dto.UserModerationDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setRole(user.getRole().toString());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setPhone(user.getPhone());
+        dto.setCompanyName(user.getCompanyName());
+        dto.setLastActivity(user.getLastActivity());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setAdvertisementCount(user.getAdvertisements() != null ? user.getAdvertisements().size() : 0);
+        dto.setBlocked(user.isBlocked());
+        dto.setBlockedUntil(user.getBlockedUntil());
+        dto.setBlockReason(user.getBlockReason());
+        return dto;
+
+    }
+
+    public UserModerationDTO convertToModerationDTOWithFullDetails(User user){
+        UserModerationDTO dto = new UserModerationDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setRole(user.getRole().name());
+        dto.setAccountType(user.getAccountType());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setPhone(user.getPhone());
+        dto.setCompanyName(user.getCompanyName());
+        dto.setNip(user.getNip());
+        dto.setRegon(user.getRegon());
+        dto.setAddress(user.getAddress());
+        dto.setWebsite(user.getWebsite());
+        dto.setLastActivity(user.getLastActivity());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setAdvertisementCount(user.getAdvertisements() != null ? user.getAdvertisements().size() : 0);
+        dto.setBlocked(user.isBlocked());
+        dto.setBlockedUntil(user.getBlockedUntil());
+        dto.setBlockReason(user.getBlockReason());
+        return dto;
+
+    }
+
+    public void updateUserByAdmin(Long userId, UpdateUserRequest request) {
+    User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    
+    // Aktualizuj dane podstawowe
+    if (request.getFirstName() != null) {
+        user.setFirstName(request.getFirstName());
+    }
+    if (request.getLastName() != null) {
+        user.setLastName(request.getLastName());
+    }
+    if (request.getPhone() != null) {
+        user.setPhone(request.getPhone());
+    }
+    
+    // Aktualizuj typ konta
+    if (request.getAccountType() != null) {
+        String oldAccountType = user.getAccountType();
+        user.setAccountType(request.getAccountType());
+        
+        // Jeśli zmieniamy z "business" na "private", wyczyść dane firmowe
+        if ("business".equals(oldAccountType) && "private".equals(request.getAccountType())) {
+            user.setCompanyName(null);
+            user.setNip(null);
+            user.setRegon(null);
+            user.setAddress(null);
+            user.setWebsite(null);
+        }
+    }
+    
+    // Dane firmowe (tylko jeśli accountType == "business")
+    if ("business".equals(user.getAccountType())) {
+        if (request.getCompanyName() != null) {
+            user.setCompanyName(request.getCompanyName());
+        }
+        if (request.getNip() != null) {
+            user.setNip(request.getNip());
+        }
+        if (request.getRegon() != null) {
+            user.setRegon(request.getRegon());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
+        if (request.getWebsite() != null) {
+            user.setWebsite(request.getWebsite());
+        }
+    }
+    
+    userRepository.save(user);
+}
 }

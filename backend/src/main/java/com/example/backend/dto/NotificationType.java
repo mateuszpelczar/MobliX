@@ -7,5 +7,6 @@ public enum NotificationType {
     AD_DELETED,             // Ogłoszenie usunięte
     AD_ENDED,               // Ogłoszenie zakończone
     TERMS_UPDATED,          // Regulamin zaktualizowany
-    NEW_MESSAGE             // Nowa wiadomość
+    NEW_MESSAGE,            // Nowa wiadomość
+    ACCOUNT_BLOCKED         // Konto zablokowane
 }

@@ -297,7 +297,7 @@ const WatchedAds: React.FC = () => {
                   Dodaj ogłoszenia do ulubionych klikając ikonę serduszka
                 </p>
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/smartfony")}
                   className="mt-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:shadow-lg transition-all duration-200"
                 >
                   <Eye className="w-4 h-4 inline mr-2" />

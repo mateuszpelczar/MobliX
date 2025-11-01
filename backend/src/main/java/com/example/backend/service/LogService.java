@@ -121,5 +121,10 @@ public class LogService {
         return ip;
     }
 
+    //pobierz logi wedlug email uzytkownika
+    public List<Log> getLogsByUserEmail(String userEmail){
+        return logRepository.findByUserEmail(userEmail);
+    }
+
 
 }

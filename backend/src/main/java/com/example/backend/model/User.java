@@ -1,7 +1,9 @@
 package com.example.backend.model;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,6 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.PrePersist;
 
 //klasa reprezentujaca uzytkownika w systemie
 @Entity
@@ -45,6 +48,31 @@ public class User {
   private String address;
   private String website;
 
+  // pola do blokowania konta
+  @Column(name="is_blocked", nullable= false)
+  private Boolean isBlocked = false;
+  private LocalDateTime blockedUntil;
+  private String blockReason;
+
+  //ostatnia aktywnosc
+  private LocalDateTime lastActivity;
+
+  // Data utworzenie konta
+  private LocalDateTime createdAt;
+  @PrePersist
+  protected void onCreate(){
+    if(createdAt==null){
+      createdAt=LocalDateTime.now();
+    }
+    if(isBlocked==null){
+      isBlocked=false;
+    }
+  }
+
+  
+
+
+
   @OneToMany(mappedBy = "receiver")
   private List<Message> receivedMessages;
 
@@ -54,8 +82,6 @@ public class User {
   @OneToMany(mappedBy = "user")
   private List<FavoriteAd> favoriteAds;
 
-  @OneToMany(mappedBy = "user")
-  private List<Review> reviews;
 
   @OneToMany(mappedBy = "reporter")
   private List<Report> reports;
@@ -70,7 +96,7 @@ public class User {
               String accountType, String firstName, String lastName, String phone,
               String companyName, String nip, String regon, String address, String website,
               List<Message> receivedMessages, List<Advertisement> advertisements,
-              List<FavoriteAd> favoriteAds, List<Review> reviews,
+              List<FavoriteAd> favoriteAds, 
               List<Report> reports, List<Log> logs) {
     this.id = id;
     this.username = username;
@@ -89,7 +115,6 @@ public class User {
     this.receivedMessages = receivedMessages;
     this.advertisements = advertisements;
     this.favoriteAds = favoriteAds;
-    this.reviews = reviews;
     this.reports = reports;
     this.logs = logs;
   }
@@ -118,9 +143,6 @@ public class User {
 
   public List<FavoriteAd> getFavoriteAds() { return favoriteAds; }
   public void setFavoriteAds(List<FavoriteAd> favoriteAds) { this.favoriteAds = favoriteAds; }
-
-  public List<Review> getReviews() { return reviews; }
-  public void setReviews(List<Review> reviews) { this.reviews = reviews; }
 
   public List<Report> getReports() { return reports; }
   public void setReports(List<Report> reports) { this.reports = reports; }
@@ -155,4 +177,46 @@ public class User {
 
   public String getWebsite() { return website; }
   public void setWebsite(String website) { this.website = website; }
+
+  public Boolean isBlocked(){
+    return isBlocked;
+  }
+
+  public void setBlocked(Boolean blocked){
+    this.isBlocked=blocked;
+  }
+
+  public LocalDateTime getBlockedUntil(){
+    return blockedUntil;
+  }
+
+  public void setBlockedUntil(LocalDateTime blockedUntil){
+    this.blockedUntil=blockedUntil;
+  }
+
+  public String getBlockReason(){
+    return blockReason;
+  }
+
+  public void setBlockReason(String blockReason){
+    this.blockReason=blockReason;
+  }
+
+  public LocalDateTime getLastActivity() {
+    return lastActivity;
+  }
+
+  public void setLastActivity(LocalDateTime lastActivity) {
+    this.lastActivity = lastActivity;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  
 }

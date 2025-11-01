@@ -25,8 +25,6 @@ import Message from "./components/user/Message";
 import Notifications from "./components/user/Notifications";
 import WatchedAds from "./components/user/WatchedAds";
 import YourAds from "./components/user/YourAds";
-import YourOpinions from "./components/user/YourOpinions";
-import Ratings from "./components/user/Ratings";
 import StaffPanel from "./components/StaffPanel";
 import ModeracjaOgloszen from "./components/staff/ModeracjaOgloszen";
 import ModeracjaOpinii from "./components/staff/ModeracjaOpinii";
@@ -132,8 +130,6 @@ const App: React.FC = () => {
         <Route path="/user/notifications" element={<Notifications />} />
         <Route path="/user/watched-ads" element={<WatchedAds />} />
         <Route path="/user/your-ads" element={<YourAds />} />
-        <Route path="/user/your-opinions" element={<YourOpinions />} />
-        <Route path="/user/ratings" element={<Ratings />} />
         <Route path="/user/mainpanel" element={<MainPanel />} />
 
         {/* Smartphone routes */}
