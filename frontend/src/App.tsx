@@ -13,11 +13,9 @@ import PersonalDetails from "./components/user/PersonalDetails";
 import EditAd from "./components/admin/EditAd";
 import UserEditAd from "./components/user/editAd";
 import JakDzialaMoblix from "./components/overall/JakDzialaMoblix";
-import PopularneWyszukiwania from "./components/overall/PopularneWyszukiwania";
 import ZasadyBezpieczeństwa from "./components/overall/ZasadyBezpieczeństwa";
 import Regulamin from "./components/overall/Regulamin";
 import PolitykaCookies from "./components/overall/PolitykaCookies";
-import UstawieniaPlikowCookies from "./components/overall/UstawieniaPlikowCookies";
 import SmartphoneCatalog from "./components/overall/SmartphoneCatalog";
 import SmartphoneDetails from "./components/overall/SmartphoneDetails";
 import ManageContent from "./components/admin/ManageContent";
@@ -150,20 +148,14 @@ const App: React.FC = () => {
           path="/staff/moderacja-ogloszen"
           element={<ModeracjaOgloszen />}
         />
-        <Route
-          path="/popularne-wyszukiwania"
-          element={<PopularneWyszukiwania />}
-        />
+
         <Route
           path="/zasady-bezpieczenstwa"
           element={<ZasadyBezpieczeństwa />}
         />
         <Route path="/regulamin" element={<Regulamin />} />
         <Route path="/polityka-cookies" element={<PolitykaCookies />} />
-        <Route
-          path="/ustawienia-plikow-cookies"
-          element={<UstawieniaPlikowCookies />}
-        />
+
         <Route path="/unauthorized" element={<h2>Brak dostępu</h2>} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
   User,
@@ -17,12 +18,29 @@ import {
   CheckCircle,
   LogOut,
   Shield,
+  AlertCircle,
 } from "lucide-react";
+
+interface DashboardStats {
+  totalUsers: number;
+  activeAds: number;
+  todayActivity: number;
+  newUsersLast7Days: number;
+  activeUsersToday: number;
+  newAdsLast24h: number;
+  pendingModeration: number;
+  activeReports: number;
+  userGrowthPercent: number;
+  adGrowthPercent: number;
+  activityGrowthPercent: number;
+}
 
 const Raports: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -38,6 +56,29 @@ const Raports: React.FC = () => {
     return null;
   };
 
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:8080/api/admin/stats/dashboard",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setStats(response.data);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const userRole = getUserRole();
   const isAdmin = userRole === "ADMIN";
   const isStaff = userRole === "STAFF";
@@ -48,6 +89,22 @@ const Raports: React.FC = () => {
     navigate("/");
     setIsDropdownOpen(false);
   };
+
+  const formatPercent = (value: number) => {
+    const sign = value >= 0 ? "+" : "";
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Activity className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Ładowanie statystyk...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
@@ -153,6 +210,7 @@ const Raports: React.FC = () => {
                       Panel użytkownika
                     </button>
                   )}
+                  <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={handleLogout}
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
@@ -192,15 +250,20 @@ const Raports: React.FC = () => {
             </div>
 
             {/* Quick Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-600 text-sm font-medium">
                       Wszyscy użytkownicy
                     </p>
-                    <p className="text-2xl font-bold text-blue-800">1,247</p>
-                    <p className="text-blue-500 text-xs">+12% w tym miesiącu</p>
+                    <p className="text-2xl font-bold text-blue-800">
+                      {stats?.totalUsers.toLocaleString()}
+                    </p>
+                    <p className="text-blue-500 text-xs">
+                      {formatPercent(stats?.userGrowthPercent || 0)} w tym
+                      miesiącu
+                    </p>
                   </div>
                   <Users className="w-10 h-10 text-blue-600" />
                 </div>
@@ -212,9 +275,12 @@ const Raports: React.FC = () => {
                     <p className="text-orange-600 text-sm font-medium">
                       Aktywne ogłoszenia
                     </p>
-                    <p className="text-2xl font-bold text-orange-800">3,891</p>
+                    <p className="text-2xl font-bold text-orange-800">
+                      {stats?.activeAds.toLocaleString()}
+                    </p>
                     <p className="text-orange-500 text-xs">
-                      +15% w tym miesiącu
+                      {formatPercent(stats?.adGrowthPercent || 0)} w tym
+                      miesiącu
                     </p>
                   </div>
                   <ShoppingBag className="w-10 h-10 text-orange-600" />
@@ -227,8 +293,13 @@ const Raports: React.FC = () => {
                     <p className="text-purple-600 text-sm font-medium">
                       Aktywność dzisiaj
                     </p>
-                    <p className="text-2xl font-bold text-purple-800">456</p>
-                    <p className="text-purple-500 text-xs">+3% od wczoraj</p>
+                    <p className="text-2xl font-bold text-purple-800">
+                      {stats?.todayActivity.toLocaleString()}
+                    </p>
+                    <p className="text-purple-500 text-xs">
+                      {formatPercent(stats?.activityGrowthPercent || 0)} od
+                      wczoraj
+                    </p>
                   </div>
                   <Activity className="w-10 h-10 text-purple-600" />
                 </div>
@@ -250,11 +321,15 @@ const Raports: React.FC = () => {
                     <span className="text-gray-600">
                       Nowi użytkownicy (7 dni)
                     </span>
-                    <span className="font-semibold text-blue-600">147</span>
+                    <span className="font-semibold text-blue-600">
+                      {stats?.newUsersLast7Days}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-white rounded border">
                     <span className="text-gray-600">Aktywni dzisiaj</span>
-                    <span className="font-semibold text-green-600">892</span>
+                    <span className="font-semibold text-green-600">
+                      {stats?.activeUsersToday}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -270,63 +345,21 @@ const Raports: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-3 bg-white rounded border">
                     <span className="text-gray-600">Nowe ogłoszenia (24h)</span>
-                    <span className="font-semibold text-blue-600">234</span>
+                    <span className="font-semibold text-blue-600">
+                      {stats?.newAdsLast24h}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-white rounded border">
                     <span className="text-gray-600">Oczekujące moderację</span>
-                    <span className="font-semibold text-orange-600">56</span>
+                    <span className="font-semibold text-orange-600">
+                      {stats?.pendingModeration}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-white rounded border">
                     <span className="text-gray-600">Zgłoszenia</span>
-                    <span className="font-semibold text-red-600">12</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mt-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Ostatnia aktywność
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4 p-3 bg-white rounded border">
-                    <Eye className="w-5 h-5 text-blue-500" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800">
-                        Nowe zgłoszenie od użytkownika
-                      </p>
-                      <p className="text-xs text-gray-500">2 minuty temu</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-3 bg-white rounded border">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800">
-                        Ogłoszenie zostało zatwierdzone
-                      </p>
-                      <p className="text-xs text-gray-500">15 minut temu</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-3 bg-white rounded border">
-                    <Star className="w-5 h-5 text-yellow-500" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800">
-                        Nowa ocena użytkownika
-                      </p>
-                      <p className="text-xs text-gray-500">23 minuty temu</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-3 bg-white rounded border">
-                    <MessageSquare className="w-5 h-5 text-purple-500" />
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-800">
-                        Nowa wiadomość w czacie
-                      </p>
-                      <p className="text-xs text-gray-500">1 godzina temu</p>
-                    </div>
+                    <span className="font-semibold text-red-600">
+                      {stats?.activeReports}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -342,12 +375,6 @@ const Raports: React.FC = () => {
               className="text-black hover:text-gray-600 transition-colors py-1 text-center"
             >
               Zasady bezpieczeństwa
-            </a>
-            <a
-              href="/popularne-wyszukiwania"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Popularne wyszukiwania
             </a>
             <a
               href="/jak-dziala-moblix"
@@ -366,12 +393,6 @@ const Raports: React.FC = () => {
               className="text-black hover:text-gray-600 transition-colors py-1 text-center"
             >
               Polityka cookies
-            </a>
-            <a
-              href="/ustawienia-plikow-cookies"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Ustawienia plików cookies
             </a>
           </div>
         </div>

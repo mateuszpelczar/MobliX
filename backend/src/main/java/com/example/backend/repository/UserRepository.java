@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,7 @@ public interface UserRepository extends JpaRepository<User,Long> {
   Optional<User>findByEmail(String email);
   Optional<User> findByUsername(String username);
   long countByRole(Role role);
+  boolean existsByEmail(String email);
   
   // Pobierz wszystkich użytkowników z daną rolą
   List<User> findByRole(Role role);
@@ -23,5 +25,11 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
   //zliczanie zablokowanych uzytkownikow
   long countByIsBlockedTrue();
+
+  //metody do statystyk admina
+  long countByCreatedAtAfter(LocalDateTime date);
+  long countByCreatedAtBefore(LocalDateTime date);
+
+
   
 }

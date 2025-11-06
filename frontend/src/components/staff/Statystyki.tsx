@@ -20,6 +20,8 @@ import {
   MessageSquare,
   LogOut,
   DollarSign,
+  Shield,
+  Users,
 } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 
@@ -221,16 +223,7 @@ const Statystyki: React.FC = () => {
                     <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
                   </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
+
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                     onClick={() => {
@@ -249,27 +242,43 @@ const Statystyki: React.FC = () => {
                         navigate("/admin");
                       }}
                     >
-                      <User className="w-4 h-4 text-red-600" />
-                      Panel Admina
+                      <Shield className="w-4 h-4 text-red-600" />
+                      Panel administratora
                     </button>
                   )}
-                  {(isStaff || isAdmin) && (
+                  {(isAdmin || isStaff) && (
                     <button
                       className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        navigate("/staff");
+                        navigate("/staffpanel");
                       }}
                     >
-                      <User className="w-4 h-4 text-orange-600" />
-                      Panel Staff
+                      <Users className="w-4 h-4 text-orange-600" />
+                      Panel pracownika
                     </button>
                   )}
+                  {(isAdmin || isStaff || isUser) && (
+                    <button
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/userpanel");
+                      }}
+                    >
+                      <User className="w-4 h-4 text-blue-600" />
+                      Panel użytkownika
+                    </button>
+                  )}
+                  <div className="border-t border-gray-200 my-1"></div>
                   <button
-                    className="dropdown-item w-full text-left bg-white text-red-600 flex items-center gap-3 px-4 py-2 hover:bg-red-50"
-                    onClick={handleLogout}
+                    onClick={() => {
+                      localStorage.removeItem("token");
+                      window.location.href = "/";
+                    }}
+                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4 text-red-500" />
                     Wyloguj
                   </button>
                 </div>
@@ -622,12 +631,7 @@ const Statystyki: React.FC = () => {
           >
             Zasady bezpieczeństwa
           </a>
-          <a
-            href="/popularne-wyszukiwania"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Popularne wyszukiwania
-          </a>
+
           <a
             href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -645,12 +649,6 @@ const Statystyki: React.FC = () => {
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
-          </a>
-          <a
-            href="/ustawienia-plikow-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Ustawienia plików cookies
           </a>
         </div>
       </div>

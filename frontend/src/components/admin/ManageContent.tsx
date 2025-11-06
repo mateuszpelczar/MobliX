@@ -1,88 +1,62 @@
-import React, { useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
-  MessageSquare,
-  ShoppingBag,
-  Star,
+  FileText,
+  Edit,
+  Save,
+  X,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
   User,
+  ChevronDown,
+  ShoppingBag,
+  MessageSquare,
+  Star,
   Shield,
   Users,
   LogOut,
-  ChevronDown,
-  FileText,
-  Search,
-  Settings,
-  BookOpen,
-  Cookie,
-  HelpCircle,
-  Edit3,
 } from "lucide-react";
 
-type ContentItem = {
-  key: string;
-  title: string;
-  path: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
+type JwtPayLoad = {
+  sub: string;
+  role: string;
+  exp: number;
 };
 
-const ITEMS: ContentItem[] = [
-  {
-    key: "safety",
-    title: "Zasady bezpieczeństwa",
-    path: "/zasady-bezpieczenstwa",
-    description: "Wskazówki jak bezpiecznie kupować i sprzedawać w MobliX.",
-    icon: Shield,
-  },
-  {
-    key: "popular",
-    title: "Popularne wyszukiwania",
-    path: "/popularne-wyszukiwania",
-    description: "Najczęściej wyszukiwane frazy i kategorie.",
-    icon: Search,
-  },
-  {
-    key: "how",
-    title: "Jak działa MobliX",
-    path: "/jak-dziala-moblix",
-    description: "Opis działania platformy, kontaktu i moderacji.",
-    icon: HelpCircle,
-  },
-  {
-    key: "terms",
-    title: "Regulamin",
-    path: "/regulamin",
-    description: "Zasady korzystania z serwisu.",
-    icon: BookOpen,
-  },
-  {
-    key: "cookies",
-    title: "Polityka cookies",
-    path: "/polityka-cookies",
-    description: "Informacje o plikach cookies i preferencjach.",
-    icon: Cookie,
-  },
-  {
-    key: "cookies-settings",
-    title: "Ustawienia plików cookies",
-    path: "/ustawienia-plikow-cookies",
-    description: "Konfiguracja zgód na poszczególne kategorie cookies.",
-    icon: Settings,
-  },
-];
+interface ContentPage {
+  id: number;
+  slug: string;
+  title: string;
+  content: string;
+  lastUpdated: string;
+  updatedBy: string;
+}
 
 const ManageContent: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [pages, setPages] = useState<ContentPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingPage, setEditingPage] = useState<ContentPage | null>(null);
+  const [editedContent, setEditedContent] = useState("");
+  const [editedTitle, setEditedTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
   const getUserRole = () => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        const decodedToken: any = jwtDecode(token);
+        const decodedToken: JwtPayLoad = jwtDecode(token);
         return decodedToken.role;
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -95,7 +69,6 @@ const ManageContent: React.FC = () => {
   const userRole = getUserRole();
   const isAdmin = userRole === "ADMIN";
   const isStaff = userRole === "STAFF";
-  const isUser = userRole === "USER";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -103,9 +76,122 @@ const ManageContent: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
+  // Pobierz wszystkie strony
+  const fetchPages = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get<ContentPage[]>(
+        "http://localhost:8080/api/content-pages",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setPages(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching pages:", error);
+      setMessage({
+        type: "error",
+        text: "Nie udało się pobrać stron",
+      });
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPages();
+  }, []);
+
+  // Rozpocznij edycję
+  const startEditing = (page: ContentPage) => {
+    setEditingPage(page);
+    setEditedTitle(page.title);
+    setEditedContent(page.content);
+    setMessage(null);
+  };
+
+  // Anuluj edycję
+  const cancelEditing = () => {
+    setEditingPage(null);
+    setEditedTitle("");
+    setEditedContent("");
+    setMessage(null);
+  };
+
+  // Zapisz zmiany
+  const saveChanges = async () => {
+    if (!editingPage) return;
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.put<ContentPage>(
+        `http://localhost:8080/api/content-pages/${editingPage.id}`,
+        {
+          title: editedTitle,
+          content: editedContent,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Aktualizuj listę stron
+      setPages(pages.map((p) => (p.id === editingPage.id ? response.data : p)));
+
+      setMessage({
+        type: "success",
+        text: "Zmiany zostały zapisane pomyślnie!",
+      });
+
+      // Zamknij edytor po 2 sekundach
+      setTimeout(() => {
+        cancelEditing();
+      }, 2000);
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      setMessage({
+        type: "error",
+        text: "Nie udało się zapisać zmian",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Inicjalizuj strony domyślne
+  const initializePages = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        "http://localhost:8080/api/content-pages/initialize",
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setMessage({
+        type: "success",
+        text: "Strony zostały zainicjalizowane!",
+      });
+
+      // Odśwież listę
+      fetchPages();
+    } catch (error) {
+      console.error("Error initializing pages:", error);
+      setMessage({
+        type: "error",
+        text: "Nie udało się zainicjalizować stron",
+      });
+    }
+  };
+
   return (
     <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header */}
+      {/* Biały pasek u góry z napisem firmy i menu "Twoje konto" */}
       <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
         <div
           className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
@@ -173,7 +259,7 @@ const ManageContent: React.FC = () => {
                   </button>
                   {isAdmin && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/admin");
@@ -185,7 +271,7 @@ const ManageContent: React.FC = () => {
                   )}
                   {(isAdmin || isStaff) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/staffpanel");
@@ -195,19 +281,10 @@ const ManageContent: React.FC = () => {
                       Panel pracownika
                     </button>
                   )}
-                  {(isAdmin || isStaff || isUser) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <button onClick={handleLogout} className="dropdown-logout">
+                  <button
+                    onClick={handleLogout}
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                  >
                     <LogOut className="w-4 h-4 text-red-600" />
                     Wyloguj
                   </button>
@@ -218,86 +295,191 @@ const ManageContent: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div
-        className="panel-content pt-20 px-4 pb-6 flex-1 flex"
-        style={{ paddingTop: "100px" }}
-      >
-        <div
-          className="bg-white rounded-2xl shadow-lg p-6 max-w-6xl mx-auto w-full max-h-[80vh] overflow-y-auto"
-          style={{
-            scrollbarWidth: "thin",
-            scrollbarColor: "#a855f7 #f3f4f6",
-          }}
-        >
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-white/20 p-3 rounded-full">
-                <FileText className="w-8 h-8 text-white" />
-              </div>
+      {/* Fioletowe tło i biały kwadrat z treścią */}
+      <div className="panel-content flex-grow w-full overflow-y-auto">
+        <div className="container mx-auto px-4 relative pt-8 pb-12 max-w-6xl">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full">
+            {/* Nagłówek */}
+            <div className="flex justify-between items-center mb-6">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                  System Zarządzania Treściami
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Zarządzanie treścią
                 </h1>
-                <p className="text-purple-100 text-lg">
-                  Kompleksowe narzędzie do administracji treści platformy
+                <p className="text-gray-600 mt-2">
+                  Edytuj treść stron informacyjnych serwisu MobliX
                 </p>
               </div>
+              <button
+                onClick={initializePages}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Inicjalizuj strony
+              </button>
             </div>
-            <p className="text-purple-100">
-              Zarządzaj wszystkimi stronami informacyjnymi, regulaminami i
-              ustawieniami platformy MobliX
-            </p>
-          </div>
 
-          <p className="text-gray-700 mb-6">
-            Wybierz stronę z listy i kliknij „Edytuj", aby przejść do jej widoku
-            i zmienić treść.
-          </p>
+            {/* Komunikaty */}
+            {message && (
+              <div
+                className={`flex items-center gap-2 p-4 rounded-lg mb-6 ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-800 border border-green-200"
+                    : "bg-red-50 text-red-800 border border-red-200"
+                }`}
+              >
+                {message.type === "success" ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5" />
+                )}
+                <span>{message.text}</span>
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
-            {ITEMS.map((item) => {
-              const IconComponent = item.icon;
-              return (
-                <div
-                  key={item.key}
-                  className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-gradient-to-br from-white to-gray-50"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="bg-purple-100 p-2 rounded-lg">
-                          <IconComponent className="w-6 h-6 text-purple-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {item.title}
-                          </h3>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">
-                        {item.description}
-                      </p>
-                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded font-mono">
-                        {item.path}
-                      </div>
+            {/* Loading */}
+            {loading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                <p className="text-gray-600 mt-4">Ładowanie stron...</p>
+              </div>
+            )}
+
+            {/* Lista stron */}
+            {!loading && !editingPage && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pages.map((page) => (
+                  <div
+                    key={page.id}
+                    className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <FileText className="w-8 h-8 text-purple-600" />
+                      <span className="text-xs text-gray-500">
+                        ID: {page.id}
+                      </span>
                     </div>
+
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {page.title}
+                    </h3>
+
+                    <div className="text-sm text-gray-600 mb-4">
+                      <p>Slug: /{page.slug}</p>
+                      <p>
+                        Ostatnia aktualizacja:{" "}
+                        {new Date(page.lastUpdated).toLocaleDateString("pl-PL")}
+                      </p>
+                      {page.updatedBy && <p>Przez: {page.updatedBy}</p>}
+                    </div>
+
                     <button
-                      onClick={() => navigate(item.path)}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors duration-200 flex-shrink-0"
+                      onClick={() => startEditing(page)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
-                      <Edit3 className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                       Edytuj
                     </button>
                   </div>
+                ))}
+
+                {pages.length === 0 && (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg">Brak stron do wyświetlenia</p>
+                    <p className="text-sm mt-2">
+                      Kliknij "Inicjalizuj strony" aby utworzyć domyślne strony
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Edytor */}
+            {editingPage && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Edycja: {editingPage.title}
+                  </h2>
+                  <button
+                    onClick={cancelEditing}
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
-              );
-            })}
+
+                {/* Tytuł */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tytuł strony
+                  </label>
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Wprowadź tytuł strony"
+                  />
+                </div>
+
+                {/* Zawartość HTML */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Zawartość HTML
+                  </label>
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                    rows={20}
+                    placeholder="Wprowadź zawartość HTML..."
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Możesz używać tagów HTML takich jak: h1, h2, p, ul, li,
+                    strong, em, a, section
+                  </p>
+                </div>
+
+                {/* Podgląd na żywo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Podgląd na żywo
+                  </label>
+                  <div className="border border-gray-300 rounded-lg p-6 bg-gray-50 max-h-96 overflow-y-auto">
+                    <div
+                      dangerouslySetInnerHTML={{ __html: editedContent }}
+                      className="prose max-w-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Przyciski akcji */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={saveChanges}
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Save className="w-5 h-5" />
+                    {saving ? "Zapisywanie..." : "Zapisz zmiany"}
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                    Anuluj
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Stopka */}
       <div className="panel-footer w-full py-2 mt-auto">
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
           <a
@@ -306,12 +488,7 @@ const ManageContent: React.FC = () => {
           >
             Zasady bezpieczeństwa
           </a>
-          <a
-            href="/popularne-wyszukiwania"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Popularne wyszukiwania
-          </a>
+
           <a
             href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -329,12 +506,6 @@ const ManageContent: React.FC = () => {
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
-          </a>
-          <a
-            href="/ustawienia-plikow-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Ustawienia plików cookies
           </a>
         </div>
       </div>

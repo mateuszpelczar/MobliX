@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,4 +56,10 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
     // Wyszukiwania według IP (dla anonimowych)
     @Query("SELECT COUNT(DISTINCT s.ipAddress) FROM SearchLog s WHERE s.userId IS NULL AND CAST(s.createdAt AS date) = CURRENT_DATE")
     Long countUniqueSessionsToday();
+
+    long countByCreatedAtAfter(LocalDateTime date);
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT COUNT(DISTINCT s.userId) FROM SearchLog s WHERE s.createdAt >= :date AND s.userId IS NOT NULL")
+    long countDistinctUserIdByCreatedAtAfter(@Param("date") LocalDateTime date);
 }

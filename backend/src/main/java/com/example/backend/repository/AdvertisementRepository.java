@@ -1,4 +1,5 @@
 package com.example.backend.repository;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -43,5 +44,9 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     // Najczęściej wystawiane marki (dla statystyk)
     @Query("SELECT a.smartphoneSpecification.brand, COUNT(a) as count FROM Advertisement a WHERE a.smartphoneSpecification.brand IS NOT NULL GROUP BY a.smartphoneSpecification.brand ORDER BY count DESC")
     List<Object[]> findTopListedBrands();
+
+    //metody do panelu admina
+    long countByCreatedAtAfter(LocalDateTime date);
+    long countByCreatedAtBefore(LocalDateTime date);
 
 }

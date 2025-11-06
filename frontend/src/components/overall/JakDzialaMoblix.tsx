@@ -1,4 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import "../../styles/MobileResponsive.css";
@@ -17,6 +18,8 @@ const JakDzialaMoblix: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pageContent, setPageContent] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -31,6 +34,22 @@ const JakDzialaMoblix: React.FC = () => {
     }
     return null;
   };
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8080/api/content-pages/slug/jak-dziala-moblix"
+        );
+        setPageContent(response.data.content);
+      } catch (error) {
+        console.error("Error fetching content: ", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, []);
 
   const userRole = getUserRole();
   const isAdmin = userRole === "ADMIN";
@@ -165,124 +184,13 @@ const JakDzialaMoblix: React.FC = () => {
       <div className="panel-content flex-grow w-full overflow-y-auto">
         <div className="container mx-auto px-4 relative pt-16 pb-12 max-w-5xl">
           <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 overflow-y-auto max-h-[75vh]">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Jak działa MobliX
-            </h1>
-            <p className="text-gray-700 leading-relaxed">
-              MobliX to platforma ogłoszeniowa skoncentrowana na smartfonach.
-              Łączymy osoby, które sprzedają i kupują telefony różnych marek i
-              modeli. Z MobliX łatwo wyszukasz konkretny model, porównasz
-              oferty, skontaktujesz się ze sprzedawcą i bezpiecznie
-              sfinalizujesz zakup.
-            </p>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Wyszukiwanie i filtrowanie
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Wyszukuj smartfony po <strong>marce</strong>,{" "}
-                  <strong>modelu</strong>, <strong>pamięci</strong> czy{" "}
-                  <strong>kolorze</strong>.
-                </li>
-                <li>
-                  Filtruj po <strong>cenie</strong>,{" "}
-                  <strong>stanie urządzenia</strong> (nowy/używany), a także
-                  innych parametrach.
-                </li>
-                <li>Sortuj wyniki według trafności, ceny lub daty dodania.</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Konto i profil
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Załóż konto, aby <strong>dodawać ogłoszenia</strong> i
-                  zarządzać nimi.
-                </li>
-                <li>
-                  Uzupełnij <strong>dane profilowe</strong> i buduj{" "}
-                  <strong>wiarygodność</strong> dzięki ocenom.
-                </li>
-                <li>
-                  Z panelu użytkownika masz szybki dostęp do wiadomości,
-                  ogłoszeń i ustawień profilu.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Dodawanie ogłoszeń
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Dodaj tytuł, opis, cenę, wybierz markę i pozostałe parametry
-                  oraz dodaj <strong>zdjęcia</strong>.
-                </li>
-                <li>Edytuj lub usuwaj swoje oferty w dowolnym momencie.</li>
-                <li>
-                  Udzielaj odpowiedzi na pytania kupujących i negocjuj warunki.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Komunikacja między użytkownikami
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Wysyłaj <strong>wiadomości</strong> bezpośrednio do
-                  sprzedającego lub kupującego.
-                </li>
-                <li>
-                  Otrzymuj powiadomienia o nowych wiadomościach i odpowiedziach.
-                </li>
-                <li>
-                  Ustalaj szczegóły transakcji i wygodny sposób odbioru/wysyłki.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Zakupy i bezpieczeństwo
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>Porównuj oferty i wybierz najlepszą dla siebie.</li>
-                <li>
-                  Finalizuj zakup na bezpiecznych warunkach uzgodnionych między
-                  stronami.
-                </li>
-                <li>
-                  Sprawdź <strong>Zasady bezpieczeństwa</strong> i kupuj
-                  świadomie.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Moderacja i administracja
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Zespół dba o porządek i reaguje na zgłoszenia nieodpowiednich
-                  treści.
-                </li>
-                <li>
-                  Administratorzy mogą{" "}
-                  <strong>edytować/usunąć ogłoszenia</strong> naruszające
-                  regulamin, przeglądać logi i raporty.
-                </li>
-              </ul>
-            </section>
-
+            <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 overflow-y-auto max-h-[75vh]">
+              {loading ? (
+                <div className="text-center py-8">Ładowanie...</div>
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: pageContent }} />
+              )}
+            </div>
             <div className="bg-gray-50 border rounded-lg p-4 text-gray-700">
               Masz pytania? Zajrzyj do sekcji: „Zasady bezpieczeństwa”,
               „Popularne wyszukiwania”, „Regulamin” oraz „Polityka cookies” w
@@ -301,12 +209,7 @@ const JakDzialaMoblix: React.FC = () => {
           >
             Zasady bezpieczeństwa
           </a>
-          <a
-            href="/popularne-wyszukiwania"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Popularne wyszukiwania
-          </a>
+
           <a
             href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -324,12 +227,6 @@ const JakDzialaMoblix: React.FC = () => {
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
-          </a>
-          <a
-            href="/ustawienia-plikow-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Ustawienia plików cookies
           </a>
         </div>
       </div>

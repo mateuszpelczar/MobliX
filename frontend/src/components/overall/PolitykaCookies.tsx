@@ -1,6 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   MessageSquare,
   ShoppingBag,
@@ -17,6 +18,8 @@ const PolitykaCookies: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pageContent, setPageContent] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -31,6 +34,22 @@ const PolitykaCookies: React.FC = () => {
     }
     return null;
   };
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8080/api/content-pages/slug/polityka-cookies"
+        );
+        setPageContent(response.data.content);
+      } catch (error) {
+        console.error("Error fetching content:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContent();
+  }, []);
 
   const userRole = getUserRole();
   const isAdmin = userRole === "ADMIN";
@@ -165,141 +184,13 @@ const PolitykaCookies: React.FC = () => {
       <div className="panel-content flex-grow w-full overflow-y-auto">
         <div className="container mx-auto px-4 relative pt-16 pb-12 max-w-5xl">
           <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 overflow-y-auto max-h-[75vh]">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Polityka plików cookies
-            </h1>
-            <p className="text-sm text-gray-600">
-              Ostatnia aktualizacja: 18.08.2025
-            </p>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                1. Czym są pliki cookies?
-              </h2>
-              <p className="text-gray-700">
-                Cookies to niewielkie pliki tekstowe zapisywane na Twoim
-                urządzeniu podczas korzystania z serwisu. Umożliwiają m.in.
-                zapamiętanie ustawień, utrzymanie sesji logowania oraz analizę
-                sposobu używania serwisu.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                2. Jakich plików cookies używamy?
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Niezbędne – wymagane do prawidłowego działania serwisu (np.
-                  utrzymanie sesji, bezpieczeństwo).
-                </li>
-                <li>
-                  Analityczne/wydajnościowe – pomagają zrozumieć, jak
-                  użytkownicy korzystają z serwisu (statystyki, poprawa UX).
-                </li>
-                <li>
-                  Funkcjonalne – zapamiętują Twoje preferencje (np. wybrane
-                  filtry, układ listy).
-                </li>
-                <li>
-                  Reklamowe – w razie wdrożenia, służą do personalizacji i
-                  mierzenia skuteczności reklam.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                3. Cel i podstawa prawna
-              </h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Zapewnienie działania i bezpieczeństwa serwisu – nasz prawnie
-                  uzasadniony interes.
-                </li>
-                <li>
-                  Poprawa jakości i personalizacja – Twoja zgoda (jeśli
-                  wymagana).
-                </li>
-                <li>
-                  Statystyka i analiza – nasz uzasadniony interes lub zgoda, w
-                  zależności od zakresu.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                4. Zarządzanie zgodą i wyłączenie cookies
-              </h2>
-              <p className="text-gray-700 mb-2">
-                W każdej chwili możesz zmienić swoje preferencje dotyczące
-                cookies w ustawieniach przeglądarki lub w naszym module
-                zarządzania zgodą.
-              </p>
-              <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>
-                  Panel zgód: przejdź do{" "}
-                  <a
-                    href="/ustawienia-plikow-cookies"
-                    className="text-purple-700 hover:underline"
-                  >
-                    Ustawienia plików cookies
-                  </a>{" "}
-                  i dostosuj kategorie.
-                </li>
-                <li>
-                  Przeglądarka: możesz blokować lub usuwać pliki cookies;
-                  pamiętaj, że wyłączenie niektórych może ograniczyć
-                  funkcjonalność serwisu.
-                </li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                5. Cookies podmiotów trzecich
-              </h2>
-              <p className="text-gray-700">
-                W serwisie mogą działać dostawcy zewnętrzni (np. narzędzia
-                analityczne). Pliki cookies tych podmiotów podlegają ich własnym
-                politykom. Zalecamy zapoznanie się z zasadami prywatności
-                odpowiednich dostawców.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                6. Okres przechowywania
-              </h2>
-              <p className="text-gray-700">
-                Czas przechowywania zależy od rodzaju pliku: sesyjne są usuwane
-                po zamknięciu przeglądarki, stałe pozostają na urządzeniu do
-                czasu ich wygaśnięcia lub ręcznego usunięcia.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                7. Zmiany Polityki cookies
-              </h2>
-              <p className="text-gray-700">
-                Możemy aktualizować niniejszą Politykę, aby odzwierciedlała
-                zmiany w technologii, przepisach lub usługach. O istotnych
-                zmianach poinformujemy w serwisie.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                8. Kontakt
-              </h2>
-              <p className="text-gray-700">
-                W sprawach dotyczących cookies i prywatności skontaktuj się z
-                nami poprzez formularz dostępny w serwisie lub dane podane w
-                sekcji „Kontakt”.
-              </p>
-            </section>
+            <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 overflow-y-auto max-h-[75vh]">
+              {loading ? (
+                <div className="text-center py-8">Ładowanie...</div>
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: pageContent }} />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -313,12 +204,7 @@ const PolitykaCookies: React.FC = () => {
           >
             Zasady bezpieczeństwa
           </a>
-          <a
-            href="/popularne-wyszukiwania"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Popularne wyszukiwania
-          </a>
+
           <a
             href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -336,12 +222,6 @@ const PolitykaCookies: React.FC = () => {
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
-          </a>
-          <a
-            href="/ustawienia-plikow-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Ustawienia plików cookies
           </a>
         </div>
       </div>

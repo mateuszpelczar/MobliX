@@ -23,8 +23,10 @@ public interface AdvertisementReportRepository extends JpaRepository<Advertiseme
   //zgloszenia dla konkretnego ogloszenia
   List<AdvertisementReport> findByAdvertisementIdOrderByCreatedAtDesc(Long advertisementId);
 
-  // do staff panel
+  // do staff i admin panel
   long countByStatus(ReportStatus status);
+
+  
 
   
 }

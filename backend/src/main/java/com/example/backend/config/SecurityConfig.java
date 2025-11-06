@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-image").authenticated() // Upload zdjęcia
                 .requestMatchers(HttpMethod.GET, "/api/ogloszenia/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/advertisements/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/advertisements/*/view").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/advertisements").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/advertisements/*").authenticated() // Update ogłoszenia
                 .requestMatchers(HttpMethod.DELETE, "/api/advertisements/*").authenticated() // Delete ogłoszenia
@@ -77,8 +78,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/stats/staff").hasAnyRole("STAFF", "ADMIN") // Statystyki dla staff/admin
                 .requestMatchers("/api/search-stats/**").hasAnyRole("STAFF", "ADMIN") // Statystyki wyszukiwań
                 .requestMatchers("/api/search-logs/**").permitAll() // Zapisywanie wyszukiwań - publiczne
+                .requestMatchers(HttpMethod.GET, "/api/content-pages/slug/*").permitAll() // Publiczne wyświetlanie stron
+                .requestMatchers("/api/content-pages/**").hasRole("ADMIN") // Edycja content-pages tylko ADMIN
                 .requestMatchers("/api/logs/activities").authenticated()
                 .requestMatchers("/api/logs/**").hasRole("ADMIN") // Logi systemowe tylko dla ADMIN
+                .requestMatchers("/api/admin/stats/dashboard").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // Catch-all dla pozostałych admin endpoints
                 .anyRequest().authenticated())
             .sessionManagement(session -> session

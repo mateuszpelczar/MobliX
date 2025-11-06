@@ -797,12 +797,7 @@ const EditAd: React.FC = () => {
           >
             Zasady bezpieczeństwa
           </a>
-          <a
-            href="/popularne-wyszukiwania"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Popularne wyszukiwania
-          </a>
+
           <a
             href="/jak-dziala-moblix"
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
@@ -820,12 +815,6 @@ const EditAd: React.FC = () => {
             className="text-black hover:text-gray-600 transition-colors py-1 text-center"
           >
             Polityka cookies
-          </a>
-          <a
-            href="/ustawienia-plikow-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Ustawienia plików cookies
           </a>
         </div>
       </div>
