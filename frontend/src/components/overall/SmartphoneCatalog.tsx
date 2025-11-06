@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   User,
   ChevronDown,
@@ -177,6 +178,48 @@ const SmartphoneCatalog: React.FC = () => {
   });
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
 
+  // Generate or retrieve session ID
+  const getSessionId = () => {
+    let sessionId = sessionStorage.getItem("searchSessionId");
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+      sessionStorage.setItem("searchSessionId", sessionId);
+    }
+    return sessionId;
+  };
+
+  // Log search to backend
+  const logSearch = async (resultsCount: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      let userId = null;
+
+      if (token) {
+        try {
+          const decoded = jwtDecode<JwtPayLoad>(token);
+          userId = decoded.sub ? parseInt(decoded.sub) : null;
+        } catch (error) {
+          console.error("Error decoding token:", error);
+        }
+      }
+
+      await axios.post("http://localhost:8080/api/search-logs", {
+        searchQuery: searchTerm || null,
+        brand: selectedBrand !== "all" ? selectedBrand : null,
+        model: null, // Model nie jest dostępny w filtrach
+        minPrice: priceRange.min ? parseFloat(priceRange.min) : null,
+        maxPrice: priceRange.max ? parseFloat(priceRange.max) : null,
+        userId: userId,
+        sessionId: getSessionId(),
+        resultsCount: resultsCount,
+      });
+    } catch (error) {
+      console.error("Error logging search:", error);
+    }
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -215,6 +258,53 @@ const SmartphoneCatalog: React.FC = () => {
     sortBy,
     setSearchParams,
   ]);
+
+  // Log search when filters change (debounced)
+  useEffect(() => {
+    // Only log if there's actual search activity
+    if (
+      searchTerm ||
+      selectedBrand !== "all" ||
+      priceRange.min ||
+      priceRange.max
+    ) {
+      const timer = setTimeout(() => {
+        // Calculate filtered results count
+        const resultsCount = smartphones.filter((phone) => {
+          const matchesSearch = phone.title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+          const matchesBrand =
+            selectedBrand === "all" || phone.brand === selectedBrand;
+          const matchesCondition =
+            selectedCondition === "all" ||
+            phone.condition === selectedCondition;
+          const matchesLocation =
+            selectedLocation === "all" ||
+            phone.location
+              .toLowerCase()
+              .includes(selectedLocation.toLowerCase());
+          const matchesMinPrice =
+            !priceRange.min || phone.price >= parseInt(priceRange.min);
+          const matchesMaxPrice =
+            !priceRange.max || phone.price <= parseInt(priceRange.max);
+
+          return (
+            matchesSearch &&
+            matchesBrand &&
+            matchesCondition &&
+            matchesLocation &&
+            matchesMinPrice &&
+            matchesMaxPrice
+          );
+        }).length;
+
+        logSearch(resultsCount);
+      }, 1500); // Debounce 1.5s
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, selectedBrand, priceRange, smartphones]);
 
   const token = localStorage.getItem("token");
   let isAuthenticated = false;

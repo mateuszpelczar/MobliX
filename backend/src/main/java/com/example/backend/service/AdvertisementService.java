@@ -9,6 +9,7 @@ import com.example.backend.dto.AdvertisementResponseDTO;
 import com.example.backend.dto.CreateAdvertisementDTO;
 import com.example.backend.dto.SellerInfoDTO;
 import com.example.backend.model.*;
+import com.example.backend.others.AdvertisementStatus;
 import com.example.backend.repository.*;
 import com.example.backend.service.*;
 import org.springframework.security.core.Authentication;

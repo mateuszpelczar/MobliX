@@ -1,12 +1,12 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles/MobileResponsive.css";
 import "../styles/StaffPanel.css";
 import { jwtDecode } from "jwt-decode";
 import {
   MessageSquare,
   ShoppingBag,
-  Star,
   User,
   Shield,
   Users,
@@ -19,11 +19,65 @@ import {
   Flag,
 } from "lucide-react";
 
+interface StaffStats {
+  pendingAdvertisements: number;
+  approvedAdvertisements: number;
+  activeUsers: number;
+  pendingReports: number;
+}
+
 const StaffPanel: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [stats, setStats] = useState<StaffStats>({
+    pendingAdvertisements: 0,
+    approvedAdvertisements: 0,
+    activeUsers: 0,
+    pendingReports: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Pobierz statystyki przy ładowaniu komponentu
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        console.log("=== FETCHING STAFF STATS ===");
+        console.log("Token:", token ? "exists" : "missing");
+
+        // Sprawdź rolę użytkownika
+        if (token) {
+          try {
+            const decoded: any = jwtDecode(token);
+            console.log("Decoded token role:", decoded.role);
+            console.log("Full decoded token:", decoded);
+          } catch (e) {
+            console.error("Failed to decode token:", e);
+          }
+        }
+
+        const response = await axios.get<StaffStats>(
+          "http://localhost:8080/api/admin/stats/staff",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        console.log("Stats response:", response.data);
+        setStats(response.data);
+      } catch (error: any) {
+        console.error("Error fetching stats:", error);
+        console.error("Error details:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
   const getUserRole = () => {
     const token = localStorage.getItem("token");
     if (!token) return null;
@@ -280,7 +334,7 @@ const StaffPanel: React.FC = () => {
                 </button>
               </div>
 
-              {/* Quick Stats Section */}
+              {/* Quick Stats Section - ZAKTUALIZOWANE Z PRAWDZIWYMI DANYMI */}
               <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
                   <div className="flex items-center gap-3">
@@ -289,10 +343,13 @@ const StaffPanel: React.FC = () => {
                       <div className="text-sm text-blue-600 font-medium">
                         Oczekujące ogłoszenia
                       </div>
-                      <div className="text-xl font-bold text-blue-800">12</div>
+                      <div className="text-xl font-bold text-blue-800">
+                        {loading ? "..." : stats.pendingAdvertisements}
+                      </div>
                     </div>
                   </div>
                 </div>
+
                 <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600" />
@@ -301,24 +358,26 @@ const StaffPanel: React.FC = () => {
                         Zatwierdzone
                       </div>
                       <div className="text-xl font-bold text-green-800">
-                        147
+                        {loading ? "..." : stats.approvedAdvertisements}
                       </div>
                     </div>
                   </div>
                 </div>
+
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
                   <div className="flex items-center gap-3">
-                    <Users className="w-6 h-6 text-purple-600" />
+                    <UserCheck className="w-6 h-6 text-purple-600" />
                     <div>
                       <div className="text-sm text-purple-600 font-medium">
                         Aktywni użytkownicy
                       </div>
                       <div className="text-xl font-bold text-purple-800">
-                        1,234
+                        {loading ? "..." : stats.activeUsers}
                       </div>
                     </div>
                   </div>
                 </div>
+
                 <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
                   <div className="flex items-center gap-3">
                     <Flag className="w-6 h-6 text-red-600" />
@@ -326,7 +385,9 @@ const StaffPanel: React.FC = () => {
                       <div className="text-sm text-red-600 font-medium">
                         Zgłoszenia
                       </div>
-                      <div className="text-xl font-bold text-red-800">3</div>
+                      <div className="text-xl font-bold text-red-800">
+                        {loading ? "..." : stats.pendingReports}
+                      </div>
                     </div>
                   </div>
                 </div>

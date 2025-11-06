@@ -1,11 +1,11 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.NotificationDTO;
-import com.example.backend.dto.NotificationType;
 import com.example.backend.model.Advertisement;
 import com.example.backend.model.FavoriteAd;
 import com.example.backend.model.Notification;
 import com.example.backend.model.User;
+import com.example.backend.others.NotificationType;
 import com.example.backend.repository.FavoriteAdRepository;
 import com.example.backend.repository.NotificationRepository;
 import com.example.backend.repository.UserRepository;
@@ -248,4 +248,34 @@ public class NotificationService {
         notificationRepository.save(notification);
 
     }
+
+    //powiadomienie o usunieciu oglsozenia przez moderatora
+    public void createAdvertisementDeletedNotification(User user, String advertisementTitle, String reason){
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setType(NotificationType.ADVERTISEMENT_DELETED);
+        notification.setTitle("Ogloszenie usuniete");
+        notification.setMessage("Twoje ogloszenie" + advertisementTitle + 
+        "\" zostalo usuniete przez moderatora z powodu naruszenia regulaminu. " +
+        "Powod: " + reason
+        );
+
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+    }
+
+    //powiadomienie o ostrzezeniu ogloszenia
+    public void createAdvertisementWarningNotification(User user, String advertisementTitle, String warningMessage){
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setType(NotificationType.ADVERTISEMENT_WARNING);
+        notification.setTitle("Ostrzezenie dotyczace ogloszenia");
+        notification.setMessage("Ostrzezenie dotyczace ogloszenia \"" + advertisementTitle + "\". " +
+        "Wiadomosc od moderatora: " + warningMessage
+        );
+
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+    }
 }
+

@@ -1,6 +1,9 @@
 package com.example.backend.model;
 
 import java.util.List;
+
+import com.example.backend.others.AdvertisementStatus;
+
 import jakarta.persistence.*;
 
 @Entity

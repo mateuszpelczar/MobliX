@@ -4,7 +4,6 @@ import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import "../../styles/MobileResponsive.css";
 import {
-  Star,
   User,
   ChevronDown,
   ShoppingBag,
@@ -325,16 +324,6 @@ const MessageComponent: React.FC = () => {
                   >
                     <MessageSquare className="w-4 h-4 text-green-600" />
                     Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
                   </button>
                   <button
                     className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"

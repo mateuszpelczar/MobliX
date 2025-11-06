@@ -20,5 +20,8 @@ public interface UserRepository extends JpaRepository<User,Long> {
   
   // Pobierz użytkowników z wieloma rolami
   List<User> findByRoleIn(List<Role> roles);
+
+  //zliczanie zablokowanych uzytkownikow
+  long countByIsBlockedTrue();
   
 }

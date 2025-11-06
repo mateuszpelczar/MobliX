@@ -1,0 +1,15 @@
+-- Dodaj nowe typy powiadomień do CHECK constraint
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+
+ALTER TABLE notifications ADD CONSTRAINT notifications_type_check 
+CHECK (type IN (
+    'ACCOUNT_BLOCKED',
+    'DESCRIPTION_CHANGED',
+    'PRICE_CHANGE',
+    'REVIEW_APPROVED', 
+    'REVIEW_REJECTED', 
+    'MESSAGE_RECEIVED', 
+    'FAVORITE_PRICE_DROP',
+    'ADVERTISEMENT_DELETED',
+    'ADVERTISEMENT_WARNING'
+));

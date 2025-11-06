@@ -1,9 +1,9 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.UserDto;
-import com.example.backend.dto.UserRoleChangeRequest;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
+import com.example.backend.others.UserRoleChangeRequest;
 import com.example.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

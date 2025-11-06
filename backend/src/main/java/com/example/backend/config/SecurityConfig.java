@@ -74,6 +74,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/users/*/unblock").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/admin/users/*/activity-logs").hasAnyRole("STAFF", "ADMIN")       
                 .requestMatchers(HttpMethod.PUT, "/api/admin/users/*").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/api/admin/stats/staff").hasAnyRole("STAFF", "ADMIN") // Statystyki dla staff/admin
+                .requestMatchers("/api/search-stats/**").hasAnyRole("STAFF", "ADMIN") // Statystyki wyszukiwań
+                .requestMatchers("/api/search-logs/**").permitAll() // Zapisywanie wyszukiwań - publiczne
                 .requestMatchers("/api/logs/activities").authenticated()
                 .requestMatchers("/api/logs/**").hasRole("ADMIN") // Logi systemowe tylko dla ADMIN
                 .requestMatchers("/api/admin/**").hasRole("ADMIN") // Catch-all dla pozostałych admin endpoints

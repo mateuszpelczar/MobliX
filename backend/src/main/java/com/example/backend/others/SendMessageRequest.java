@@ -1,4 +1,4 @@
-package com.example.backend.dto;
+package com.example.backend.others;
 
 public class SendMessageRequest {
     private String receiverEmail;

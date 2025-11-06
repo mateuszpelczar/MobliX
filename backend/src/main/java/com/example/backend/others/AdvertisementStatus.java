@@ -1,4 +1,4 @@
-package com.example.backend.model;
+package com.example.backend.others;
 
 public enum AdvertisementStatus {
     PENDING,    // Oczekuje na moderację

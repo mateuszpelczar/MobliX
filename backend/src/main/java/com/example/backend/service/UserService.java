@@ -1,11 +1,11 @@
 package com.example.backend.service;
 
-import com.example.backend.dto.LoginRequest;
-import com.example.backend.dto.RegisterRequest;
-import com.example.backend.dto.UpdateUserRequest;
 import com.example.backend.dto.UserModerationDTO;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
+import com.example.backend.others.LoginRequest;
+import com.example.backend.others.RegisterRequest;
+import com.example.backend.others.UpdateUserRequest;
 import com.example.backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -292,6 +292,13 @@ public class UserService {
             user.setLastActivity(java.time.LocalDateTime.now());
             userRepository.save(user);
         });
+    }
+
+    /**
+     * zliczanie wszystkich aktywnych uzytkownikow - nie zablokowanych
+     */
+    public long countActiveUsers(){
+        return userRepository.count() - userRepository.countByIsBlockedTrue();
     }
     
     /**

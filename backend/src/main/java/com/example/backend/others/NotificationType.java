@@ -1,4 +1,4 @@
-package com.example.backend.dto;
+package com.example.backend.others;
 
 public enum NotificationType {
     PRICE_CHANGE,           // Zmiana ceny
@@ -8,5 +8,7 @@ public enum NotificationType {
     AD_ENDED,               // Ogłoszenie zakończone
     TERMS_UPDATED,          // Regulamin zaktualizowany
     NEW_MESSAGE,            // Nowa wiadomość
-    ACCOUNT_BLOCKED         // Konto zablokowane
+    ACCOUNT_BLOCKED,        // Konto zablokowane
+    ADVERTISEMENT_DELETED,  //ogloszenie usuniete
+    ADVERTISEMENT_WARNING   //ostrzezenie dla ogloszenia  
 }

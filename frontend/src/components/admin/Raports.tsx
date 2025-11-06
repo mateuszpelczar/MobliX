@@ -15,6 +15,8 @@ import {
   Eye,
   FileText,
   CheckCircle,
+  LogOut,
+  Shield,
 } from "lucide-react";
 
 const Raports: React.FC = () => {
@@ -117,38 +119,45 @@ const Raports: React.FC = () => {
                   </button>
                   {isAdmin && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/admin");
                       }}
                     >
+                      <Shield className="w-4 h-4 text-red-600" />
                       Panel administratora
                     </button>
                   )}
                   {(isAdmin || isStaff) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/staffpanel");
                       }}
                     >
+                      <Users className="w-4 h-4 text-orange-600" />
                       Panel pracownika
                     </button>
                   )}
                   {(isAdmin || isStaff || isUser) && (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black"
+                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/userpanel");
                       }}
                     >
+                      <User className="w-4 h-4 text-blue-600" />
                       Panel użytkownika
                     </button>
                   )}
-                  <button onClick={handleLogout} className="dropdown-logout">
+                  <button
+                    onClick={handleLogout}
+                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                  >
+                    <LogOut className="w-4 h-4 text-red-600" />
                     Wyloguj
                   </button>
                 </div>

@@ -1,10 +1,10 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.LoginRequest;
-import com.example.backend.dto.RegisterRequest;
-import com.example.backend.dto.UpdateUserRequest;
 import com.example.backend.dto.UserDto;
 import com.example.backend.model.User;
+import com.example.backend.others.LoginRequest;
+import com.example.backend.others.RegisterRequest;
+import com.example.backend.others.UpdateUserRequest;
 import com.example.backend.service.LogService;
 import com.example.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;

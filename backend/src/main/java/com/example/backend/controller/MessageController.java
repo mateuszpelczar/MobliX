@@ -2,7 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.dto.ConversationDTO;
 import com.example.backend.dto.MessageDTO;
-import com.example.backend.dto.SendMessageRequest;
+import com.example.backend.others.SendMessageRequest;
 import com.example.backend.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

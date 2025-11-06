@@ -1,4 +1,4 @@
-package com.example.backend.dto;
+package com.example.backend.others;
 
 public class BlockUserRequest {
     private int durationMinutes; // 15 lub 1440 (24h)

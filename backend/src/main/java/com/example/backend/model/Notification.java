@@ -1,8 +1,9 @@
 package com.example.backend.model;
 
-import com.example.backend.dto.NotificationType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
+import com.example.backend.others.NotificationType;
 
 @Entity
 @Table(name = "notifications")

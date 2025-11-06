@@ -1,5 +1,8 @@
 package com.example.backend.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.backend.model.Advertisement;
@@ -17,4 +20,7 @@ public interface FavoriteAdRepository extends JpaRepository<FavoriteAd, Long> {
     boolean existsByUserAndAdvertisement(User user, Advertisement advertisement);
     void deleteByUserAndAdvertisement(User user, Advertisement advertisement);
     long countByUser(User user);
+    @Modifying
+    @Query("DELETE FROM FavoriteAd f WHERE f.advertisement.id = :advertisementId")
+    void deleteByAdvertisementId(@Param("advertisementId") Long advertisementId);
 }

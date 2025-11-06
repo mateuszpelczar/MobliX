@@ -27,7 +27,6 @@ import WatchedAds from "./components/user/WatchedAds";
 import YourAds from "./components/user/YourAds";
 import StaffPanel from "./components/StaffPanel";
 import ModeracjaOgloszen from "./components/staff/ModeracjaOgloszen";
-import ModeracjaOpinii from "./components/staff/ModeracjaOpinii";
 import Statystyki from "./components/staff/Statystyki";
 import ModeracjaUzytkownikow from "./components/staff/ModeracjaUzytkownikow";
 import ModeracjaZgloszen from "./components/staff/ModeracjaZgloszen";
@@ -136,7 +135,6 @@ const App: React.FC = () => {
         <Route path="/smartfony" element={<SmartphoneCatalog />} />
         <Route path="/smartfon/:id" element={<SmartphoneDetails />} />
 
-        <Route path="/staff/moderacja-opinii" element={<ModeracjaOpinii />} />
         <Route
           path="/staff/moderacja-zgloszen"
           element={<ModeracjaZgloszen />}

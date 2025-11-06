@@ -1,11 +1,15 @@
-package com.example.backend.dto;
+package com.example.backend.others;
 
-public class UpdateUserRequest {
-    private String accountType;
+public class RegisterRequest {
+    private String username;
+    private String email;
+    private String password;
+    
+    // Nowe pola dla kont prywatnych i firmowych
+    private String accountType; // "personal" lub "business"
     private String firstName;
     private String lastName;
     private String phone;
-    private String password; // opcjonalne - tylko jeśli użytkownik chce zmienić hasło
     
     // Pola dla kont firmowych
     private String companyName;
@@ -15,16 +19,18 @@ public class UpdateUserRequest {
     private String website;
 
     // Konstruktory
-    public UpdateUserRequest() {}
+    public RegisterRequest() {}
 
-    public UpdateUserRequest(String accountType, String firstName, String lastName, String phone,
-                           String password, String companyName, String nip, String regon, 
-                           String address, String website) {
+    public RegisterRequest(String username, String email, String password,
+                         String accountType, String firstName, String lastName, String phone,
+                         String companyName, String nip, String regon, String address, String website) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
         this.accountType = accountType;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
-        this.password = password;
         this.companyName = companyName;
         this.nip = nip;
         this.regon = regon;
@@ -33,6 +39,15 @@ public class UpdateUserRequest {
     }
 
     // Gettery i Settery
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
     public String getAccountType() { return accountType; }
     public void setAccountType(String accountType) { this.accountType = accountType; }
 
@@ -44,9 +59,6 @@ public class UpdateUserRequest {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
 
     public String getCompanyName() { return companyName; }
     public void setCompanyName(String companyName) { this.companyName = companyName; }

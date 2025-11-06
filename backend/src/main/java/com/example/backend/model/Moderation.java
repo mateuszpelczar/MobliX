@@ -1,7 +1,4 @@
 package com.example.backend.model;
-
-
-
 import java.util.Date;
 
 import jakarta.persistence.Entity;
@@ -24,7 +21,7 @@ public class Moderation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String action; // HIDE, DELETE, BLOCK, etc.
+    private String action; // zatwierdz, usun itd..
     private Date timestamp;
     private String reason;
 

@@ -1,11 +1,15 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.UpdateUserRequest;
 import com.example.backend.dto.UserDto;
 import com.example.backend.dto.UserModerationDTO;
-import com.example.backend.dto.UserRoleChangeRequest;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
+import com.example.backend.others.AdvertisementStatus;
+import com.example.backend.others.ReportStatus;
+import com.example.backend.others.UpdateUserRequest;
+import com.example.backend.others.UserRoleChangeRequest;
+import com.example.backend.repository.AdvertisementReportRepository;
+import com.example.backend.repository.AdvertisementRepository;
 import com.example.backend.service.LogService;
 import com.example.backend.service.NotificationService;
 import com.example.backend.service.UserService;
@@ -20,6 +24,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,12 +36,17 @@ public class AdminController {
     
     private final UserService userService;
     private final LogService logService;
-    private final NotificationService notificationService;
+    private final NotificationService notificationService; 
+    private final AdvertisementRepository advertisementRepository;
+    private final AdvertisementReportRepository reportRepository;
 
-    public AdminController(UserService userService, LogService logService, NotificationService notificationService) {
+
+    public AdminController(UserService userService, LogService logService, NotificationService notificationService,AdvertisementRepository advertisementRepository, AdvertisementReportRepository reportRepository) {
         this.userService = userService;
         this.logService = logService;
         this.notificationService = notificationService;
+        this.advertisementRepository = advertisementRepository;
+        this.reportRepository = reportRepository;
     }
 
     @GetMapping("/users")
@@ -200,7 +210,7 @@ public class AdminController {
 @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
 public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
         @PathVariable Long userId,
-        @RequestBody com.example.backend.dto.BlockUserRequest request,
+        @RequestBody com.example.backend.others.BlockUserRequest request,
         Principal principal,
         HttpServletRequest httpRequest) {
     
@@ -320,6 +330,28 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
         }
         
     
+        }
+
+        //pobierz statystyki dla staff panel
+        @GetMapping("/stats/staff")
+        @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+        public ResponseEntity<Map<String,Long>> getStaffStats(){
+            Map<String,Long> stats = new HashMap<>();
+
+            //oczekujace ogloszenia (status PENDING)
+            stats.put("pendingAdvertisements", advertisementRepository.countByStatus(AdvertisementStatus.PENDING));
+
+            //ogloszenia zatwierdzone
+            stats.put("approvedAdvertisements", advertisementRepository.countByStatus(AdvertisementStatus.ACTIVE));
+
+            //aktywni uzytkownicy (nie zablokowaniu)
+            stats.put("activeUsers",userService.countActiveUsers());
+
+            //zgloszone ogloszenia - oczekujace
+            stats.put("pendingReports", reportRepository.countByStatus(ReportStatus.PENDING));
+
+            return ResponseEntity.ok(stats);
+
         }
 
         

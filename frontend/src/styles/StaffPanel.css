@@ -46,6 +46,34 @@
   scroll-behavior: smooth;
 }
 
+/* Reports table scrollbar */
+.reports-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.reports-table-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.reports-table-container::-webkit-scrollbar-thumb {
+  background: #f97316;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.reports-table-container::-webkit-scrollbar-thumb:hover {
+  background: #ea580c;
+}
+
+/* Firefox scrollbar for reports table */
+.reports-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #f97316 #f3f4f6;
+  scroll-behavior: smooth;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .staff-content {

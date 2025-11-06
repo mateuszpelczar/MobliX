@@ -703,19 +703,57 @@ const SmartphoneDetails: React.FC = () => {
   };
 
   // Report handlers
-  const handleSubmitReport = () => {
+  const handleSubmitReport = async () => {
     if (!token) {
       alert("Musisz być zalogowany, aby zgłosić problem");
       return;
     }
 
-    if (reportForm.reason && reportForm.description.trim()) {
-      // W prawdziwej aplikacji wysłalibyśmy to do API
-      alert("Zgłoszenie zostało wysłane. Dziękujemy za informację.");
-      setReportForm({ reason: "", description: "" });
-      setShowReportForm(false);
-    } else {
+    if (!reportForm.reason || !reportForm.description.trim()) {
       alert("Proszę wypełnić wszystkie pola");
+      return;
+    }
+
+    try {
+      // Map frontend reason values to backend enum
+      const reasonMap: { [key: string]: string } = {
+        fraud: "FRAUD",
+        spam: "SPAM",
+        inappropriate: "INAPPROPRIATE",
+        duplicate: "DUPLICATE",
+        fake_seller: "FAKE_SELLER",
+        other: "OTHER",
+      };
+
+      const response = await axios.post(
+        `http://localhost:8080/api/reports/${id}`,
+        {
+          reason: reasonMap[reportForm.reason],
+          comment: reportForm.description,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        alert("Zgłoszenie zostało wysłane. Dziękujemy za informację.");
+        setReportForm({ reason: "", description: "" });
+        setShowReportForm(false);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        alert(
+          error.response.data || "Nie można wysłać zgłoszenia. Sprawdź dane."
+        );
+      } else if (error.response?.data) {
+        alert(error.response.data);
+      } else {
+        alert("Wystąpił błąd podczas wysyłania zgłoszenia. Spróbuj ponownie.");
+      }
+      console.error("Error submitting report:", error);
     }
   };
 

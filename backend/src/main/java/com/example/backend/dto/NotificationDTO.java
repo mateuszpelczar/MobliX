@@ -2,6 +2,8 @@ package com.example.backend.dto;
 
 import java.time.LocalDateTime;
 
+import com.example.backend.others.NotificationType;
+
 public class NotificationDTO {
     
     private Long id;
