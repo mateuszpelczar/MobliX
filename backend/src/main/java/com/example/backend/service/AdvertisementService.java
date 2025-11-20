@@ -11,12 +11,11 @@ import com.example.backend.dto.SellerInfoDTO;
 import com.example.backend.model.*;
 import com.example.backend.others.AdvertisementStatus;
 import com.example.backend.repository.*;
-import com.example.backend.service.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 
-import jakarta.servlet.http.HttpServletRequest;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -140,15 +139,15 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         // Użytkownik niezalogowany lub brak kontekstu uwierzytelnienia
     }
     
-    logService.saveLog(
-        "INFO",
-        "advertisement",
-        "Wyświetlenie ogłoszenia: " + ad.getTitle(),
-        "ID: " + advertisementId + ", Liczba wyświetleń: " + ad.getViewCount(),
-        "AdvertisementService",
-        currentUser,
-        request != null ? request.getRemoteAddr() : null
-    );
+    // logService.saveLog(
+    //     "INFO",
+    //     "advertisement",
+    //     "Wyświetlenie ogłoszenia: " + ad.getTitle(),
+    //     "ID: " + advertisementId + ", Liczba wyświetleń: " + ad.getViewCount(),
+    //     "AdvertisementService",
+    //     currentUser,
+    //     request != null ? request.getRemoteAddr() : null
+    // );
 }
 
     public AdvertisementResponseDTO createAdvertisement(CreateAdvertisementDTO createDto, String userEmail) {
@@ -176,6 +175,8 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         advertisement.setDescription(createDto.getDescription());
         advertisement.setPrice(createDto.getPrice());
         advertisement.setCondition(createDto.getCondition());
+        advertisement.setWarranty(createDto.getWarranty());
+        advertisement.setIncludesCharger(createDto.getIncludesCharger());
         advertisement.setUser(user);
         advertisement.setCategory(category);
         advertisement.setLocation(location);
@@ -292,6 +293,15 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         // Jeśli status to REJECTED, ustaw powód odrzucenia
         if ("REJECTED".equals(status) && rejectReason != null && !rejectReason.trim().isEmpty()) {
             advertisement.setRejectReason(rejectReason);
+
+            if (notificationService != null) {
+            notificationService.createAdvertisementRejectedNotification(
+                advertisement.getUser(), 
+                advertisement.getTitle(), 
+                rejectReason
+            );
+        }
+
         } else if (!"REJECTED".equals(status)) {
             // Jeśli status zmieniony na inny niż REJECTED, wyczyść powód odrzucenia
             advertisement.setRejectReason(null);

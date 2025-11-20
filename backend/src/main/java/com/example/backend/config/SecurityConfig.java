@@ -59,16 +59,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/advertisements/*/status").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/advertisements/latest").permitAll()
                 .requestMatchers("/api/messages/**").authenticated()
-                // Opinions endpoints
-                .requestMatchers(HttpMethod.GET, "/api/opinions/advertisement/*").permitAll() // Publiczne - opinie dla ogłoszenia
-                .requestMatchers(HttpMethod.POST, "/api/opinions").authenticated() // Dodawanie opinii
-                .requestMatchers(HttpMethod.GET, "/api/opinions/user").authenticated() // Opinie użytkownika
-                .requestMatchers(HttpMethod.GET, "/api/opinions/user/status/*").authenticated() // Opinie użytkownika według statusu
-                .requestMatchers(HttpMethod.GET, "/api/opinions/pending").hasAnyRole("STAFF", "ADMIN") // Oczekujące opinie
-                .requestMatchers(HttpMethod.PUT, "/api/opinions/*/approve").hasAnyRole("STAFF", "ADMIN") // Zatwierdzanie
-                .requestMatchers(HttpMethod.PUT, "/api/opinions/*/reject").hasAnyRole("STAFF", "ADMIN") // Odrzucanie
-                
-                // New admin and log endpoints
                 .requestMatchers("/api/admin/users/moderation").hasAnyRole("STAFF","ADMIN")
                 .requestMatchers("/api/admin/users/*/details").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/admin/users/*/block").hasAnyRole("STAFF", "ADMIN")
@@ -105,7 +95,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:*","http://127.0.0.1:*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));

@@ -6,7 +6,6 @@ import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
   ShoppingBag,
-  Star,
   User,
   Shield,
   Users,
@@ -23,6 +22,10 @@ import {
   Eye,
   Loader,
   Trash2,
+  Search,
+  Heart,
+  Plus,
+  LogIn,
 } from "lucide-react";
 
 type Notification = {
@@ -57,6 +60,7 @@ const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   // Fetch notifications from API
   useEffect(() => {
@@ -86,12 +90,35 @@ const Notifications: React.FC = () => {
     };
 
     fetchNotifications();
+    fetchFavoriteCount();
   }, [navigate]);
+
+  const fetchFavoriteCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await axios.get<any[]>(
+        "http://localhost:8080/api/favorites",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setFavoriteCount(response.data.length);
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
     setIsDropdownOpen(false);
+  };
+
+  const handleGoToAdminPanel = () => {
+    setIsDropdownOpen(false);
+    navigate("/admin");
   };
 
   // Check user role from JWT token
@@ -177,20 +204,20 @@ const Notifications: React.FC = () => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "PRICE_CHANGE":
-        return <TrendingDown className="w-5 h-5 text-green-500" />;
+        return <TrendingDown className="w-6 h-6 text-green-400" />;
       case "IMAGES_CHANGED":
-        return <Camera className="w-5 h-5 text-blue-500" />;
+        return <Camera className="w-6 h-6 text-blue-400" />;
       case "DESCRIPTION_CHANGED":
-        return <FileText className="w-5 h-5 text-blue-500" />;
+        return <FileText className="w-6 h-6 text-cyan-400" />;
       case "TERMS_UPDATED":
-        return <FileText className="w-5 h-5 text-purple-500" />;
+        return <FileText className="w-6 h-6 text-purple-400" />;
       case "AD_DELETED":
       case "AD_ENDED":
-        return <X className="w-5 h-5 text-red-500" />;
+        return <X className="w-6 h-6 text-red-400" />;
       case "NEW_MESSAGE":
-        return <MessageSquare className="w-5 h-5 text-orange-500" />;
+        return <MessageSquare className="w-6 h-6 text-orange-400" />;
       default:
-        return <Bell className="w-5 h-5 text-gray-500" />;
+        return <Bell className="w-6 h-6 text-gray-400" />;
     }
   };
 
@@ -202,312 +229,385 @@ const Notifications: React.FC = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) {
-      return `${diffMins} minut temu`;
-    } else if (diffHours < 24) {
-      return `${diffHours} godzin temu`;
-    } else if (diffDays === 1) {
-      return "Wczoraj";
-    } else if (diffDays < 7) {
-      return `${diffDays} dni temu`;
-    } else {
-      return date.toLocaleDateString("pl-PL");
-    }
+    if (diffMins < 1) return "Teraz";
+    if (diffMins < 60) return `${diffMins} min temu`;
+    if (diffHours < 24) return `${diffHours} godz. temu`;
+    if (diffDays === 1) return "Wczoraj";
+    if (diffDays < 7) return `${diffDays} dni temu`;
+    return date.toLocaleDateString("pl-PL");
   };
 
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header like AdminPanel */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button flex items-center gap-2"
-            >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
+          </div>
+
+          {/* Wyszukiwarka */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              navigate("/smartfony");
+            }}
+            className="flex-1 max-w-2xl"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </form>
+
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            {/* Ikona czatu */}
+            <button
+              onClick={() => navigate("/user/message")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
             </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-ads");
-                    }}
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    Ogłoszenia
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/message");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/personaldetails");
-                    }}
-                  >
-                    <User className="w-4 h-4 text-purple-600" />
-                    Profil
-                  </button>
-                  {isAdmin && (
+
+            {/* Ikona powiadomień - aktywna */}
+            <button
+              onClick={() => navigate("/user/notifications")}
+              className="p-2 bg-purple-600 rounded-lg transition-colors relative"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Ikona ulubionych */}
+            <button
+              onClick={() => navigate("/user/watchedads")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
+                </span>
+              )}
+            </button>
+
+            {/* Przycisk dodaj ogłoszenie */}
+            <button
+              onClick={() => navigate("/user/addadvertisement")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden lg:inline">Dodaj ogłoszenie</span>
+            </button>
+
+            {/* Dropdown Twoje konto */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                <span className="hidden md:inline">Twoje konto</span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
+                  {token ? (
+                    <>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
+                        Ogłoszenia
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
+                        <MessageSquare className="w-4 h-4 text-green-400" />
+                        Chat
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-purple-300" />
+                        Profil
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/admin");
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        >
+                          <Shield className="w-4 h-4 text-red-400" />
+                          Panel administratora
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-orange-400" />
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-cyan-400" />
+                          Panel użytkownika
+                        </button>
+                      )}
+                      <div className="border-t border-purple-400 my-1"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                      >
+                        <LogOut className="w-4 h-4 text-red-400" />
+                        Wyloguj
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        navigate("/admin");
+                        navigate("/login");
                       }}
                     >
-                      <Shield className="w-4 h-4 text-red-600" />
-                      Panel administratora
+                      <LogIn className="w-4 h-4 text-white" />
+                      Zaloguj się
                     </button>
                   )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/staffpanel");
-                      }}
-                    >
-                      <Users className="w-4 h-4 text-orange-600" />
-                      Panel pracownika
-                    </button>
-                  )}
-                  {(isAdmin || isStaff || isUser) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                  >
-                    <LogOut className="w-4 h-4 text-red-600" />
-                    Wyloguj
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div
-          className="container mx-auto px-4 relative"
-          style={{ paddingTop: "400px", paddingBottom: "48px" }}
-        >
-          <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 w-full flex flex-col gap-6 min-h-[300px] border-t-4 border-blue-500">
-            {/* Header with gradient background and icon */}
-            <div className="text-center relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg -z-10"></div>
-              <div className="flex items-center justify-center gap-2 py-4">
-                <Bell className="w-6 h-6 text-blue-600" />
-                <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Powiadomienia
-                </h2>
+      {/* Główna zawartość */}
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header sekcji */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center gap-3 mb-4">
+              <div className="p-3 bg-purple-600 rounded-full">
+                <Bell className="w-8 h-8 text-white" />
               </div>
             </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+              Powiadomienia
+            </h1>
+            <p className="text-gray-300 text-lg">
+              Śledź aktualizacje swoich obserwowanych ogłoszeń
+            </p>
+          </div>
 
-            {/* Actions bar */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-500" />
-                  <span className="text-gray-700 font-medium text-sm">
-                    {notifications.filter((n) => !n.isRead).length}{" "}
-                    nieprzeczytanych
+          {/* Panel akcji */}
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-gray-700">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 bg-purple-600/20 px-4 py-2 rounded-lg border border-purple-500/30">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <span className="text-white font-medium">
+                    {unreadCount} nieprzeczytanych
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="text-gray-700 font-medium text-sm">
+                <div className="flex items-center gap-2 bg-green-600/20 px-4 py-2 rounded-lg border border-green-500/30">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className="text-white font-medium">
                     {notifications.filter((n) => n.isRead).length} przeczytanych
                   </span>
                 </div>
               </div>
-              <button
-                onClick={handleMarkAllAsRead}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm rounded-lg hover:shadow-lg transition-all duration-200"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Oznacz wszystkie jako przeczytane
-              </button>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/50 border-2 border-purple-400"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Oznacz wszystkie jako przeczytane</span>
+                </button>
+              )}
             </div>
+          </div>
 
-            {/* Notifications list */}
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader className="w-8 h-8 mx-auto mb-4 text-blue-500 animate-spin" />
-                <p className="text-gray-500">Ładowanie powiadomień...</p>
+          {/* Lista powiadomień */}
+          {loading ? (
+            <div className="text-center py-20">
+              <Loader className="w-12 h-12 mx-auto mb-4 text-purple-400 animate-spin" />
+              <p className="text-gray-300 text-lg">Ładowanie powiadomień...</p>
+            </div>
+          ) : error ? (
+            <div className="bg-red-900/20 border border-red-500 rounded-xl p-8 text-center">
+              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+              <p className="text-red-400 font-medium text-lg">{error}</p>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700 rounded-xl p-12 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-purple-600/20 rounded-full flex items-center justify-center">
+                <Bell className="w-10 h-10 text-purple-400" />
               </div>
-            ) : error ? (
-              <div className="text-center py-8">
-                <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-                <p className="text-red-500 font-medium">{error}</p>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                  <Bell className="w-8 h-8 text-blue-500" />
-                </div>
-                <p className="text-gray-500 text-lg font-medium">
-                  Brak powiadomień
-                </p>
-                <p className="text-gray-400 text-sm mt-2">
-                  Gdy pojawią się nowe powiadomienia, zobaczysz je tutaj
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`bg-gradient-to-br from-white to-gray-50 border rounded-xl p-4 transition-all duration-300 hover:shadow-lg group cursor-pointer ${
-                      !notification.isRead
-                        ? "border-blue-300 bg-gradient-to-br from-blue-50 to-white"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-100 to-white flex items-center justify-center shadow-sm">
-                          {getNotificationIcon(notification.type)}
-                        </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Brak powiadomień
+              </h3>
+              <p className="text-gray-400 text-lg">
+                Gdy pojawią się nowe powiadomienia, zobaczysz je tutaj
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`group relative bg-gray-800/50 backdrop-blur-sm border rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 hover:border-purple-500 cursor-pointer ${
+                    !notification.isRead
+                      ? "border-purple-500 bg-purple-900/20"
+                      : "border-gray-700"
+                  }`}
+                >
+                  {!notification.isRead && (
+                    <div className="absolute top-4 right-4 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                  )}
+
+                  <div className="flex items-start gap-4">
+                    {/* Icon */}
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-12 h-12 rounded-full bg-gray-900/50 flex items-center justify-center border border-gray-700 group-hover:border-purple-500 transition-colors">
+                        {getNotificationIcon(notification.type)}
                       </div>
+                    </div>
 
-                      {/* Content */}
-                      <div className="flex-grow space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {notification.title}
-                          </h3>
-                          {!notification.isRead && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
-                          )}
+                    {/* Content */}
+                    <div className="flex-grow space-y-2 min-w-0">
+                      <h3 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">
+                        {notification.title}
+                      </h3>
+
+                      <p className="text-gray-300 leading-relaxed">
+                        {notification.message}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-700/50">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatTimestamp(notification.createdAt)}</span>
                         </div>
 
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          {notification.message}
-                        </p>
-
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Clock className="w-3 h-3" />
-                            <span>
-                              {formatTimestamp(notification.createdAt)}
-                            </span>
-                          </div>
-
-                          <div className="flex gap-2">
-                            {!notification.isRead && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMarkAsRead(notification.id);
-                                }}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              >
-                                <Eye className="w-3 h-3" />
-                                Oznacz jako przeczytane
-                              </button>
-                            )}
+                        <div className="flex gap-2">
+                          {!notification.isRead && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteNotification(notification.id);
+                                handleMarkAsRead(notification.id);
                               }}
-                              className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg transition-all duration-200"
                             >
-                              <Trash2 className="w-3 h-3" />
-                              Usuń
+                              <Eye className="w-4 h-4" />
+                              Przeczytane
                             </button>
-                          </div>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteNotification(notification.id);
+                            }}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Usuń
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Czarna stopka */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a
+              href="/jak-dziala-moblix"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Jak działa MobliX
+            </a>
+            <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+            <a
+              href="/regulamin"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Zasady bezpieczeństwa
+            </a>
+          </div>
+          <div className="text-center text-gray-400 text-xs mt-4">
+            © 2024 MobliX. Wszelkie prawa zastrzeżone.
           </div>
         </div>
-      </div>
-
-      {/* White footer bar at bottom */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 };

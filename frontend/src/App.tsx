@@ -10,7 +10,7 @@ import SystemLogs from "./components/admin/SystemLogs";
 import Raports from "./components/admin/Raports";
 import AddAdvertisement from "./components/user/AddAdvertisement";
 import PersonalDetails from "./components/user/PersonalDetails";
-import EditAd from "./components/admin/EditAd";
+import EditAd from "./components/staff/EditAd";
 import UserEditAd from "./components/user/editAd";
 import JakDzialaMoblix from "./components/overall/JakDzialaMoblix";
 import ZasadyBezpieczeństwa from "./components/overall/ZasadyBezpieczeństwa";
@@ -91,17 +91,17 @@ const App: React.FC = () => {
           }
         />
         <Route
-          path="/admin/edit-ad"
+          path="/staff/edit-ad"
           element={
-            <PrivateRoute requiredRole="ADMIN">
+            <PrivateRoute requiredRole={["ADMIN", "STAFF"]}>
               <EditAd />
             </PrivateRoute>
           }
         />
         <Route
-          path="/admin/edit-ad/:id"
+          path="/staff/edit-ad/:id"
           element={
-            <PrivateRoute requiredRole="ADMIN">
+            <PrivateRoute requiredRole={["ADMIN", "STAFF"]}>
               <EditAd />
             </PrivateRoute>
           }
@@ -125,7 +125,7 @@ const App: React.FC = () => {
         <Route path="/user/message" element={<Message />} />
         <Route path="/jak-dziala-moblix" element={<JakDzialaMoblix />} />
         <Route path="/user/notifications" element={<Notifications />} />
-        <Route path="/user/watched-ads" element={<WatchedAds />} />
+        <Route path="/user/watchedads" element={<WatchedAds />} />
         <Route path="/user/your-ads" element={<YourAds />} />
         <Route path="/user/mainpanel" element={<MainPanel />} />
 

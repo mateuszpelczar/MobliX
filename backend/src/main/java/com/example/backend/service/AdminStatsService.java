@@ -70,7 +70,13 @@ public class AdminStatsService {
     private long getActiveUsersToday() {
         LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
         // Liczba unikalnych użytkowników, którzy wykonali wyszukiwania dzisiaj
-        return searchLogRepository.countDistinctUserIdByCreatedAtAfter(startOfDay);
+        //ignoruj null userId - niezalogowani uzytkownicy
+        long searchActiveUsers = searchLogRepository.countDistinctUserIdByCreatedAtAfter(startOfDay);
+        
+        // Użytkownicy, którzy dodali ogłoszenia
+        long adActiveUsers = advertisementRepository.countDistinctUserByCreatedAtAfter(startOfDay);
+
+        return searchActiveUsers + adActiveUsers;
     }
 
     private long getNewAdsLast24Hours() {

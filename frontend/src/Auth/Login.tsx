@@ -42,15 +42,15 @@ const Login: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Tło z MainPanel (rozmazane) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 to-slate-900/30 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
       {/* Formularz logowania */}
-      <div className="relative bg-white rounded-2xl shadow-2xl p-12 w-full max-w-md mx-4">
+      <div className="relative bg-gray-800 rounded-2xl shadow-2xl p-12 w-full max-w-md mx-4 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">Logowanie</h2>
+          <h2 className="text-3xl font-bold text-white">Logowanie</h2>
           <button
             onClick={() => navigate("/")}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <span className="text-2xl">×</span>
           </button>
@@ -58,7 +58,7 @@ const Login: React.FC = () => {
 
         <form onSubmit={handleLogin} className="flex flex-col gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Email
             </label>
             <input
@@ -67,12 +67,12 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Hasło
             </label>
             <div className="relative">
@@ -82,7 +82,7 @@ const Login: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-10 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 pr-10 text-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -95,11 +95,11 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        <p className="text-center text-gray-600 text-sm mt-6">
+        <p className="text-center text-gray-300 text-sm mt-6">
           Nie masz konta?{" "}
           <Link
             to="/register"
-            className="text-purple-600 hover:underline font-medium"
+            className="text-purple-400 hover:text-purple-300 hover:underline font-medium"
           >
             Zarejestruj się
           </Link>

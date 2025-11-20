@@ -6,6 +6,11 @@ import com.example.backend.model.User;
 import com.example.backend.others.LoginRequest;
 import com.example.backend.others.RegisterRequest;
 import com.example.backend.others.UpdateUserRequest;
+import com.example.backend.repository.AdvertisementRepository;
+import com.example.backend.repository.FavoriteAdRepository;
+import com.example.backend.repository.LogRepository;
+import com.example.backend.repository.MessageRepository;
+import com.example.backend.repository.NotificationRepository;
 import com.example.backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,11 +24,23 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final LogRepository logRepository;
+    private final FavoriteAdRepository favoriteRepository;
+    private final AdvertisementRepository advertisementRepository;
+    private final MessageRepository messageRepository;
+    private final NotificationRepository notificationRepository;
+    
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,LogRepository logRepository, FavoriteAdRepository favoriteRepository,AdvertisementRepository advertisementRepository,MessageRepository messageRepository,NotificationRepository notificationRepository ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.logRepository = logRepository;
+        this.favoriteRepository = favoriteRepository;
+        this.advertisementRepository = advertisementRepository;
+        this.messageRepository = messageRepository;
+        this.notificationRepository = notificationRepository;
+
     }
  
     // === METODY AUTORYZACJI ===
@@ -213,7 +230,35 @@ public class UserService {
                 throw new RuntimeException("Cannot delete the last admin user");
             }
         }
+
+        //1. Usuniecie powiazania z ulubionymi ogloszeniami
+        if(favoriteRepository !=null){
+            favoriteRepository.deleteByUserId(userId);
+        }
+
+        //2. Usuniecie powiazania uzytkownika z ogloszeniami
+        if(advertisementRepository !=null){
+            advertisementRepository.deleteByUserId(userId);
+        }
+
+
+        //3. Usuniecie powiazania uzytkownika z wiadomosciami
+        if(messageRepository !=null){
+            messageRepository.deleteByUserId(userId);
+        }
+
+        //4. Usuniecie powiazania uzytkownika z powiadomieniami
+        if(notificationRepository !=null){
+            notificationRepository.deleteByUserId(userId);
+        }
+
+        //5. Usuniecie powiazania z logami (ustaw user_id na NULL)
+        if(logRepository != null){
+            logRepository.nullifyUserIdForUser(userId);
+        }
         
+
+        //6. Usuniecie uzytkownika
         userRepository.delete(user);
     }
 

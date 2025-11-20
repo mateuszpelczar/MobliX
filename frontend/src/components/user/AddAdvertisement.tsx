@@ -22,7 +22,6 @@ import {
   Palette,
   MessageSquare,
   ShoppingBag,
-  Star,
   User,
   Users,
   LogOut,
@@ -31,6 +30,8 @@ import {
   Search,
   Package,
   Building2,
+  Bell,
+  Heart,
 } from "lucide-react";
 import { FaAndroid, FaApple } from "react-icons/fa";
 import { voivodeships } from "../../data/locations";
@@ -108,6 +109,10 @@ const AddAdvertisement: React.FC = () => {
   const [includesCharger, setIncludesCharger] = useState<boolean>(false);
   const [warranty, setWarranty] = useState<string>("");
   const [condition, setCondition] = useState<string>("NEW");
+
+  // Stan dla rozwijania sekcji dodatkowych specyfikacji
+  const [showAdditionalSpecs, setShowAdditionalSpecs] =
+    useState<boolean>(false);
 
   // Typ sprzedawcy - czy dodajesz jako osoba prywatna czy firma
   const [sellerType, setSellerType] = useState<"personal" | "business">(
@@ -413,180 +418,225 @@ const AddAdvertisement: React.FC = () => {
   };
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* White header bar at top */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        {/* Logo in top left */}
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
+          </div>
 
-        {/* Account dropdown in top right corner */}
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4"
-            >
-              <User className="w-3 h-3 sm:w-4 sm:h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ml-1 ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+          {/* Wyszukiwarka */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              navigate("/smartfony");
+            }}
+            className="flex-1 max-w-2xl"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </form>
+
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            {/* Ikona czatu */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/message") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
             </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
-                  {isAuthenticated ? (
+
+            {/* Ikona powiadomień */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/notifications") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+
+            {/* Ikona ulubionych */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/watchedads") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+            </button>
+
+            {/* Przycisk dodaj ogłoszenie */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/addadvertisement") : navigate("/login")
+              }
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Dodaj ogłoszenie
+            </button>
+
+            {/* Dropdown Twoje konto */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Twoje konto
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
+                  {token ? (
                     <>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/your-ads");
                         }}
                       >
-                        <ShoppingBag className="w-4 h-4 text-blue-600" />
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
                         Ogłoszenia
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/message");
                         }}
                       >
-                        <MessageSquare className="w-4 h-4 text-green-600" />
+                        <MessageSquare className="w-4 h-4 text-green-400" />
                         Chat
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/ratings");
-                        }}
-                      >
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        Oceny
-                      </button>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/personaldetails");
                         }}
                       >
-                        <User className="w-4 h-4 text-purple-600" />
+                        <User className="w-4 h-4 text-purple-300" />
                         Profil
                       </button>
                       {isAdmin && (
                         <button
                           onClick={handleGoToAdminPanel}
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         >
-                          <Shield className="w-4 h-4 text-red-600" />
+                          <Shield className="w-4 h-4 text-red-400" />
                           Panel administratora
                         </button>
                       )}
                       {(isAdmin || isStaff) && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                           onClick={() => {
                             setIsDropdownOpen(false);
                             navigate("/staffpanel");
                           }}
                         >
-                          <Users className="w-4 h-4 text-orange-600" />
+                          <Users className="w-4 h-4 text-orange-400" />
                           Panel pracownika
                         </button>
                       )}
                       {(isAdmin || isStaff || isUser) && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                           onClick={() => {
                             setIsDropdownOpen(false);
                             navigate("/userpanel");
                           }}
                         >
-                          <User className="w-4 h-4 text-blue-600" />
+                          <User className="w-4 h-4 text-cyan-400" />
                           Panel użytkownika
                         </button>
                       )}
-                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="border-t border-purple-400 my-1"></div>
                       <button
                         onClick={handleLogout}
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        <LogOut className="w-4 h-4 text-red-500" />
+                        <LogOut className="w-4 h-4 text-red-400" />
                         Wyloguj
                       </button>
                     </>
                   ) : (
-                    <>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/login");
-                        }}
-                      >
-                        <LogIn className="w-4 h-4 text-green-600" />
-                        Zaloguj się
-                      </button>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/register");
-                        }}
-                      >
-                        <User className="w-4 h-4 text-blue-600" />
-                        Zarejestruj się
-                      </button>
-                    </>
+                    <button
+                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/login");
+                      }}
+                    >
+                      <LogIn className="w-4 h-4 text-white" />
+                      Zaloguj się
+                    </button>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Main Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-16 pb-12 max-w-5xl">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6 overflow-y-auto max-h-[75vh]">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <Plus className="h-6 w-6 text-purple-600" />
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 border border-gray-700 animate-fade-in">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg shadow-lg">
+                <Plus className="h-8 w-8 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Dodaj ogłoszenie
-              </h1>
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                  Dodaj ogłoszenie
+                </h1>
+                <p className="text-gray-400 mt-1">
+                  Wypełnij formularz i opublikuj swoje ogłoszenie
+                </p>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Sekcja podstawowa - OBOWIĄZKOWA */}
-              <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50">
+              <div className="border-2 border-purple-500 rounded-xl p-6 bg-gray-900">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-purple-600 p-2 rounded-lg">
                     <FileText className="h-5 w-5 text-white" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-xl font-bold text-white">
                     Informacje podstawowe *
                   </h2>
                 </div>
 
                 {/* Wybór typu sprzedawcy - tylko jeśli użytkownik ma oba typy kont */}
                 {userAccountType && (
-                  <div className="mb-6 p-4 bg-white rounded-lg border border-purple-200">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-purple-500">
+                    <label className="block text-sm font-medium text-gray-300 mb-3">
                       Dodajesz ogłoszenie jako:
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -595,8 +645,8 @@ const AddAdvertisement: React.FC = () => {
                         onClick={() => setSellerType("personal")}
                         className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
                           sellerType === "personal"
-                            ? "border-purple-600 bg-purple-50 text-purple-700"
-                            : "border-gray-300 bg-white text-gray-700 hover:border-purple-300"
+                            ? "border-purple-500 bg-purple-600 text-white"
+                            : "border-gray-600 bg-gray-700 text-gray-300 hover:border-purple-400"
                         }`}
                       >
                         <User className="h-5 w-5" />
@@ -607,8 +657,8 @@ const AddAdvertisement: React.FC = () => {
                         onClick={() => setSellerType("business")}
                         className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
                           sellerType === "business"
-                            ? "border-purple-600 bg-purple-50 text-purple-700"
-                            : "border-gray-300 bg-white text-gray-700 hover:border-purple-300"
+                            ? "border-purple-500 bg-purple-600 text-white"
+                            : "border-gray-600 bg-gray-700 text-gray-300 hover:border-purple-400"
                         }`}
                         disabled={userAccountType !== "business"}
                       >
@@ -618,7 +668,7 @@ const AddAdvertisement: React.FC = () => {
                     </div>
                     {userAccountType !== "business" &&
                       sellerType === "personal" && (
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-400 mt-2">
                           Aby dodawać ogłoszenia jako firma, zmień typ konta w
                           ustawieniach profilu
                         </p>
@@ -628,12 +678,12 @@ const AddAdvertisement: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
                       <Tag className="h-4 w-4" />
                       Tytuł *
                     </label>
                     <input
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Np. iPhone 15 Pro 256 GB"
@@ -642,14 +692,14 @@ const AddAdvertisement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
                       <DollarSign className="h-4 w-4" />
                       Cena (PLN) *
                     </label>
                     <input
                       type="number"
                       inputMode="decimal"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="np. 4299"
@@ -659,15 +709,15 @@ const AddAdvertisement: React.FC = () => {
                 </div>
 
                 <div className="mt-4">
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
                     <FileText className="h-4 w-4" />
                     Opis
-                    <span className="text-xs text-gray-500 ml-auto">
+                    <span className="text-xs text-gray-400 ml-auto">
                       {description.length}/2000 znaków
                     </span>
                   </label>
                   <textarea
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     rows={4}
                     value={description}
                     onChange={(e) => {
@@ -783,17 +833,17 @@ const AddAdvertisement: React.FC = () => {
               </div>
 
               {/* Sekcja zdjęć */}
-              <div className="border border-gray-200 rounded-xl p-6">
+              <div className="border border-purple-500 rounded-xl p-6 bg-gray-900">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <Camera className="h-5 w-5 text-blue-600" />
+                  <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
+                    <Camera className="h-5 w-5 text-white" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Zdjęcia</h2>
+                  <h2 className="text-xl font-bold text-white">Zdjęcia</h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
                       <Upload className="h-4 w-4" />
                       Wybierz pliki ({images.length + imageUrls.length}/6)
                     </label>
@@ -804,7 +854,7 @@ const AddAdvertisement: React.FC = () => {
                       accept="image/*"
                       onChange={(e) => onSelectImages(e.target.files)}
                       disabled={images.length + imageUrls.length >= 6}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-800 disabled:cursor-not-allowed"
                     />
                     {images.length > 0 && (
                       <div className="flex gap-2 mt-3">
@@ -829,14 +879,14 @@ const AddAdvertisement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
                       <Upload className="h-4 w-4" />
                       Dodaj linki do zdjęć ({images.length + imageUrls.length}
                       /6)
                     </label>
                     <div className="flex gap-2 mb-3">
                       <input
-                        className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         value={newImageUrl}
                         onChange={(e) => setNewImageUrl(e.target.value)}
                         placeholder="https://i.imgur.com/abc123.jpg lub https://example.com/image.png"
@@ -849,7 +899,7 @@ const AddAdvertisement: React.FC = () => {
                           !newImageUrl.trim() ||
                           images.length + imageUrls.length >= 6
                         }
-                        className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Plus className="h-4 w-4" />
                         Dodaj
@@ -859,12 +909,12 @@ const AddAdvertisement: React.FC = () => {
                     {/* Wyświetlanie dodanych linków */}
                     {imageUrls.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Dodane linki:</p>
+                        <p className="text-sm text-gray-300">Dodane linki:</p>
                         <div className="space-y-2">
                           {imageUrls.map((url, index) => (
                             <div
                               key={index}
-                              className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg"
+                              className="flex items-center gap-2 p-2 bg-gray-700 rounded-lg"
                             >
                               <img
                                 src={url}
@@ -875,7 +925,7 @@ const AddAdvertisement: React.FC = () => {
                                     "https://dummyimage.com/48x48/ccc/fff&text=Error";
                                 }}
                               />
-                              <span className="flex-1 text-sm text-gray-700 truncate">
+                              <span className="flex-1 text-sm text-gray-300 truncate">
                                 {url}
                               </span>
                               <button
@@ -891,7 +941,7 @@ const AddAdvertisement: React.FC = () => {
                       </div>
                     )}
 
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-400 mt-2">
                       💡 Możesz dodać łącznie do 6 zdjęć (pliki + linki). Dla
                       Imgur: użyj bezpośredniego linku do obrazu
                     </p>
@@ -1094,206 +1144,224 @@ const AddAdvertisement: React.FC = () => {
                     required
                   />
                 </div>
+
+                {/* Przycisk rozwijania dodatkowych specyfikacji */}
+                <button
+                  type="button"
+                  onClick={() => setShowAdditionalSpecs(!showAdditionalSpecs)}
+                  className="w-full mt-6 flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5 text-purple-400" />
+                    <span className="text-white font-semibold">
+                      Dodatkowe specyfikacje (opcjonalne)
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`h-5 w-5 text-white transition-transform ${
+                      showAdditionalSpecs ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Rozwijana sekcja dodatkowych specyfikacji */}
+                {showAdditionalSpecs && (
+                  <div className="mt-4 space-y-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+                    {/* Wyświetlacz */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Monitor className="h-5 w-5" />
+                        Wyświetlacz
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Przekątna
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={displaySize}
+                            onChange={(e) => setDisplaySize(e.target.value)}
+                            placeholder="np. 6.1 cala"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Technologia
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={displayTech}
+                            onChange={(e) => setDisplayTech(e.target.value)}
+                            placeholder="np. Super Retina XDR OLED"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Łączność */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Wifi className="h-5 w-5" />
+                        Łączność
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                            <Wifi className="h-4 w-4" />
+                            Wi-Fi
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={wifi}
+                            onChange={(e) => setWifi(e.target.value)}
+                            placeholder="np. Wi‑Fi 6E"
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                            <Bluetooth className="h-4 w-4" />
+                            Bluetooth
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={bluetooth}
+                            onChange={(e) => setBluetooth(e.target.value)}
+                            placeholder="np. 5.3"
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                            <Shield className="h-4 w-4" />
+                            Odporność
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={ipRating}
+                            onChange={(e) => setIpRating(e.target.value)}
+                            placeholder="np. IP68"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ładowanie */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Zap className="h-5 w-5" />
+                        Ładowanie
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Ładowanie przewodowe
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={fastCharging}
+                            onChange={(e) => setFastCharging(e.target.value)}
+                            placeholder="np. 27W"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Ładowanie bezprzewodowe
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={wirelessCharging}
+                            onChange={(e) =>
+                              setWirelessCharging(e.target.value)
+                            }
+                            placeholder="np. 15W MagSafe"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Procesor i grafika */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Cpu className="h-5 w-5" />
+                        Procesor i grafika
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Procesor
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={processor}
+                            onChange={(e) => setProcessor(e.target.value)}
+                            placeholder="np. Apple A17 Pro"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Karta graficzna
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={gpu}
+                            onChange={(e) => setGpu(e.target.value)}
+                            placeholder="np. Apple GPU 6-core"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Wyświetlacz - zaawansowane */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Monitor className="h-5 w-5" />
+                        Wyświetlacz - szczegóły
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Rozdzielczość
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={screenResolution}
+                            onChange={(e) =>
+                              setScreenResolution(e.target.value)
+                            }
+                            placeholder="np. 2556 x 1179"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-300 mb-2 block">
+                            Częstotliwość odświeżania (Hz)
+                          </label>
+                          <input
+                            className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            value={refreshRate}
+                            onChange={(e) => setRefreshRate(e.target.value)}
+                            placeholder="np. 120Hz"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Dodatkowe specyfikacje - OPCJONALNE */}
-              <div className="border border-gray-200 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-gray-100 p-2 rounded-lg">
-                    <Monitor className="h-5 w-5 text-gray-600" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Dodatkowe specyfikacje (opcjonalne)
-                  </h2>
-                </div>
-
-                {/* Wyświetlacz */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Monitor className="h-5 w-5" />
-                    Wyświetlacz
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Przekątna
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={displaySize}
-                        onChange={(e) => setDisplaySize(e.target.value)}
-                        placeholder="np. 6.1 cala"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Technologia
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={displayTech}
-                        onChange={(e) => setDisplayTech(e.target.value)}
-                        placeholder="np. Super Retina XDR OLED"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Łączność */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Wifi className="h-5 w-5" />
-                    Łączność
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Wifi className="h-4 w-4" />
-                        Wi-Fi
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={wifi}
-                        onChange={(e) => setWifi(e.target.value)}
-                        placeholder="np. Wi‑Fi 6E"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Bluetooth className="h-4 w-4" />
-                        Bluetooth
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={bluetooth}
-                        onChange={(e) => setBluetooth(e.target.value)}
-                        placeholder="np. 5.3"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Shield className="h-4 w-4" />
-                        Odporność
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={ipRating}
-                        onChange={(e) => setIpRating(e.target.value)}
-                        placeholder="np. IP68"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ładowanie */}
+              {/* Dodatkowe informacje */}
+              <div className="border border-purple-500 rounded-xl p-6 bg-gray-900">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Zap className="h-5 w-5" />
-                    Ładowanie
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Ładowanie przewodowe
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={fastCharging}
-                        onChange={(e) => setFastCharging(e.target.value)}
-                        placeholder="np. 27W"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Ładowanie bezprzewodowe
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={wirelessCharging}
-                        onChange={(e) => setWirelessCharging(e.target.value)}
-                        placeholder="np. 15W MagSafe"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Procesor i grafika */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Cpu className="h-5 w-5" />
-                    Procesor i grafika
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Procesor
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={processor}
-                        onChange={(e) => setProcessor(e.target.value)}
-                        placeholder="np. Apple A17 Pro"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Karta graficzna
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={gpu}
-                        onChange={(e) => setGpu(e.target.value)}
-                        placeholder="np. Apple GPU 6-core"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Wyświetlacz - zaawansowane */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Monitor className="h-5 w-5" />
-                    Wyświetlacz - szczegóły
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Rozdzielczość
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={screenResolution}
-                        onChange={(e) => setScreenResolution(e.target.value)}
-                        placeholder="np. 2556 x 1179"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Częstotliwość odświeżania (Hz)
-                      </label>
-                      <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                        value={refreshRate}
-                        onChange={(e) => setRefreshRate(e.target.value)}
-                        placeholder="np. 120Hz"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dodatkowe informacje */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                     <Package className="h-5 w-5" />
                     Dodatkowe informacje
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      <label className="text-sm font-medium text-gray-300 mb-2 block">
                         Stan urządzenia *
                       </label>
                       <select
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         value={condition}
                         onChange={(e) => setCondition(e.target.value)}
                         required
@@ -1307,14 +1375,14 @@ const AddAdvertisement: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      <label className="text-sm font-medium text-gray-300 mb-2 block">
                         Gwarancja
-                        <span className="text-xs text-gray-500 ml-2">
+                        <span className="text-xs text-gray-400 ml-2">
                           {warranty.length}/500 znaków
                         </span>
                       </label>
                       <input
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         value={warranty}
                         onChange={(e) => {
                           if (e.target.value.length <= 500) {
@@ -1325,7 +1393,7 @@ const AddAdvertisement: React.FC = () => {
                         maxLength={500}
                       />
                       {warranty.length > 450 && (
-                        <p className="text-xs text-orange-600 mt-1">
+                        <p className="text-xs text-orange-400 mt-1">
                           Uwaga: Zbliżasz się do limitu znaków (
                           {warranty.length}/500)
                         </p>
@@ -1340,9 +1408,9 @@ const AddAdvertisement: React.FC = () => {
                         type="checkbox"
                         checked={includesCharger}
                         onChange={(e) => setIncludesCharger(e.target.checked)}
-                        className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                        className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500 focus:ring-2"
                       />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-gray-300">
                         Ładowarka z kablem w zestawie
                       </span>
                     </label>
@@ -1365,36 +1433,40 @@ const AddAdvertisement: React.FC = () => {
         </div>
       </div>
 
-      {/* White footer bar at bottom */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
+      {/* Czarna stopka */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a
+              href="/jak-dziala-moblix"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Jak działa MobliX
+            </a>
+            <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+            <a
+              href="/regulamin"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Zasady bezpieczeństwa
+            </a>
+          </div>
+          <div className="text-center mt-4 text-gray-400 text-xs">
+            © 2024 MobliX. Wszystkie prawa zastrzeżone.
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

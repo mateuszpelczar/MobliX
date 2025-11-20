@@ -8,7 +8,6 @@ import {
   LogOut,
   ShoppingBag,
   MessageSquare,
-  Star,
   Shield,
   Users,
   Search,
@@ -18,6 +17,8 @@ import {
   Heart,
   Eye,
   LogIn,
+  Bell,
+  Plus,
 } from "lucide-react";
 import "../../styles/MobileResponsive.css";
 import { voivodeships } from "../../data/locations";
@@ -93,6 +94,7 @@ const SmartphoneCatalog: React.FC = () => {
   const [smartphones, setSmartphones] = useState<SmartphoneData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   // Pobieranie smartfonów z API
   useEffect(() => {
@@ -159,6 +161,28 @@ const SmartphoneCatalog: React.FC = () => {
     fetchSmartphones();
   }, []);
 
+  // Fetch favorite count
+  useEffect(() => {
+    fetchFavoriteCount();
+  }, []);
+
+  const fetchFavoriteCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch("http://localhost:8080/api/favorites", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFavoriteCount(data.length);
+      }
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState(
     searchParams.get("search") || ""
@@ -177,6 +201,10 @@ const SmartphoneCatalog: React.FC = () => {
     max: searchParams.get("maxPrice") || "",
   });
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(searchParams.get("page") || "1")
+  );
+  const itemsPerPage = 8;
 
   // Generate or retrieve session ID
   const getSessionId = () => {
@@ -191,7 +219,7 @@ const SmartphoneCatalog: React.FC = () => {
   };
 
   // Log search to backend
-  const logSearch = async (resultsCount: number) => {
+  const logSearch = async (resultsCount: number, searchSource: string) => {
     try {
       const token = localStorage.getItem("token");
       let userId = null;
@@ -214,6 +242,7 @@ const SmartphoneCatalog: React.FC = () => {
         userId: userId,
         sessionId: getSessionId(),
         resultsCount: resultsCount,
+        searchSource: searchSource,
       });
     } catch (error) {
       console.error("Error logging search:", error);
@@ -247,6 +276,7 @@ const SmartphoneCatalog: React.FC = () => {
     if (priceRange.min) params.set("minPrice", priceRange.min);
     if (priceRange.max) params.set("maxPrice", priceRange.max);
     if (sortBy !== "newest") params.set("sort", sortBy);
+    if (currentPage !== 1) params.set("page", currentPage.toString());
 
     setSearchParams(params);
   }, [
@@ -256,6 +286,7 @@ const SmartphoneCatalog: React.FC = () => {
     selectedLocation,
     priceRange,
     sortBy,
+    currentPage,
     setSearchParams,
   ]);
 
@@ -271,9 +302,10 @@ const SmartphoneCatalog: React.FC = () => {
       const timer = setTimeout(() => {
         // Calculate filtered results count
         const resultsCount = smartphones.filter((phone) => {
-          const matchesSearch = phone.title
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase());
+          const matchesSearch =
+            phone.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            phone.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            phone.model.toLowerCase().includes(searchTerm.toLowerCase());
           const matchesBrand =
             selectedBrand === "all" || phone.brand === selectedBrand;
           const matchesCondition =
@@ -299,7 +331,15 @@ const SmartphoneCatalog: React.FC = () => {
           );
         }).length;
 
-        logSearch(resultsCount);
+        // Determine search source
+        let searchSource = "catalog_search";
+        if (searchTerm) {
+          searchSource = "catalog_search";
+        } else if (selectedBrand !== "all") {
+          searchSource = "catalog_filter";
+        }
+
+        logSearch(resultsCount, searchSource);
       }, 1500); // Debounce 1.5s
 
       return () => clearTimeout(timer);
@@ -307,18 +347,18 @@ const SmartphoneCatalog: React.FC = () => {
   }, [searchTerm, selectedBrand, priceRange, smartphones]);
 
   const token = localStorage.getItem("token");
-  let isAuthenticated = false;
   let userRole = "";
   let isAdmin = false;
   let isStaff = false;
+  let isUser = false;
 
   if (token) {
     try {
       const decodedToken = jwtDecode<JwtPayLoad>(token);
-      isAuthenticated = true;
       userRole = decodedToken.role;
       isAdmin = userRole === "ADMIN";
       isStaff = userRole === "STAFF" || isAdmin;
+      isUser = userRole === "USER" || isUser;
     } catch (error) {
       localStorage.removeItem("token");
     }
@@ -330,12 +370,18 @@ const SmartphoneCatalog: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
+  const handleGoToAdminPanel = () => {
+    navigate("/admin");
+    setIsDropdownOpen(false);
+  };
+
   // Filter smartphones based on search criteria
   const filteredSmartphones = smartphones
     .filter((phone) => {
-      const matchesSearch = phone.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        phone.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        phone.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        phone.model.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesBrand =
         selectedBrand === "all" || phone.brand === selectedBrand;
       const matchesCondition =
@@ -375,189 +421,255 @@ const SmartphoneCatalog: React.FC = () => {
       }
     });
 
-  return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* White header bar at top */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        {/* Logo in top left */}
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredSmartphones.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSmartphones = filteredSmartphones.slice(startIndex, endIndex);
 
-        {/* Account dropdown in top right corner */}
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4"
-            >
-              <User className="w-3 h-3 sm:w-4 sm:h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ml-1 ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    selectedBrand,
+    selectedCondition,
+    selectedLocation,
+    priceRange,
+    sortBy,
+  ]);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
+          </div>
+
+          {/* Wyszukiwarka */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault(); /* Logika wyszukiwania już obsługiwana przez filtry */
+            }}
+            className="flex-1 max-w-2xl"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </form>
+
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            {/* Ikona czatu */}
+            <button
+              onClick={() => navigate("/user/message")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
             </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
-                  {isAuthenticated ? (
+
+            {/* Ikona powiadomień */}
+            <button
+              onClick={() => navigate("/user/notifications")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+
+            {/* Ikona ulubionych */}
+            <button
+              onClick={() => navigate("/user/watchedads")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
+                </span>
+              )}
+            </button>
+
+            {/* Przycisk dodaj ogłoszenie */}
+            <button
+              onClick={() => navigate("/user/addadvertisement")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden lg:inline">Dodaj ogłoszenie</span>
+            </button>
+
+            {/* Dropdown Twoje konto */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Twoje konto
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
+                  {token ? (
                     <>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/your-ads");
                         }}
                       >
-                        <ShoppingBag className="w-4 h-4 text-blue-600" />
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
                         Ogłoszenia
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/message");
                         }}
                       >
-                        <MessageSquare className="w-4 h-4 text-green-600" />
+                        <MessageSquare className="w-4 h-4 text-green-400" />
                         Chat
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/ratings");
-                        }}
-                      >
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        Oceny
-                      </button>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/personaldetails");
                         }}
                       >
-                        <User className="w-4 h-4 text-purple-600" />
+                        <User className="w-4 h-4 text-purple-300" />
                         Profil
                       </button>
                       {isAdmin && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/admin");
-                          }}
+                          onClick={handleGoToAdminPanel}
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         >
-                          <Shield className="w-4 h-4 text-red-600" />
+                          <Shield className="w-4 h-4 text-red-400" />
                           Panel administratora
                         </button>
                       )}
-                      {isStaff && (
+                      {(isAdmin || isStaff) && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                           onClick={() => {
                             setIsDropdownOpen(false);
                             navigate("/staffpanel");
                           }}
                         >
-                          <Users className="w-4 h-4 text-orange-600" />
+                          <Users className="w-4 h-4 text-orange-400" />
                           Panel pracownika
                         </button>
                       )}
-                      {(isAdmin || isStaff || isAuthenticated) && (
+                      {(isAdmin || isStaff || isUser) && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                           onClick={() => {
                             setIsDropdownOpen(false);
                             navigate("/userpanel");
                           }}
                         >
-                          <User className="w-4 h-4 text-blue-600" />
+                          <User className="w-4 h-4 text-cyan-400" />
                           Panel użytkownika
                         </button>
                       )}
-                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="border-t border-purple-400 my-1"></div>
                       <button
                         onClick={handleLogout}
-                        className="dropdown-logout flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        <LogOut className="w-4 h-4 text-red-500" />
+                        <LogOut className="w-4 h-4 text-red-400" />
                         Wyloguj
                       </button>
                     </>
                   ) : (
                     <button
-                      className="dropdown-logout w-full text-left flex items-center gap-3 px-4 py-2"
+                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/login");
                       }}
                     >
-                      <LogIn className="w-4 h-4 text-green-600" />
+                      <LogIn className="w-4 h-4 text-white" />
                       Zaloguj się
                     </button>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Main Content - Fioletowe tło */}
-      <div className="panel-content flex-grow w-full overflow-y-auto bg-purple-600">
-        <div className="container mx-auto px-4 relative pt-32 pb-12 max-w-7xl">
-          {/* Jeden biały kontener na fioletowym tle */}
-          <div className="bg-white rounded-lg shadow-lg p-6 max-h-[calc(100vh-10rem)] overflow-y-auto mt-20">
-            {/* Tytuł strony po lewej stronie - standardowy rozmiar */}
-            <div className="mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-                Katalog smartfonów
-              </h1>
-              <p className="text-base text-gray-600">
-                Znajdź swój idealny smartfon spośród setek ogłoszeń
-              </p>
-            </div>
+      {/* Main Content - Ciemny gradient tło */}
+      <div className="flex-grow w-full">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          {/* Tytuł strony */}
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              Katalog smartfonów
+            </h1>
+            <p className="text-base text-gray-300">
+              Znajdź swój idealny smartfon spośród setek ogłoszeń
+            </p>
+          </div>
 
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Filtry po lewej stronie - przesunięte w dół */}
-              <div className="lg:w-1/4 lg:min-w-[280px]">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Filtry po lewej stronie - ciemny sidebar */}
+            <div className="lg:w-1/4 lg:min-w-[280px] lg:self-start lg:sticky lg:top-4">
+              <div className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700 min-h-[800px]">
                 {/* Tytuł sekcji filtrów */}
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Filtry</h2>
+                <h2 className="text-lg font-bold text-white mb-6 pb-2 border-b border-gray-700">
+                  Filtry
+                </h2>
 
                 {/* Search Bar */}
-                <div className="mb-4">
+                <div className="mb-6">
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="Szukaj smartfonów..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   </div>
                 </div>
 
                 {/* Filters */}
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Brand Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="mt-8">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Marka
                     </label>
                     <select
                       value={selectedBrand}
                       onChange={(e) => setSelectedBrand(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="all">Wszystkie marki</option>
                       {availableBrands.map((brand) => (
@@ -570,13 +682,13 @@ const SmartphoneCatalog: React.FC = () => {
 
                   {/* Condition Filter */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Stan
                     </label>
                     <select
                       value={selectedCondition}
                       onChange={(e) => setSelectedCondition(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="all">Wszystkie stany</option>
                       <option value="NEW">Nowy</option>
@@ -589,13 +701,13 @@ const SmartphoneCatalog: React.FC = () => {
 
                   {/* Location Filter */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Lokalizacja
                     </label>
                     <select
                       value={selectedLocation}
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="all">Wszystkie lokalizacje</option>
                       {voivodeships.map((voivodeship) => (
@@ -608,13 +720,13 @@ const SmartphoneCatalog: React.FC = () => {
 
                   {/* Sort Filter */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Sortowanie
                     </label>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="newest">Najnowsze</option>
                       <option value="oldest">Najstarsze</option>
@@ -625,7 +737,7 @@ const SmartphoneCatalog: React.FC = () => {
 
                   {/* Price Range */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Zakres cen (PLN)
                     </label>
                     <div className="space-y-2">
@@ -636,7 +748,7 @@ const SmartphoneCatalog: React.FC = () => {
                         onChange={(e) =>
                           setPriceRange({ ...priceRange, min: e.target.value })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                       <input
                         type="number"
@@ -645,37 +757,39 @@ const SmartphoneCatalog: React.FC = () => {
                         onChange={(e) =>
                           setPriceRange({ ...priceRange, max: e.target.value })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Główna treść po prawej stronie */}
-              <div className="lg:w-3/4 flex-1">
-                {/* Loading State */}
-                {loading && (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Ładowanie smartfonów...</p>
-                  </div>
-                )}
+            {/* Główna treść po prawej stronie - ciemne karty */}
+            <div className="lg:w-3/4 flex-1">
+              {/* Loading State */}
+              {loading && (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                  <p className="text-gray-300">Ładowanie smartfonów...</p>
+                </div>
+              )}
 
-                {/* Error State */}
-                {error && (
-                  <div className="text-center py-12">
-                    <div className="text-red-600 text-lg">{error}</div>
-                  </div>
-                )}
+              {/* Error State */}
+              {error && (
+                <div className="text-center py-12">
+                  <div className="text-red-400 text-lg">{error}</div>
+                </div>
+              )}
 
-                {/* Smartphones Grid */}
-                {!loading && !error && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Smartphones Grid - Ciemne karty */}
+              {!loading && !error && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filteredSmartphones.length === 0 ? (
                       <div className="col-span-full text-center py-12">
                         <Smartphone className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 text-lg">
+                        <p className="text-gray-300 text-lg">
                           Nie znaleziono smartfonów
                         </p>
                         <p className="text-gray-500">
@@ -683,13 +797,13 @@ const SmartphoneCatalog: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      filteredSmartphones.map((phone) => (
+                      paginatedSmartphones.map((phone) => (
                         <div
                           key={phone.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer bg-white"
+                          className="bg-gray-800 border-2 border-purple-500 rounded-2xl p-3 hover:shadow-xl hover:shadow-purple-500/50 hover:border-purple-400 transition-all cursor-pointer"
                           onClick={() => navigate(`/smartfon/${phone.id}`)}
                         >
-                          <div className="aspect-square mb-3 overflow-hidden rounded-lg bg-gray-100">
+                          <div className="aspect-square mb-2 overflow-hidden rounded-xl bg-gray-900">
                             <img
                               src={phone.images[0]}
                               alt={phone.title}
@@ -702,12 +816,12 @@ const SmartphoneCatalog: React.FC = () => {
                           </div>
 
                           <div className="space-y-2">
-                            <h3 className="font-medium text-gray-800 text-sm line-clamp-2">
+                            <h3 className="font-medium text-white text-sm line-clamp-2">
                               {phone.title}
                             </h3>
 
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-lg text-purple-600">
+                              <span className="font-bold text-lg text-purple-400">
                                 {phone.price.toLocaleString()} zł
                               </span>
                               {phone.originalPrice && (
@@ -717,7 +831,7 @@ const SmartphoneCatalog: React.FC = () => {
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2 text-gray-600 text-xs">
+                            <div className="flex items-center gap-2 text-gray-400 text-xs">
                               <MapPin className="w-3 h-3" />
                               <span>{phone.location}</span>
                             </div>
@@ -743,23 +857,23 @@ const SmartphoneCatalog: React.FC = () => {
                             </div>
 
                             {/* Podstawowe specyfikacje w karcie */}
-                            <div className="space-y-1 pt-2 border-t border-gray-100">
+                            <div className="space-y-1 pt-2 border-t border-gray-700">
                               <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">Pamięć:</span>
-                                <span className="font-medium text-gray-900">
+                                <span className="text-gray-400">Pamięć:</span>
+                                <span className="font-medium text-gray-200">
                                   {phone.specifications.storage}
                                 </span>
                               </div>
                               <div className="flex justify-between text-xs">
-                                <span className="text-gray-500">RAM:</span>
-                                <span className="font-medium text-gray-900">
+                                <span className="text-gray-400">RAM:</span>
+                                <span className="font-medium text-gray-200">
                                   {phone.specifications.ram}
                                 </span>
                               </div>
                               {phone.specifications.color && (
                                 <div className="flex justify-between text-xs">
-                                  <span className="text-gray-500">Kolor:</span>
-                                  <span className="font-medium text-gray-900">
+                                  <span className="text-gray-400">Kolor:</span>
+                                  <span className="font-medium text-gray-200">
                                     {phone.specifications.color}
                                   </span>
                                 </div>
@@ -770,43 +884,98 @@ const SmartphoneCatalog: React.FC = () => {
                       ))
                     )}
                   </div>
-                )}
-              </div>
+
+                  {/* Pagination */}
+                  {filteredSmartphones.length > 0 && totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2 mt-8">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          currentPage === 1
+                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            : "bg-gray-800 text-white hover:bg-purple-600 border border-purple-500"
+                        }`}
+                      >
+                        Poprzednia
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                        (page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              currentPage === page
+                                ? "bg-purple-600 text-white border-2 border-purple-400"
+                                : "bg-gray-800 text-white hover:bg-purple-600 border border-purple-500"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
+
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages)
+                          )
+                        }
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          currentPage === totalPages
+                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            : "bg-gray-800 text-white hover:bg-purple-600 border border-purple-500"
+                        }`}
+                      >
+                        Następna
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* White footer bar at bottom */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
+      {/* Czarna stopka jak w MainPanel */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a
+              href="/jak-dziala-moblix"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Jak działa MobliX
+            </a>
+            <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+            <a
+              href="/regulamin"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Zasady bezpieczeństwa
+            </a>
+          </div>
+          <div className="text-center text-gray-400 text-sm mt-4">
+            © 2024 MobliX. Wszystkie prawa zastrzeżone.
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

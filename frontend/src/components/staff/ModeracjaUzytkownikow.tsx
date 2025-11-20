@@ -21,16 +21,16 @@ import {
   X,
   MessageSquare,
   ShoppingBag,
-  Star,
   Save,
   Edit,
   Globe,
   MapPin,
   FileText,
   Hash,
+  Bell,
+  Heart,
+  Plus,
 } from "lucide-react";
-import "../../styles/MobileResponsive.css";
-import "../../styles/UserPanel.css";
 
 type JwtPayLoad = {
   sub: string;
@@ -93,6 +93,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [users, setUsers] = useState<UserModeration[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserModeration | null>(null);
@@ -105,6 +106,8 @@ const ModeracjaUzytkownikow: React.FC = () => {
   const [blockReason, setBlockReason] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -138,7 +141,42 @@ const ModeracjaUzytkownikow: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchFavoriteCount();
   }, []);
+
+  const fetchFavoriteCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get<{ count: number }>(
+        "http://localhost:8080/api/user/watched-ads/count",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setFavoriteCount(response.data.count);
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?query=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleMessengerClick = () => {
+    navigate("/user/message");
+  };
+
+  const handleNotificationsClick = () => {
+    navigate("/user/notifications");
+  };
+
+  const handleWatchedAdsClick = () => {
+    navigate("/user/watched-ads");
+  };
 
   const fetchUsers = async () => {
     try {
@@ -327,7 +365,11 @@ const ModeracjaUzytkownikow: React.FC = () => {
   };
 
   const roleFilteredUsers = users.filter((user) => {
-    if (isAdmin) return true;
+    if (isAdmin) {
+      // Admin widzi wszystkich, ale może filtrować po roli
+      if (roleFilter === "ALL") return true;
+      return user.role === roleFilter;
+    }
     if (isStaff) return user.role === "USER";
     return false;
   });
@@ -341,849 +383,908 @@ const ModeracjaUzytkownikow: React.FC = () => {
   );
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* White header bar at top */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div
-          onClick={() => navigate("/main")}
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button"
+    <>
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+        {/* Czarny pasek nawigacji */}
+        <nav className="bg-black text-white px-4 py-3 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            {/* Logo */}
+            <div
+              className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+              onClick={() => navigate("/main")}
             >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu">
-                <div className="py-1">
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-ads");
-                    }}
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    Ogłoszenia
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/message");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-opinions");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-orange-500" />
-                    Twoje opinie
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/personaldetails");
-                    }}
-                  >
-                    <User className="w-4 h-4 text-purple-600" />
-                    Profil
-                  </button>
-                  {isAdmin && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/admin");
-                      }}
-                    >
-                      <Shield className="w-4 h-4 text-red-600" />
-                      Panel administratora
-                    </button>
-                  )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/staffpanel");
-                      }}
-                    >
-                      <Users className="w-4 h-4 text-orange-600" />
-                      Panel pracownika
-                    </button>
-                  )}
-                  {(isAdmin || isStaff || isUser) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <div className="border-t my-1"></div>
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem("token");
-                      window.location.href = "/";
-                    }}
-                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
-                  >
-                    <LogOut className="w-4 h-4 text-red-600" />
-                    Wyloguj
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+              MobliX
+            </div>
 
-      {/* Main Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-[80px] sm:pt-[100px] pb-16 max-w-6xl">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <Users className="w-8 h-8" />
+            {/* Wyszukiwarka */}
+            <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Szukaj smartfonów..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              </div>
+            </form>
+
+            {/* Ikony i przyciski */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleMessengerClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Wiadomości"
+              >
+                <MessageSquare className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleNotificationsClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Powiadomienia"
+              >
+                <Bell className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleWatchedAdsClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+                title="Ulubione ogłoszenia"
+              >
+                <Heart className="w-6 h-6" />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {favoriteCount > 9 ? "9+" : favoriteCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate("/user/addadvertisement")}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Dodaj ogłoszenie
+              </button>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                  Twoje konto
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl z-50">
+                    <div className="py-1">
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
+                        Ogłoszenia
+                      </button>
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
+                        <MessageSquare className="w-4 h-4 text-green-400" />
+                        Czat
+                      </button>
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-purple-400" />
+                        Profil
+                      </button>
+                      {isAdmin && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/admin");
+                          }}
+                        >
+                          <Shield className="w-4 h-4 text-red-400" />
+                          Panel administratora
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-orange-400" />
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-cyan-400" />
+                          Panel użytkownika
+                        </button>
+                      )}
+                      <div className="border-t border-purple-400 my-1"></div>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem("token");
+                          window.location.href = "/";
+                        }}
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4 text-red-400" />
+                        Wyloguj
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Content */}
+        <div className="flex-1 px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header z ikoną Users */}
+            <div className="bg-gray-800 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-600 p-4 rounded-full">
+                  <Users className="w-12 h-12 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold">
+                  <h1 className="text-3xl font-bold text-white">
                     Moderacja Użytkowników
                   </h1>
-                  <p className="text-blue-100">
-                    {isAdmin
-                      ? "Zarządzaj wszystkimi użytkownikami systemu"
-                      : "Moderuj użytkowników z rolą USER"}
+                  <p className="text-gray-300">
+                    Zarządzaj użytkownikami systemu
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 sm:p-8">
-              {/* Search */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Szukaj użytkownika..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+            {/* Wyszukiwarka i filtr roli */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Szukaj użytkowników..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
+                />
               </div>
 
-              {/* Users Table */}
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                {loading ? (
-                  <div className="p-12 text-center">
-                    <p className="text-gray-500">Ładowanie użytkowników...</p>
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="p-12 text-center">
-                    <p className="text-gray-500">
+              {/* Filtr roli - tylko dla adminów */}
+              {isAdmin && (
+                <div className="relative">
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700 appearance-none cursor-pointer"
+                  >
+                    <option value="ALL">Wszystkie role</option>
+                    <option value="USER">USER</option>
+                    <option value="STAFF">STAFF</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                </div>
+              )}
+            </div>
+
+            {/* Loading state */}
+            {loading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+                <p className="mt-4 text-gray-300">Ładowanie użytkowników...</p>
+              </div>
+            )}
+
+            {/* Users list */}
+            {!loading && (
+              <div className="space-y-4">
+                {filteredUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-300 text-lg">
                       Brak użytkowników do wyświetlenia
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Użytkownik
-                          </th>
-                          {isAdmin && (
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Rola
-                            </th>
-                          )}
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Ostatnia aktywność
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Akcje
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredUsers.map((user) => (
-                          <tr key={user.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <User className="h-6 w-6 text-blue-600" />
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {user.firstName} {user.lastName}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {user.email}
-                                  </div>
-                                </div>
+                  filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all border border-gray-700"
+                    >
+                      <div className="flex flex-col md:flex-row gap-4">
+                        {/* Avatar */}
+                        <div className="flex-shrink-0">
+                          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                            <User className="h-8 w-8 text-white" />
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="text-lg font-semibold text-white mb-1">
+                                {user.firstName} {user.lastName}
+                              </h3>
+                              <div className="text-sm text-gray-300">
+                                {user.email}
                               </div>
-                            </td>
-                            {isAdmin && (
-                              <td className="px-6 py-4 whitespace-nowrap">
+                            </div>
+                            <div className="flex gap-2">
+                              {isAdmin && (
                                 <span
-                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
                                     user.role === "ADMIN"
-                                      ? "bg-red-100 text-red-800"
+                                      ? "bg-red-900/50 text-red-300"
                                       : user.role === "STAFF"
-                                      ? "bg-orange-100 text-orange-800"
-                                      : "bg-blue-100 text-blue-800"
+                                      ? "bg-orange-900/50 text-orange-300"
+                                      : "bg-blue-900/50 text-blue-300"
                                   }`}
                                 >
                                   {user.role}
                                 </span>
-                              </td>
-                            )}
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatRelativeTime(user.lastActivity)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                              )}
                               {isUserBlocked(user) ? (
-                                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 flex items-center gap-1 w-fit">
+                                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-900/50 text-red-300 flex items-center gap-1">
                                   <Ban className="w-3 h-3" />
                                   Zablokowany
                                 </span>
                               ) : (
-                                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-900/50 text-green-300">
                                   Aktywny
                                 </span>
                               )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-300 mb-3">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-blue-400" />
+                              <span>
+                                {formatRelativeTime(user.lastActivity)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-purple-400" />
+                              <span>{user.advertisementCount} ogłoszeń</span>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => fetchUserDetails(user.id)}
+                              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              title="Podgląd/Edycja profilu"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>Podgląd</span>
+                            </button>
+                            {isUserBlocked(user) ? (
                               <button
-                                onClick={() => fetchUserDetails(user.id)}
-                                className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
-                                title="Podgląd/Edycja profilu"
+                                onClick={() => handleUnblockUser(user.id)}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                title="Odblokuj"
                               >
-                                <Eye className="w-4 h-4" />
+                                <Unlock className="w-4 h-4" />
+                                <span>Odblokuj</span>
                               </button>
-                              {isUserBlocked(user) ? (
-                                <button
-                                  onClick={() => handleUnblockUser(user.id)}
-                                  className="text-green-600 hover:text-green-900 inline-flex items-center gap-1"
-                                  title="Odblokuj"
-                                >
-                                  <Unlock className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setShowBlockModal(true);
-                                  }}
-                                  className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
-                                  title="Zablokuj"
-                                >
-                                  <Ban className="w-4 h-4" />
-                                </button>
-                              )}
+                            ) : (
                               <button
-                                onClick={() => fetchUserActivities(user.id)}
-                                className="text-purple-600 hover:text-purple-900 inline-flex items-center gap-1"
-                                title="Aktywność"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setShowBlockModal(true);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                                title="Zablokuj"
                               >
-                                <Activity className="w-4 h-4" />
+                                <Ban className="w-4 h-4" />
+                                <span>Zablokuj</span>
                               </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            )}
+                            <button
+                              onClick={() => fetchUserActivities(user.id)}
+                              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                              title="Aktywność"
+                            >
+                              <Activity className="w-4 h-4" />
+                              <span>Aktywność</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modal - Szczegóły/Edycja użytkownika */}
+        {showDetailsModal && userDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border-4 border-purple-600 shadow-2xl">
+              <div className="p-6 border-b border-gray-700 flex justify-between items-center sticky top-0 bg-gray-800 z-10">
+                <h2 className="text-2xl font-bold text-white">
+                  {isEditing ? "Edycja użytkownika" : "Szczegóły użytkownika"}
+                </h2>
+                <div className="flex gap-2">
+                  {!isEditing && (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-blue-400 hover:text-blue-300 p-2"
+                      title="Edytuj"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowDetailsModal(false);
+                      setIsEditing(false);
+                      setUserDetails(null);
+                    }}
+                    className="text-gray-400 hover:text-gray-200"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Typ konta */}
+                <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-blue-300">
+                    Typ konta:{" "}
+                    {userDetails.accountType === "business"
+                      ? "Firmowe"
+                      : "Prywatne"}
+                  </p>
+                </div>
+
+                {/* Dane podstawowe */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-400" />
+                    Dane podstawowe
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Typ konta */}
+                    <div className="md:col-span-2">
+                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                        <Building className="w-4 h-4" />
+                        Typ konta
+                      </label>
+                      {isEditing ? (
+                        <select
+                          className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          value={editForm.accountType}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              accountType: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="private">Konto prywatne</option>
+                          <option value="business">Konto firmowe</option>
+                        </select>
+                      ) : (
+                        <p className="font-medium text-gray-200">
+                          {userDetails.accountType === "business"
+                            ? "Konto firmowe"
+                            : "Konto prywatne"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                        <User className="w-4 h-4" />
+                        Imię
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          value={editForm.firstName}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              firstName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-200">
+                          {userDetails.firstName || "Brak"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                        <User className="w-4 h-4" />
+                        Nazwisko
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          value={editForm.lastName}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              lastName: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-200">
+                          {userDetails.lastName || "Brak"}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </label>
+                      <p className="font-medium text-gray-200">
+                        {userDetails.email}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                        <Phone className="w-4 h-4" />
+                        Telefon
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          value={editForm.phone}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, phone: e.target.value })
+                          }
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-200">
+                          {userDetails.phone || "Brak"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dane firmowe - pokazuj gdy edytujemy i wybrano "business" LUB gdy nie edytujemy i użytkownik ma "business" */}
+                {(isEditing
+                  ? editForm.accountType === "business"
+                  : userDetails.accountType === "business") && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Building className="w-5 h-5 text-blue-400" />
+                      Dane firmowe
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                          <Building className="w-4 h-4" />
+                          Nazwa firmy
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            value={editForm.companyName}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                companyName: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          <p className="font-medium text-gray-200">
+                            {userDetails.companyName || "Brak"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                          <Hash className="w-4 h-4" />
+                          NIP
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            value={editForm.nip}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, nip: e.target.value })
+                            }
+                          />
+                        ) : (
+                          <p className="font-medium text-gray-200">
+                            {userDetails.nip || "Brak"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                          <FileText className="w-4 h-4" />
+                          REGON
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            value={editForm.regon}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                regon: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          <p className="font-medium text-gray-200">
+                            {userDetails.regon || "Brak"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                          <MapPin className="w-4 h-4" />
+                          Adres
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            value={editForm.address}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                address: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          <p className="font-medium text-gray-200">
+                            {userDetails.address || "Brak"}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="text-sm text-gray-400 flex items-center gap-2 mb-1">
+                          <Globe className="w-4 h-4" />
+                          Strona www
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="url"
+                            className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            value={editForm.website}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                website: e.target.value,
+                              })
+                            }
+                          />
+                        ) : (
+                          <p className="font-medium text-gray-200">
+                            {userDetails.website ? (
+                              <a
+                                href={userDetails.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-purple-400 hover:text-purple-300 hover:underline"
+                              >
+                                {userDetails.website}
+                              </a>
+                            ) : (
+                              "Brak"
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Informacje systemowe */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-blue-400" />
+                    Informacje systemowe
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {isAdmin && (
+                      <div>
+                        <label className="text-sm text-gray-400">Rola</label>
+                        <p className="font-medium text-gray-200">
+                          {userDetails.role}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Data rejestracji
+                      </label>
+                      <p className="font-medium text-gray-200">
+                        {formatDate(userDetails.createdAt)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400 flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Ostatnia aktywność
+                      </label>
+                      <p className="font-medium text-gray-200">
+                        {formatRelativeTime(userDetails.lastActivity)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400">
+                        Liczba ogłoszeń
+                      </label>
+                      <p className="font-medium text-gray-200">
+                        {userDetails.advertisementCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status blokady */}
+                {userDetails.blocked && (
+                  <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-red-300">
+                      Konto zablokowane
+                    </p>
+                    <p className="text-sm text-red-400">
+                      Do: {formatDate(userDetails.blockedUntil)}
+                    </p>
+                    <p className="text-sm text-red-400 mt-2">
+                      Powód: {userDetails.blockReason}
+                    </p>
+                  </div>
+                )}
+
+                {/* Przyciski akcji */}
+                {isEditing && (
+                  <div className="flex gap-3 pt-4 border-t border-gray-700">
+                    <button
+                      onClick={handleSaveUserDetails}
+                      className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Zapisz zmiany
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditForm({
+                          firstName: userDetails.firstName || "",
+                          lastName: userDetails.lastName || "",
+                          phone: userDetails.phone || "",
+                          email: userDetails.email || "",
+                          accountType: userDetails.accountType || "private",
+                          companyName: userDetails.companyName || "",
+                          nip: userDetails.nip || "",
+                          regon: userDetails.regon || "",
+                          address: userDetails.address || "",
+                          website: userDetails.website || "",
+                        });
+                      }}
+                      className="flex-1 bg-gray-700 text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+                    >
+                      Anuluj
+                    </button>
                   </div>
                 )}
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Modal - Szczegóły/Edycja użytkownika */}
-      {showDetailsModal && userDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {isEditing ? "Edycja użytkownika" : "Szczegóły użytkownika"}
-              </h2>
-              <div className="flex gap-2">
-                {!isEditing && (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="text-blue-600 hover:text-blue-800 p-2"
-                    title="Edytuj"
-                  >
-                    <Edit className="w-5 h-5" />
-                  </button>
-                )}
+        {/* Modal - Blokowanie */}
+        {showBlockModal && selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full">
+              <div className="p-6 border-b flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Zablokuj użytkownika
+                </h2>
                 <button
                   onClick={() => {
-                    setShowDetailsModal(false);
-                    setIsEditing(false);
-                    setUserDetails(null);
+                    setShowBlockModal(false);
+                    setBlockReason("");
                   }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Typ konta */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-blue-800">
-                  Typ konta:{" "}
-                  {userDetails.accountType === "business"
-                    ? "Firmowe"
-                    : "Prywatne"}
+              <div className="p-6 space-y-4">
+                <p className="text-gray-700">
+                  Zablokuj użytkownika: {selectedUser.email}
                 </p>
-              </div>
-
-              {/* Dane podstawowe */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <User className="w-5 h-5 text-blue-600" />
-                  Dane podstawowe
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Typ konta */}
-                  <div className="md:col-span-2">
-                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                      <Building className="w-4 h-4" />
-                      Typ konta
-                    </label>
-                    {isEditing ? (
-                      <select
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        value={editForm.accountType}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            accountType: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="private">Konto prywatne</option>
-                        <option value="business">Konto firmowe</option>
-                      </select>
-                    ) : (
-                      <p className="font-medium text-gray-900">
-                        {userDetails.accountType === "business"
-                          ? "Konto firmowe"
-                          : "Konto prywatne"}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                      <User className="w-4 h-4" />
-                      Imię
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        value={editForm.firstName}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            firstName: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      <p className="font-medium text-gray-900">
-                        {userDetails.firstName || "Brak"}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                      <User className="w-4 h-4" />
-                      Nazwisko
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        value={editForm.lastName}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, lastName: e.target.value })
-                        }
-                      />
-                    ) : (
-                      <p className="font-medium text-gray-900">
-                        {userDetails.lastName || "Brak"}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                      <Mail className="w-4 h-4" />
-                      Email
-                    </label>
-                    <p className="font-medium text-gray-900">
-                      {userDetails.email}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                      <Phone className="w-4 h-4" />
-                      Telefon
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        value={editForm.phone}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, phone: e.target.value })
-                        }
-                      />
-                    ) : (
-                      <p className="font-medium text-gray-900">
-                        {userDetails.phone || "Brak"}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Dane firmowe - pokazuj gdy edytujemy i wybrano "business" LUB gdy nie edytujemy i użytkownik ma "business" */}
-              {(isEditing
-                ? editForm.accountType === "business"
-                : userDetails.accountType === "business") && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Building className="w-5 h-5 text-blue-600" />
-                    Dane firmowe
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                        <Building className="w-4 h-4" />
-                        Nazwa firmy
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          value={editForm.companyName}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              companyName: e.target.value,
-                            })
-                          }
-                        />
-                      ) : (
-                        <p className="font-medium text-gray-900">
-                          {userDetails.companyName || "Brak"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                        <Hash className="w-4 h-4" />
-                        NIP
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          value={editForm.nip}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, nip: e.target.value })
-                          }
-                        />
-                      ) : (
-                        <p className="font-medium text-gray-900">
-                          {userDetails.nip || "Brak"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                        <FileText className="w-4 h-4" />
-                        REGON
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          value={editForm.regon}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, regon: e.target.value })
-                          }
-                        />
-                      ) : (
-                        <p className="font-medium text-gray-900">
-                          {userDetails.regon || "Brak"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                        <MapPin className="w-4 h-4" />
-                        Adres
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          value={editForm.address}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              address: e.target.value,
-                            })
-                          }
-                        />
-                      ) : (
-                        <p className="font-medium text-gray-900">
-                          {userDetails.address || "Brak"}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="text-sm text-gray-500 flex items-center gap-2 mb-1">
-                        <Globe className="w-4 h-4" />
-                        Strona www
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="url"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          value={editForm.website}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              website: e.target.value,
-                            })
-                          }
-                        />
-                      ) : (
-                        <p className="font-medium text-gray-900">
-                          {userDetails.website ? (
-                            <a
-                              href={userDetails.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              {userDetails.website}
-                            </a>
-                          ) : (
-                            "Brak"
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Informacje systemowe */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-blue-600" />
-                  Informacje systemowe
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {isAdmin && (
-                    <div>
-                      <label className="text-sm text-gray-500">Rola</label>
-                      <p className="font-medium text-gray-900">
-                        {userDetails.role}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Data rejestracji
-                    </label>
-                    <p className="font-medium text-gray-900">
-                      {formatDate(userDetails.createdAt)}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Ostatnia aktywność
-                    </label>
-                    <p className="font-medium text-gray-900">
-                      {formatRelativeTime(userDetails.lastActivity)}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">
-                      Liczba ogłoszeń
-                    </label>
-                    <p className="font-medium text-gray-900">
-                      {userDetails.advertisementCount}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status blokady */}
-              {userDetails.blocked && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-red-800">
-                    Konto zablokowane
-                  </p>
-                  <p className="text-sm text-red-600">
-                    Do: {formatDate(userDetails.blockedUntil)}
-                  </p>
-                  <p className="text-sm text-red-600 mt-2">
-                    Powód: {userDetails.blockReason}
-                  </p>
-                </div>
-              )}
-
-              {/* Przyciski akcji */}
-              {isEditing && (
-                <div className="flex gap-3 pt-4 border-t">
-                  <button
-                    onClick={handleSaveUserDetails}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Czas blokady
+                  </label>
+                  <select
+                    className="w-full border rounded-lg px-3 py-2"
+                    value={blockDuration}
+                    onChange={(e) => setBlockDuration(parseInt(e.target.value))}
                   >
-                    <Save className="w-4 h-4" />
-                    Zapisz zmiany
+                    <option value={15}>15 minut</option>
+                    <option value={1440}>24 godziny</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Powód blokady
+                  </label>
+                  <textarea
+                    className="w-full border rounded-lg px-3 py-2"
+                    rows={3}
+                    placeholder="Opisz powód blokady..."
+                    value={blockReason}
+                    onChange={(e) => setBlockReason(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleBlockUser}
+                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                    disabled={!blockReason.trim()}
+                  >
+                    Zablokuj
                   </button>
                   <button
                     onClick={() => {
-                      setIsEditing(false);
-                      setEditForm({
-                        firstName: userDetails.firstName || "",
-                        lastName: userDetails.lastName || "",
-                        phone: userDetails.phone || "",
-                        email: userDetails.email || "",
-                        accountType: userDetails.accountType || "private",
-                        companyName: userDetails.companyName || "",
-                        nip: userDetails.nip || "",
-                        regon: userDetails.regon || "",
-                        address: userDetails.address || "",
-                        website: userDetails.website || "",
-                      });
+                      setShowBlockModal(false);
+                      setBlockReason("");
                     }}
                     className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
                   >
                     Anuluj
                   </button>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal - Blokowanie */}
-      {showBlockModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">
-                Zablokuj użytkownika
-              </h2>
-              <button
-                onClick={() => {
-                  setShowBlockModal(false);
-                  setBlockReason("");
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-gray-700">
-                Zablokuj użytkownika: {selectedUser.email}
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Czas blokady
-                </label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={blockDuration}
-                  onChange={(e) => setBlockDuration(parseInt(e.target.value))}
-                >
-                  <option value={15}>15 minut</option>
-                  <option value={1440}>24 godziny</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Powód blokady
-                </label>
-                <textarea
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows={3}
-                  placeholder="Opisz powód blokady..."
-                  value={blockReason}
-                  onChange={(e) => setBlockReason(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleBlockUser}
-                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-                  disabled={!blockReason.trim()}
-                >
-                  Zablokuj
-                </button>
-                <button
-                  onClick={() => {
-                    setShowBlockModal(false);
-                    setBlockReason("");
-                  }}
-                  className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
-                >
-                  Anuluj
-                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Modal - Aktywność */}
-      {showActivityModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Historia aktywności
-              </h2>
-              <button
-                onClick={() => setShowActivityModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="p-6">
-              {userActivities.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">
-                  Brak aktywności użytkownika
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {userActivities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="border rounded-lg p-4 hover:bg-gray-50"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">
-                            {activity.message}
-                          </p>
-                          {activity.details && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              {activity.details}
+        {/* Modal - Aktywność */}
+        {showActivityModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border-4 border-purple-600 shadow-2xl">
+              <div className="p-6 border-b border-gray-700 flex justify-between items-center sticky top-0 bg-gray-800">
+                <h2 className="text-2xl font-bold text-white">
+                  Historia aktywności
+                </h2>
+                <button
+                  onClick={() => setShowActivityModal(false)}
+                  className="text-gray-400 hover:text-gray-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-6">
+                {userActivities.length === 0 ? (
+                  <p className="text-center text-gray-400 py-8">
+                    Brak aktywności użytkownika
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {userActivities.map((activity) => (
+                      <div
+                        key={activity.id}
+                        className="border border-gray-700 bg-gray-700/50 rounded-lg p-4 hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="font-medium text-white">
+                              {activity.message}
                             </p>
-                          )}
+                            {activity.details && (
+                              <p className="text-sm text-gray-400 mt-1">
+                                {activity.details}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {formatDate(activity.timestamp)}
+                          </span>
                         </div>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(activity.timestamp)}
-                        </span>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* White footer bar at bottom */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
-        </div>
+        {/* Czarna stopka */}
+        <footer className="bg-black text-white py-6 mt-auto">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+              <a
+                href="/jak-dziala-moblix"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Jak działa MobliX
+              </a>
+              <a
+                href="/polityka-cookies"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Polityka cookies
+              </a>
+              <a
+                href="/regulamin"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Regulamin
+              </a>
+              <a
+                href="/zasady-bezpieczenstwa"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Zasady bezpieczeństwa
+              </a>
+            </div>
+            <div className="text-center mt-4 text-gray-400 text-xs">
+              © 2024 MobliX. Wszystkie prawa zastrzeżone.
+            </div>
+          </div>
+        </footer>
       </div>
-    </div>
+    </>
   );
 };
 

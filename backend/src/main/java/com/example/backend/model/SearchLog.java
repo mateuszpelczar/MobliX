@@ -41,6 +41,9 @@ public class SearchLog {
     @Column(name = "results_count")
     private Integer resultsCount;
 
+    @Column(name = "search_source")
+    private String searchSource;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -50,7 +53,7 @@ public class SearchLog {
     public SearchLog() {
     }
 
-    public SearchLog(String searchQuery, String brand, String model, Double minPrice, Double maxPrice, Long userId, String sessionId, String ipAddress, Integer resultsCount) {
+    public SearchLog(String searchQuery, String brand, String model, Double minPrice, Double maxPrice, Long userId, String sessionId, String ipAddress, Integer resultsCount, String searchSource) {
         this.searchQuery = searchQuery;
         this.brand = brand;
         this.model = model;
@@ -60,6 +63,7 @@ public class SearchLog {
         this.sessionId = sessionId;
         this.ipAddress = ipAddress;
         this.resultsCount = resultsCount;
+        this.searchSource = searchSource;
     }
 
     // gett i sett
@@ -149,5 +153,13 @@ public class SearchLog {
 
     public void setResultsCount(Integer resultsCount) {
         this.resultsCount = resultsCount;
+    }
+
+    public String getSearchSource() {
+        return searchSource;
+    }
+
+    public void setSearchSource(String searchSource) {
+        this.searchSource = searchSource;
     }
 }

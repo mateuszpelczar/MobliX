@@ -5,7 +5,6 @@ import com.example.backend.repository.SearchLogRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -126,6 +125,57 @@ public class SearchLogService {
         stats.put("topSearchedModels", modelStats);
 
         return stats;
+    }
+
+    // Najczęściej wyszukiwane marki z podziałem na okresy
+    public Map<String, Object> getTopBrandsByTimePeriod(String period) {
+        Map<String, Object> result = new HashMap<>();
+        LocalDateTime startDate;
+
+        switch (period.toLowerCase()) {
+            case "today":
+                startDate = LocalDateTime.now().minusHours(24);
+                break;
+            case "week":
+                startDate = LocalDateTime.now().minusDays(7);
+                break;
+            case "month":
+                startDate = LocalDateTime.now().minusDays(30);
+                break;
+            default:
+                startDate = LocalDateTime.now().minusHours(24);
+        }
+
+        // Pobierz top marki dla danego okresu (limit 3)
+        List<Object[]> topBrands = searchLogRepository.findTopSearchedBrandsByPeriod(startDate);
+        List<Map<String, Object>> brandStats = topBrands.stream()
+                .limit(3)
+                .map(row -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("brand", row[0]);
+                    item.put("count", row[1]);
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        // Pobierz szczegóły według źródła
+        List<Object[]> brandsBySource = searchLogRepository.findTopSearchedBrandsBySourceAndPeriod(startDate);
+        Map<String, Map<String, Long>> sourceBreakdown = new HashMap<>();
+
+        for (Object[] row : brandsBySource) {
+            String brand = (String) row[0];
+            String source = (String) row[1];
+            Long count = (Long) row[2];
+
+            sourceBreakdown.putIfAbsent(brand, new HashMap<>());
+            sourceBreakdown.get(brand).put(source, count);
+        }
+
+        result.put("topBrands", brandStats);
+        result.put("sourceBreakdown", sourceBreakdown);
+        result.put("period", period);
+
+        return result;
     }
 
     // Najczęściej wystawiane marki - z tabeli advertisements

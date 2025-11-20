@@ -6,7 +6,6 @@ import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
   ShoppingBag,
-  Star,
   User,
   Shield,
   Users,
@@ -25,13 +24,15 @@ import {
   XCircle,
   AlertTriangle,
   FileText,
-  Settings,
   X,
   Save,
   Upload,
   ChevronUp,
   ChevronDown as ChevronDownIcon,
   Image as ImageIcon,
+  Bell,
+  Heart,
+  Plus,
 } from "lucide-react";
 
 type JwtPayLoad = {
@@ -94,8 +95,13 @@ const EditAd: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteCount, setFavoriteCount] = useState(0);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const adsPerPage = 4;
 
   // API State
   const [ads, setAds] = useState<Advertisement[]>([]);
@@ -145,6 +151,36 @@ const EditAd: React.FC = () => {
       console.error("Nieprawidłowy token JWT", err);
     }
   }
+
+  // Funkcje obsługi nawigacji
+  const fetchFavoriteCount = async () => {
+    try {
+      if (token) {
+        const response = await axios.get<{ count: number }>(
+          "http://localhost:8080/api/favorites/count",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFavoriteCount(response.data.count || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/main?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleMessengerClick = () => navigate("/user/message");
+  const handleNotificationsClick = () => navigate("/user/notifications");
+  const handleWatchedAdsClick = () => navigate("/user/watchedads");
+
+  useEffect(() => {
+    fetchFavoriteCount();
+  }, []);
 
   // Fetch all advertisements on mount
   useEffect(() => {
@@ -203,7 +239,7 @@ const EditAd: React.FC = () => {
 
   // Filter ads
   const filteredAds = ads.filter((ad) => {
-    const matchesStatus = statusFilter === "all" || ad.status === statusFilter;
+    const matchesStatus = ad.status === "ACTIVE";
     const matchesSearch =
       searchTerm === "" ||
       ad.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -218,6 +254,17 @@ const EditAd: React.FC = () => {
 
     return matchesStatus && matchesSearch;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAds.length / adsPerPage);
+  const indexOfLastAd = currentPage * adsPerPage;
+  const indexOfFirstAd = indexOfLastAd - adsPerPage;
+  const currentAds = filteredAds.slice(indexOfFirstAd, indexOfLastAd);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Get status config
   const getStatusConfig = (status: string) => {
@@ -448,143 +495,187 @@ const EditAd: React.FC = () => {
   };
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header - biały pasek jak w AdminPanel */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button"
+    <>
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+        {/* Czarny pasek nawigacji */}
+        <nav className="bg-black text-white px-4 py-3 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            {/* Logo */}
+            <div
+              className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+              onClick={() => navigate("/main")}
             >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu">
-                <div className="py-1">
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-ads");
-                    }}
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    Ogłoszenia
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/message");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/personaldetails");
-                    }}
-                  >
-                    <User className="w-4 h-4 text-purple-600" />
-                    Profil
-                  </button>
-                  {isAdmin && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/admin");
-                      }}
-                    >
-                      <Shield className="w-4 h-4 text-red-600" />
-                      Panel administratora
-                    </button>
-                  )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/staffpanel");
-                      }}
-                    >
-                      <Users className="w-4 h-4 text-orange-600" />
-                      Panel pracownika
-                    </button>
-                  )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
-                  >
-                    <LogOut className="w-4 h-4 text-red-500" />
-                    Wyloguj
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main content with modern design - jak w AdminPanel */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-[220px] pb-16 max-w-6xl">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header */}
-            <div className="mb-8 p-6 md:p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-                <Settings className="h-8 w-8 text-purple-600" />
-                Edycja ogłoszeń
-              </h1>
-              <p className="text-gray-600">
-                Zarządzaj wszystkimi ogłoszeniami w systemie
-              </p>
+              MobliX
             </div>
 
-            {/* Content wrapper z scrollem */}
-            <div className="p-6 md:p-8 max-h-[calc(100vh-20rem)] overflow-y-auto">
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {/* Search */}
+            {/* Wyszukiwarka */}
+            <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Szukaj smartfonów..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              </div>
+            </form>
+
+            {/* Ikony i przyciski */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleMessengerClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Wiadomości"
+              >
+                <MessageSquare className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleNotificationsClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Powiadomienia"
+              >
+                <Bell className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleWatchedAdsClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+                title="Ulubione ogłoszenia"
+              >
+                <Heart className="w-6 h-6" />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {favoriteCount > 9 ? "9+" : favoriteCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate("/user/addadvertisement")}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Dodaj ogłoszenie
+              </button>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                  Twoje konto
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl z-50">
+                    <div className="py-1">
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
+                        Ogłoszenia
+                      </button>
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
+                        <MessageSquare className="w-4 h-4 text-green-400" />
+                        Czat
+                      </button>
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-purple-400" />
+                        Profil
+                      </button>
+                      {isAdmin && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/admin");
+                          }}
+                        >
+                          <Shield className="w-4 h-4 text-red-400" />
+                          Panel administratora
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-orange-400" />
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-cyan-400" />
+                          Panel użytkownika
+                        </button>
+                      )}
+                      <div className="border-t border-purple-400 my-1"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4 text-red-400" />
+                        Wyloguj
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Content */}
+        <div className="flex-1 px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header z ikoną Edit3 */}
+            <div className="bg-gray-800 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-600 p-4 rounded-full">
+                  <Edit3 className="w-12 h-12 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">
+                    Edycja Ogłoszeń
+                  </h1>
+                  <p className="text-gray-300">
+                    Zarządzaj i edytuj ogłoszenia użytkowników
+                  </p>
+                </div>
+              </div>
+              {/* Wyszukiwarka */}
+              <div className="mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
@@ -592,35 +683,23 @@ const EditAd: React.FC = () => {
                     placeholder="Szukaj ogłoszeń..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
                   />
                 </div>
-
-                {/* Status filter */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="all">Wszystkie statusy</option>
-                  <option value="ACTIVE">Aktywne</option>
-                  <option value="PENDING">Oczekujące</option>
-                  <option value="REJECTED">Odrzucone</option>
-                </select>
               </div>
 
               {/* Loading state */}
               {loading && (
                 <div className="text-center py-12">
                   <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
-                  <p className="mt-4 text-gray-600">Ładowanie ogłoszeń...</p>
+                  <p className="mt-4 text-gray-300">Ładowanie ogłoszeń...</p>
                 </div>
               )}
 
               {/* Error state */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-2 text-red-800">
+                <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
+                  <div className="flex items-center gap-2 text-red-200">
                     <AlertTriangle className="h-5 w-5" />
                     <span className="font-semibold">Błąd:</span>
                     <span>{error}</span>
@@ -631,21 +710,23 @@ const EditAd: React.FC = () => {
               {/* Ads list */}
               {!loading && !error && (
                 <>
-                  <div className="mb-4 text-sm text-gray-600">
+                  <div className="mb-4 text-sm text-gray-300">
                     Znaleziono:{" "}
-                    <span className="font-semibold">{filteredAds.length}</span>{" "}
-                    ogłoszeń
+                    <span className="font-semibold text-white">
+                      {filteredAds.length}
+                    </span>{" "}
+                    ogłoszeń (Strona {currentPage} z {totalPages})
                   </div>
 
                   <div className="space-y-4">
-                    {filteredAds.map((ad) => {
+                    {currentAds.map((ad) => {
                       const statusConfig = getStatusConfig(ad.status);
                       const StatusIcon = statusConfig.icon;
 
                       return (
                         <div
                           key={ad.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                          className="bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all border border-gray-700"
                         >
                           <div className="flex flex-col md:flex-row gap-4">
                             {/* Image */}
@@ -671,8 +752,8 @@ const EditAd: React.FC = () => {
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <Smartphone className="h-12 w-12 text-gray-400" />
+                                <div className="w-full h-full bg-gray-700 rounded-lg flex items-center justify-center">
+                                  <Smartphone className="h-12 w-12 text-gray-500" />
                                 </div>
                               )}
                             </div>
@@ -681,10 +762,10 @@ const EditAd: React.FC = () => {
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
                                 <div>
-                                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                  <h3 className="text-lg font-semibold text-white mb-1">
                                     {ad.title}
                                   </h3>
-                                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                  <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
                                     <span className="font-semibold">
                                       {ad.specification?.brand || "N/A"}{" "}
                                       {ad.specification?.model || ""}
@@ -717,23 +798,23 @@ const EditAd: React.FC = () => {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 mb-3">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-300 mb-3">
                                 <div className="flex items-center gap-2">
-                                  <DollarSign className="h-4 w-4 text-green-600" />
-                                  <span className="font-semibold text-gray-900">
+                                  <DollarSign className="h-4 w-4 text-green-400" />
+                                  <span className="font-semibold text-white">
                                     {ad.price.toLocaleString()} zł
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4 text-red-600" />
+                                  <MapPin className="h-4 w-4 text-red-400" />
                                   <span>{ad.locationName || "N/A"}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4 text-purple-600" />
+                                  <User className="h-4 w-4 text-purple-400" />
                                   <span>{ad.userName || "N/A"}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-blue-600" />
+                                  <Calendar className="h-4 w-4 text-blue-400" />
                                   <span>
                                     {new Date(
                                       ad.createdAt
@@ -774,77 +855,136 @@ const EditAd: React.FC = () => {
 
                     {filteredAds.length === 0 && (
                       <div className="text-center py-12">
-                        <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-600 text-lg">
+                        <FileText className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+                        <p className="text-gray-300 text-lg">
                           Nie znaleziono ogłoszeń
                         </p>
                       </div>
                     )}
                   </div>
+
+                  {/* Pagination controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-8">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          currentPage === 1
+                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            : "bg-purple-600 text-white hover:bg-purple-700"
+                        }`}
+                      >
+                        Poprzednia
+                      </button>
+
+                      <div className="flex gap-2">
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                              currentPage === page
+                                ? "bg-purple-600 text-white"
+                                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages)
+                          )
+                        }
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          currentPage === totalPages
+                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            : "bg-purple-600 text-white hover:bg-purple-700"
+                        }`}
+                      >
+                        Następna
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* White footer bar at bottom - jak w AdminPanel */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
-        </div>
+        {/* Czarna stopka */}
+        <footer className="bg-black text-white py-6 mt-auto">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+              <a
+                href="/zasady-bezpieczenstwa"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Zasady bezpieczeństwa
+              </a>
+              <a
+                href="/jak-dziala-moblix"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Jak działa MobliX
+              </a>
+              <a
+                href="/regulamin"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Regulamin
+              </a>
+              <a
+                href="/polityka-cookies"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Polityka cookies
+              </a>
+            </div>
+            <div className="text-center text-gray-400 text-sm mt-4">
+              © 2024 MobliX. Wszystkie prawa zastrzeżone.
+            </div>
+          </div>
+        </footer>
       </div>
 
       {/* Edit modal */}
       {showEditModal && editingAd && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full my-8">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full my-8 border border-gray-700">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <Smartphone className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
+              <h1 className="text-2xl font-bold text-white">
                 Edytuj ogłoszenie #{editingAd.id}
-              </h3>
+              </h1>
               <button
                 onClick={cancelEdit}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <X className="h-6 w-6" />
+                <X className="h-6 w-6 text-white" />
               </button>
             </div>
 
             <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
               {/* Podstawowe informacje */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-purple-600" />
+                <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-purple-400" />
                   Podstawowe informacje
                 </h4>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
                     Tytuł *
                   </label>
                   <input
@@ -853,13 +993,13 @@ const EditAd: React.FC = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, title: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="np. iPhone 13 128GB"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
                     Opis *
                   </label>
                   <textarea
@@ -868,7 +1008,7 @@ const EditAd: React.FC = () => {
                       setEditForm({ ...editForm, description: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Szczegółowy opis ogłoszenia..."
                   />
                 </div>
@@ -1275,10 +1415,10 @@ const EditAd: React.FC = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-3 justify-end mt-6 pt-6 border-t">
+            <div className="flex gap-3 justify-end mt-6 pt-6 border-t border-gray-700">
               <button
                 onClick={cancelEdit}
-                className="px-6 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                className="px-6 py-2 rounded-lg border border-gray-600 text-white hover:bg-gray-700 transition-colors"
               >
                 Anuluj
               </button>
@@ -1296,24 +1436,24 @@ const EditAd: React.FC = () => {
 
       {/* Delete confirmation modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
             <div className="flex items-center gap-3 mb-4">
-              <div className="bg-red-100 p-3 rounded-full">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="bg-red-900/50 p-3 rounded-full">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="text-xl font-bold text-white">
                 Potwierdź usunięcie
               </h3>
             </div>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-300 mb-6">
               Czy na pewno chcesz usunąć to ogłoszenie? Ta operacja jest
               nieodwracalna.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={cancelDelete}
-                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 rounded-lg border border-gray-600 text-white hover:bg-gray-700 transition-colors"
               >
                 Anuluj
               </button>
@@ -1327,7 +1467,7 @@ const EditAd: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

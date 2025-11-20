@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/search-logs")
-@CrossOrigin(origins = "http://localhost:5173")
 public class SearchLogController {
 
     private final SearchLogService searchLogService;
@@ -33,6 +32,7 @@ public class SearchLogController {
         searchLog.setSessionId(request.getSessionId());
         searchLog.setIpAddress(getClientIP(httpRequest));
         searchLog.setResultsCount(request.getResultsCount());
+        searchLog.setSearchSource(request.getSearchSource());
 
         SearchLog savedLog = searchLogService.saveSearchLog(searchLog);
         return ResponseEntity.ok(savedLog);
@@ -57,6 +57,7 @@ public class SearchLogController {
         private Long userId;
         private String sessionId;
         private Integer resultsCount;
+        private String searchSource;
 
         // Gett i sett
         public String getSearchQuery() {
@@ -121,6 +122,14 @@ public class SearchLogController {
 
         public void setResultsCount(Integer resultsCount) {
             this.resultsCount = resultsCount;
+        }
+
+        public String getSearchSource() {
+            return searchSource;
+        }
+
+        public void setSearchSource(String searchSource) {
+            this.searchSource = searchSource;
         }
     }
 }

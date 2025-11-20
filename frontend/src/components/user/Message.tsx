@@ -15,10 +15,12 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Loader,
-  Clock,
-  Check,
   CheckCheck,
-  Circle,
+  Bell,
+  Heart,
+  Search,
+  Plus,
+  LogIn,
 } from "lucide-react";
 
 type Conversation = {
@@ -62,9 +64,15 @@ const MessageComponent: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
+
+  // Token dla dostępu do API
+  const token = localStorage.getItem("token");
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -104,7 +112,26 @@ const MessageComponent: React.FC = () => {
       // Pobierz wszystkie konwersacje
       fetchConversations();
     }
+
+    // Pobierz liczbę ulubionych
+    fetchFavoriteCount();
   }, [adId, sellerEmail]);
+
+  const fetchFavoriteCount = async () => {
+    if (!token) return;
+
+    try {
+      const response = await axios.get<any[]>(
+        "http://localhost:8080/api/favorites",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setFavoriteCount(response.data.length);
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
 
   useEffect(() => {
     // Scroll do dołu przy nowych wiadomościach
@@ -126,6 +153,14 @@ const MessageComponent: React.FC = () => {
 
       if (!token) {
         navigate("/login");
+        return;
+      }
+
+      // Sprawdź czy użytkownik nie próbuje wysłać wiadomości do samego siebie
+      const currentEmail = getCurrentUserEmail();
+      if (currentEmail === seller) {
+        setError("Nie możesz wysłać wiadomości do samego siebie");
+        setLoading(false);
         return;
       }
 
@@ -262,6 +297,17 @@ const MessageComponent: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+    setIsDropdownOpen(false);
+  };
+
+  const handleGoToAdminPanel = () => {
+    setIsDropdownOpen(false);
+    navigate("/admin");
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -278,150 +324,214 @@ const MessageComponent: React.FC = () => {
   };
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button flex items-center gap-2"
-            >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
+          </div>
+
+          {/* Wyszukiwarka */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              navigate("/smartfony");
+            }}
+            className="flex-1 max-w-2xl"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </form>
+
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            {/* Ikona czatu */}
+            <button
+              onClick={() => navigate("/user/message")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
             </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-ads");
-                    }}
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    Ogłoszenia
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/message");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/personaldetails");
-                    }}
-                  >
-                    <User className="w-4 h-4 text-purple-600" />
-                    Profil
-                  </button>
-                  {isAdmin && (
+
+            {/* Ikona powiadomień */}
+            <button
+              onClick={() => navigate("/user/notifications")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+
+            {/* Ikona ulubionych */}
+            <button
+              onClick={() => navigate("/user/watchedads")}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
+                </span>
+              )}
+            </button>
+
+            {/* Przycisk dodaj ogłoszenie */}
+            <button
+              onClick={() => navigate("/user/addadvertisement")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden lg:inline">Dodaj ogłoszenie</span>
+            </button>
+
+            {/* Dropdown Twoje konto */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                <span className="hidden md:inline">Twoje konto</span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
+                  {token ? (
+                    <>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
+                        Ogłoszenia
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
+                        <MessageSquare className="w-4 h-4 text-green-400" />
+                        Chat
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-purple-300" />
+                        Profil
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={handleGoToAdminPanel}
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        >
+                          <Shield className="w-4 h-4 text-red-400" />
+                          Panel administratora
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-orange-400" />
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-cyan-400" />
+                          Panel użytkownika
+                        </button>
+                      )}
+                      <div className="border-t border-purple-400 my-1"></div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                      >
+                        <LogOut className="w-4 h-4 text-red-400" />
+                        Wyloguj
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        navigate("/admin");
+                        navigate("/login");
                       }}
                     >
-                      <Shield className="w-4 h-4 text-red-600" />
-                      Panel administratora
+                      <LogIn className="w-4 h-4 text-white" />
+                      Zaloguj się
                     </button>
                   )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/staffpanel");
-                      }}
-                    >
-                      <Users className="w-4 h-4 text-orange-600" />
-                      Panel pracownika
-                    </button>
-                  )}
-                  {(isAdmin || isStaff || isUser) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem("token");
-                      window.location.href = "/";
-                    }}
-                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
-                  >
-                    <LogOut className="w-4 h-4 text-red-600" />
-                    Wyloguj
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-52 pb-12 max-w-7xl">
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden h-[600px] flex">
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-gray-900 rounded-lg shadow-2xl overflow-hidden border border-gray-700 h-[calc(100vh-200px)] flex">
             {/* Lewa kolumna - Lista konwersacji */}
-            <div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
+            <div className="w-full md:w-1/3 bg-[#1a1a1a] border-r border-gray-800 flex flex-col">
               {/* Header listy konwersacji */}
-              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-600 to-green-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white bg-opacity-20 rounded-full">
-                    <MessageSquare className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Wiadomości</h2>
-                    <p className="text-sm text-green-100">
-                      {conversations.length} konwersacji
-                    </p>
-                  </div>
-                </div>
+              <div className="px-6 py-5 border-b border-gray-800">
+                <h2 className="text-xl font-bold text-white">Wiadomości</h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  {conversations.length} konwersacje
+                </p>
               </div>
 
               {/* Lista konwersacji */}
               <div className="flex-1 overflow-y-auto">
                 {loading && conversations.length === 0 ? (
                   <div className="flex justify-center items-center h-full">
-                    <Loader className="w-8 h-8 text-green-600 animate-spin" />
+                    <Loader className="w-8 h-8 text-purple-400 animate-spin" />
                   </div>
                 ) : conversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <MessageSquare className="w-8 h-8 text-gray-400" />
+                    <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                      <MessageSquare className="w-8 h-8 text-gray-500" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-300 mb-2">
                       Brak konwersacji
                     </h3>
                     <p className="text-gray-500 text-sm">
@@ -429,102 +539,169 @@ const MessageComponent: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      onClick={() => {
-                        setSelectedConversation(conv);
-                        fetchMessages(conv.id);
-                      }}
-                      className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
-                        selectedConversation?.id === conv.id
-                          ? "bg-green-50 border-l-4 border-l-green-600"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Zdjęcie ogłoszenia */}
-                        <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                          {conv.advertisementImageUrl ? (
-                            <img
-                              src={conv.advertisementImageUrl}
-                              alt={conv.advertisementTitle}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="w-6 h-6 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Informacje o konwersacji */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-1">
-                            <h4 className="font-semibold text-gray-900 truncate text-sm">
-                              {conv.otherUserName}
-                            </h4>
-                            {conv.unreadCount > 0 && (
-                              <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full ml-2">
-                                {conv.unreadCount}
+                  conversations
+                    .slice(
+                      (currentPage - 1) * itemsPerPage,
+                      currentPage * itemsPerPage
+                    )
+                    .map((conv) => (
+                      <div
+                        key={conv.id}
+                        onClick={() => {
+                          setSelectedConversation(conv);
+                          fetchMessages(conv.id);
+                        }}
+                        className={`px-6 py-5 border-b border-gray-800 cursor-pointer hover:bg-gray-800/50 transition-colors ${
+                          selectedConversation?.id === conv.id
+                            ? "bg-gray-800"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Avatar użytkownika z fioletową obramówką */}
+                          <div className="w-16 h-16 bg-purple-600 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center border-2 border-purple-500">
+                            {conv.advertisementImageUrl ? (
+                              <img
+                                src={conv.advertisementImageUrl}
+                                alt={conv.otherUserName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-white font-bold text-xl">
+                                {conv.otherUserName.charAt(0).toUpperCase()}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-600 truncate mb-1">
-                            {conv.advertisementTitle}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {conv.lastMessage || "Brak wiadomości"}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock className="w-3 h-3 text-gray-400" />
-                            <span className="text-xs text-gray-400">
-                              {conv.lastMessageTime
-                                ? formatTime(conv.lastMessageTime)
-                                : ""}
-                            </span>
+
+                          {/* Informacje o konwersacji */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-semibold text-white truncate text-base">
+                                {conv.otherUserName}
+                              </h4>
+                              {conv.lastMessageTime && (
+                                <span className="text-xs text-gray-500 ml-2">
+                                  {formatTime(conv.lastMessageTime)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-gray-400 truncate">
+                                {conv.lastMessage || conv.advertisementTitle}
+                              </p>
+                              {conv.unreadCount > 0 && (
+                                <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-full ml-2 flex-shrink-0">
+                                  {conv.unreadCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))
                 )}
               </div>
+
+              {/* Paginacja */}
+              {conversations.length > itemsPerPage && (
+                <div className="p-4 border-t border-gray-800 bg-[#1a1a1a]">
+                  <div className="flex justify-center items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        currentPage === 1
+                          ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                          : "bg-gray-800 text-white hover:bg-purple-600 border border-purple-500"
+                      }`}
+                    >
+                      Poprzednia
+                    </button>
+
+                    {Array.from(
+                      {
+                        length: Math.ceil(conversations.length / itemsPerPage),
+                      },
+                      (_, i) => i + 1
+                    ).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                          currentPage === page
+                            ? "bg-purple-600 text-white border-2 border-purple-400"
+                            : "bg-gray-800 text-white hover:bg-purple-600 border border-purple-500"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) =>
+                          Math.min(
+                            prev + 1,
+                            Math.ceil(conversations.length / itemsPerPage)
+                          )
+                        )
+                      }
+                      disabled={
+                        currentPage ===
+                        Math.ceil(conversations.length / itemsPerPage)
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        currentPage ===
+                        Math.ceil(conversations.length / itemsPerPage)
+                          ? "bg-gray-800 text-gray-600 cursor-not-allowed"
+                          : "bg-gray-800 text-white hover:bg-purple-600 border border-purple-500"
+                      }`}
+                    >
+                      Następna
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Prawa kolumna - Okno czatu */}
-            <div className="hidden md:flex md:w-2/3 flex-col">
+            <div className="hidden md:flex md:w-2/3 flex-col bg-gray-900">
               {selectedConversation ? (
                 <>
                   {/* Header czatu */}
-                  <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-600 to-green-700">
+                  <div className="p-4 border-b border-gray-700 bg-gray-800">
                     <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-white">
                           {selectedConversation.otherUserName}
                         </h3>
-                        <p
-                          className="text-sm text-green-100 cursor-pointer hover:underline"
+                        <button
                           onClick={() =>
                             navigate(
                               `/smartfon/${selectedConversation.advertisementId}`
                             )
                           }
+                          className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
                         >
                           {selectedConversation.advertisementTitle}
-                        </p>
+                        </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Wiadomości */}
-                  <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                  <div className="flex-1 overflow-y-auto p-4">
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                          <MessageSquare className="w-8 h-8 text-gray-400" />
+                        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                          <MessageSquare className="w-8 h-8 text-gray-600" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-300 mb-2">
                           Rozpocznij konwersację
                         </h3>
                         <p className="text-gray-500 text-sm">
@@ -544,10 +721,10 @@ const MessageComponent: React.FC = () => {
                               }`}
                             >
                               <div
-                                className={`relative max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                                className={`relative max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-lg border-2 ${
                                   isOwnMessage
-                                    ? "bg-green-600 text-white rounded-br-none"
-                                    : "bg-white text-gray-900 rounded-bl-none shadow-md"
+                                    ? "bg-purple-600 text-white rounded-br-none border-purple-500"
+                                    : "bg-gray-800 text-gray-200 rounded-bl-none border-purple-500"
                                 }`}
                               >
                                 <p className="text-sm break-words mb-1">
@@ -556,7 +733,7 @@ const MessageComponent: React.FC = () => {
                                 <div
                                   className={`flex items-center justify-between gap-2 text-xs ${
                                     isOwnMessage
-                                      ? "text-green-100"
+                                      ? "text-purple-200"
                                       : "text-gray-500"
                                   }`}
                                 >
@@ -567,7 +744,7 @@ const MessageComponent: React.FC = () => {
                                       message.isRead ? (
                                         <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-sm">
                                           <CheckCheck
-                                            className="w-2 h-2 text-green-600"
+                                            className="w-2 h-2 text-purple-600"
                                             strokeWidth={3}
                                           />
                                         </div>
@@ -602,9 +779,9 @@ const MessageComponent: React.FC = () => {
                   </div>
 
                   {/* Input do wysyłania wiadomości */}
-                  <div className="p-4 border-t border-gray-200 bg-white">
+                  <div className="p-4 border-t border-gray-700 bg-gray-800">
                     {error && (
-                      <div className="mb-3 flex items-center gap-2 text-red-600 text-sm">
+                      <div className="mb-3 flex items-center gap-2 text-red-400 text-sm">
                         <AlertCircle className="w-4 h-4" />
                         <span>{error}</span>
                       </div>
@@ -615,14 +792,14 @@ const MessageComponent: React.FC = () => {
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Napisz wiadomość..."
-                        className="flex-1 resize-none border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent max-h-32"
+                        className="flex-1 resize-none bg-gray-700 border-2 border-purple-500 text-white rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent max-h-32 placeholder-gray-400"
                         rows={2}
                         disabled={sendingMessage}
                       />
                       <button
                         onClick={sendMessage}
                         disabled={!newMessage.trim() || sendingMessage}
-                        className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full border-2 border-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {sendingMessage ? (
                           <Loader className="w-5 h-5 animate-spin" />
@@ -637,16 +814,17 @@ const MessageComponent: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-full bg-gray-50">
+                <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <MessageSquare className="w-10 h-10 text-gray-400" />
+                    <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="w-10 h-10 text-gray-600" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">
                       Wybierz konwersację
                     </h3>
-                    <p className="text-gray-500">
-                      Wybierz konwersację z listy aby rozpocząć czat
+                    <p className="text-gray-400">
+                      Wybierz kontakt z listy po lewej stronie, aby rozpocząć
+                      czat
                     </p>
                   </div>
                 </div>
@@ -656,36 +834,40 @@ const MessageComponent: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
+      {/* Czarna stopka */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a
+              href="/jak-dziala-moblix"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Jak działa MobliX
+            </a>
+            <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+            <a
+              href="/regulamin"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Zasady bezpieczeństwa
+            </a>
+          </div>
+          <div className="text-center mt-4 text-gray-400 text-xs">
+            © 2024 MobliX. Wszystkie prawa zastrzeżone.
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

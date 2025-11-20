@@ -3,13 +3,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.backend.model.Advertisement;
 import com.example.backend.model.User;
 import com.example.backend.others.AdvertisementStatus;
-import com.example.backend.others.ReportStatus;
+
+
+import jakarta.transaction.Transactional;
 
 @Repository
 public interface AdvertisementRepository extends JpaRepository<Advertisement, Long> {
@@ -41,12 +45,25 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     @Query("SELECT a FROM Advertisement a WHERE a.smartphoneSpecification.status = 'ACTIVE' AND a.smartphoneSpecification.dateAdded IS NOT NULL ORDER BY a.smartphoneSpecification.dateAdded DESC")
     List<Advertisement> findTop4ByOrderBySmartphoneSpecificationDateAddedDesc();
 
-    // Najczęściej wystawiane marki (dla statystyk)
-    @Query("SELECT a.smartphoneSpecification.brand, COUNT(a) as count FROM Advertisement a WHERE a.smartphoneSpecification.brand IS NOT NULL GROUP BY a.smartphoneSpecification.brand ORDER BY count DESC")
+    // Najczęściej wystawiane marki (dla statystyk) - tylko aktywne ogłoszenia, limit 5
+    @Query(value = "SELECT s.brand, COUNT(a.id) as count FROM advertisements a " +
+           "INNER JOIN smartphone_specifications s ON a.specification_id = s.id " +
+           "WHERE a.status = 'ACTIVE' AND s.brand IS NOT NULL " +
+           "GROUP BY s.brand " +
+           "ORDER BY count DESC " +
+           "LIMIT 5", nativeQuery = true)
     List<Object[]> findTopListedBrands();
 
     //metody do panelu admina
     long countByCreatedAtAfter(LocalDateTime date);
     long countByCreatedAtBefore(LocalDateTime date);
+
+    @Query("SELECT COUNT(DISTINCT a.user.id) FROM Advertisement a WHERE a.createdAt >= :date")
+    long countDistinctUserByCreatedAtAfter(@Param("date") LocalDateTime date);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Advertisement a WHERE a.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 
 }

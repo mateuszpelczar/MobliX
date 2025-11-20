@@ -27,7 +27,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/advertisements")
-@CrossOrigin(origins = "http://localhost:5173")
 public class AdvertisementController {
 
     private final AdvertisementService advertisementService;
@@ -370,4 +369,37 @@ public ResponseEntity<Void> incrementViewCount(
 
         return ResponseEntity.ok(stats);
     }
+
+    //udostepnianie linku ogloszenia
+    @PostMapping("/{id}/share")
+    public ResponseEntity<Void> shareAdvertisement(
+        @PathVariable Long id,
+        Authentication authentication,
+        HttpServletRequest request
+    ){
+        User currentUser = null;
+        if(authentication !=null && authentication.isAuthenticated()){
+            try{
+                currentUser = userService.findByEmail(authentication.getName());
+            }catch (Exception e){
+                // niezalogowany uzytkownik
+            }
+        }
+    Advertisement ad = advertisementService.findById(id);
+    String ipAddress = logService.getClientIP(request);
+
+    logService.saveLog(
+        "INFO",
+        "advertisement",
+        "Udostepniono ogloszenie: " + ad.getTitle(),
+        "ID: " + id,
+        "AdvertisementController.shareAdvertisement",
+        currentUser,
+        ipAddress
+    );
+    return ResponseEntity.ok().build();
+    }
+
+    
+
 }

@@ -1,89 +1,89 @@
-C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
-C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
-C:\MobliX\backend\src\main\java\com\example\backend\config\WebConfig.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminStatsController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\AdvertisementController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\AdvertisementReportController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\AuthController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\ContentPageController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\FavoriteAdController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\LogController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\MessageController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\NotificationController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\SearchLogController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\SearchStatsController.java
-C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementReportDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\ConversationDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\LogDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\MessageDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\NotificationDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\SellerInfoDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java
-C:\MobliX\backend\src\main\java\com\example\backend\dto\UserModerationDTO.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Advertisement.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\AdvertisementReport.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Category.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\ContentPage.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Conversation.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\FavoriteAd.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Image.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Location.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Log.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Message.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Moderation.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Notification.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Regulation.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Report.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\ReportSummary.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\Role.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\SearchLog.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\SmartphoneSpecification.java
-C:\MobliX\backend\src\main\java\com\example\backend\model\User.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\AdvertisementStatus.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\BlockUserRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\CreateReportRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\LoginRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\NotificationType.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\RegisterRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\ReportStatus.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\ReviewReportRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\SendMessageRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\UpdateUserRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\others\UserRoleChangeRequest.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\AdvertisementReportRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\AdvertisementRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\CategoryRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\ContentPageRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\ConversationRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\FavoriteAdRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\ImageRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\LocationRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\LogRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\MessageRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\ModerationRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\NotificationRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\RegulationRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportSummaryRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\SearchLogRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\SmartphoneSpecificationRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\repository\UserRepository.java
-C:\MobliX\backend\src\main\java\com\example\backend\security\CustomUserDetails.java
-C:\MobliX\backend\src\main\java\com\example\backend\security\JwtAuthenticationFilter.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\AdminService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\AdminStatsService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementReportService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\ContentPageService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\FavoriteAdService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\LogService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\MessageService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\NotificationService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\SearchLogService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\BackendApplication.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\config\SecurityConfig.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\config\WebConfig.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\AdminController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\AdminStatsController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\AdvertisementController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\AdvertisementReportController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\AuthController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\ContentPageController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\FavoriteAdController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\LogController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\MessageController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\NotificationController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\SearchLogController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\SearchStatsController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\controller\UserController.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\AdvertisementReportDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\ConversationDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\LogDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\MessageDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\NotificationDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\SellerInfoDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\UserDto.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\dto\UserModerationDTO.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Advertisement.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\AdvertisementReport.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Category.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\ContentPage.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Conversation.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\FavoriteAd.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Image.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Location.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Log.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Message.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Moderation.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Notification.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Regulation.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Report.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\ReportSummary.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\Role.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\SearchLog.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\SmartphoneSpecification.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\model\User.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\AdvertisementStatus.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\BlockUserRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\CreateReportRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\LoginRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\NotificationType.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\RegisterRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\ReportStatus.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\ReviewReportRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\SendMessageRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\UpdateUserRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\others\UserRoleChangeRequest.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\AdvertisementReportRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\AdvertisementRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\CategoryRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\ContentPageRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\ConversationRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\FavoriteAdRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\ImageRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\LocationRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\LogRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\MessageRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\ModerationRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\NotificationRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\RegulationRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\ReportRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\ReportSummaryRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\SearchLogRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\SmartphoneSpecificationRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\repository\UserRepository.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\security\CustomUserDetails.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\security\JwtAuthenticationFilter.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\AdminService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\AdminStatsService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\AdvertisementReportService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\AdvertisementService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\ContentPageService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\FavoriteAdService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\JwtService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\LogService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\MessageService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\NotificationService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\SearchLogService.java
+C:\MobliX — kopia\backend\src\main\java\com\example\backend\service\UserService.java

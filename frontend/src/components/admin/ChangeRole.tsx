@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../../styles/MobileResponsive.css";
 import { jwtDecode } from "jwt-decode";
 import {
   MessageSquare,
   ShoppingBag,
-  Star,
   User,
   Shield,
   Users,
@@ -16,16 +14,14 @@ import {
   Mail,
   Tag,
   Crown,
-  UserCheck,
   UserX,
   Trash2,
   Edit3,
-  AlertTriangle,
-  Check,
-  X,
-  ArrowLeft,
   Search,
   Filter,
+  Bell,
+  Heart,
+  Plus,
 } from "lucide-react";
 
 interface User {
@@ -49,12 +45,44 @@ const ChangeRole: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
+    fetchFavoriteCount();
   }, []);
+
+  const fetchFavoriteCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch("http://localhost:8080/api/favorites", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFavoriteCount(data.length);
+      }
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
+
+  const handleMessengerClick = () => navigate("/user/message");
+  const handleNotificationsClick = () => navigate("/user/notifications");
+  const handleWatchedAdsClick = () => navigate("/user/watchedads");
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate(
+      searchQuery.trim()
+        ? `/smartfony?search=${searchQuery.trim()}`
+        : "/smartfony"
+    );
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -282,12 +310,12 @@ const ChangeRole: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex justify-center items-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex justify-center items-center">
+        <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
           <div className="flex items-center justify-center mt-4 gap-2">
-            <UserCog className="w-5 h-5 text-purple-600" />
-            <p className="text-gray-700">Ładowanie użytkowników...</p>
+            <UserCog className="w-5 h-5 text-purple-400" />
+            <p className="text-white">Ładowanie użytkowników...</p>
           </div>
         </div>
       </div>
@@ -295,461 +323,499 @@ const ChangeRole: React.FC = () => {
   }
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* White header bar at top */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        {/* Logo in top left */}
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-
-        {/* Account dropdown in top right corner */}
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4 flex items-center gap-2"
-            >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
-                  {token ? (
-                    <>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/your-ads");
-                        }}
-                      >
-                        <ShoppingBag className="w-4 h-4 text-blue-600" />
-                        Ogłoszenia
-                      </button>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/message");
-                        }}
-                      >
-                        <MessageSquare className="w-4 h-4 text-green-600" />
-                        Czat
-                      </button>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/ratings");
-                        }}
-                      >
-                        <Star className="w-4 h-4 text-yellow-500" />
-                        Oceny
-                      </button>
-                      <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/personaldetails");
-                        }}
-                      >
-                        <User className="w-4 h-4 text-purple-600" />
-                        Profil
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/admin");
-                          }}
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        >
-                          <Shield className="w-4 h-4 text-red-600" />
-                          Panel administratora
-                        </button>
-                      )}
-                      {(isAdmin || isStaff) && (
-                        <button
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/staffpanel");
-                          }}
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        >
-                          <Users className="w-4 h-4 text-orange-600" />
-                          Panel pracownika
-                        </button>
-                      )}
-                      {(isAdmin || isStaff || isUser) && (
-                        <button
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/userpanel");
-                          }}
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        >
-                          <User className="w-4 h-4 text-blue-600" />
-                          Panel użytkownika
-                        </button>
-                      )}
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <button
-                        onClick={handleLogout}
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      >
-                        <LogOut className="w-4 h-4 text-red-600" />
-                        Wyloguj
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="dropdown-logout w-full text-left"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/login");
-                      }}
-                    >
-                      Zaloguj się
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
           </div>
-        </div>
-      </div>
 
-      {/* Main content with dark gradient background */}
-      <div className="panel-content-with-search flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-64 pb-12">
-          {/* White content box - adjusted positioning with equal spacing */}
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full max-w-4xl mx-auto min-h-[400px] sm:min-h-[500px] mt-10 mb-12 flex flex-col gap-6 sm:gap-8">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 rounded-lg shadow-md mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <UserCog className="w-8 h-8" />
-                <h2 className="text-2xl sm:text-3xl font-bold">
-                  System Zarządzania Użytkownikami
-                </h2>
-              </div>
-              <p className="text-purple-100 text-sm sm:text-base">
-                Kompleksowe narzędzie do administracji kontami użytkowników i
-                zarządzania uprawnieniami
-              </p>
+          {/* Wyszukiwarka */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
+          </form>
 
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                {successMessage}
-              </div>
-            )}
-
-            {/* Search and Filter Section */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Search Bar */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Szukaj po ID, nazwie użytkownika lub email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Role Filter Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setRoleFilter("ALL")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      roleFilter === "ALL"
-                        ? "bg-purple-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4" />
-                      Wszystkie
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setRoleFilter("USER")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      roleFilter === "USER"
-                        ? "bg-green-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      Użytkownicy
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setRoleFilter("STAFF")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      roleFilter === "STAFF"
-                        ? "bg-blue-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      Staff
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setRoleFilter("ADMIN")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      roleFilter === "ADMIN"
-                        ? "bg-red-600 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Crown className="w-4 h-4" />
-                      Admini
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Results count */}
-              <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>
-                  Znaleziono {filteredUsers.length} z {users.length}{" "}
-                  użytkowników
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleMessengerClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
+            </button>
+            <button
+              onClick={handleNotificationsClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+            <button
+              onClick={handleWatchedAdsClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
                 </span>
-              </div>
-            </div>
+              )}
+            </button>
+            <button
+              onClick={() => navigate("/user/addadvertisement")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Dodaj ogłoszenie
+            </button>
 
-            <div className="flex-grow">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-purple-600" />
-                <h2 className="text-lg sm:text-xl font-semibold">
-                  Lista użytkowników
-                </h2>
-              </div>
-
-              {filteredUsers.length === 0 ? (
-                <div className="text-center py-8">
-                  {users.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <UserX className="w-12 h-12 text-gray-400" />
-                      <p className="text-gray-500">
-                        Brak użytkowników do wyświetlenia.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-3">
-                      <Search className="w-12 h-12 text-gray-400" />
-                      <p className="text-gray-500">
-                        Nie znaleziono użytkowników spełniających kryteria
-                        wyszukiwania.
-                      </p>
-                      <button
-                        onClick={() => {
-                          setSearchTerm("");
-                          setRoleFilter("ALL");
-                        }}
-                        className="text-purple-600 hover:text-purple-800 underline"
-                      >
-                        Wyczyść filtry
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-200">
-                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <Tag className="w-4 h-4" />
-                            ID
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            Email
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            Nazwa użytkownika
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <Shield className="w-4 h-4" />
-                            Aktualna rola
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <Edit3 className="w-4 h-4" />
-                            Zmień rolę
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <Trash2 className="w-4 h-4" />
-                            Akcja
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.map((user) => (
-                        <tr
-                          key={user.id}
-                          className="hover:bg-gray-50 transition-colors"
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Twoje konto
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl z-50">
+                  <div className="py-1">
+                    {token ? (
+                      <>
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/user/your-ads");
+                          }}
                         >
-                          <td className="py-3 px-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            #{user.id}
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-700">
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4 text-gray-400" />
-                              {user.email}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-700">
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-gray-400" />
-                              {user.username}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(
-                                user.role
-                              )}`}
-                            >
-                              {getRoleIcon(user.role)}
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() =>
-                                  handleRoleChange(user.id, "USER")
-                                }
-                                className={`px-2 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
-                                  user.role === "USER"
-                                    ? "bg-green-600 text-white shadow-md"
-                                    : "bg-gray-100 text-gray-700 hover:bg-green-100"
-                                }`}
-                                title="Ustaw jako USER"
-                              >
-                                <User className="w-3 h-3" />
-                                USER
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleRoleChange(user.id, "STAFF")
-                                }
-                                className={`px-2 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
-                                  user.role === "STAFF"
-                                    ? "bg-blue-600 text-white shadow-md"
-                                    : "bg-gray-100 text-gray-700 hover:bg-blue-100"
-                                }`}
-                                title="Ustaw jako STAFF"
-                              >
-                                <Shield className="w-3 h-3" />
-                                STAFF
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleRoleChange(user.id, "ADMIN")
-                                }
-                                className={`px-2 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
-                                  user.role === "ADMIN"
-                                    ? "bg-red-600 text-white shadow-md"
-                                    : "bg-gray-100 text-gray-700 hover:bg-red-100"
-                                }`}
-                                title="Ustaw jako ADMIN"
-                              >
-                                <Crown className="w-3 h-3" />
-                                ADMIN
-                              </button>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 whitespace-nowrap">
-                            <button
-                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Usuń
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          <ShoppingBag className="w-4 h-4 text-blue-400" />
+                          Ogłoszenia
+                        </button>
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/user/message");
+                          }}
+                        >
+                          <MessageSquare className="w-4 h-4 text-green-400" />
+                          Czat
+                        </button>
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/user/personaldetails");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-purple-400" />
+                          Profil
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              navigate("/admin");
+                            }}
+                            className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          >
+                            <Shield className="w-4 h-4 text-red-400" />
+                            Panel administratora
+                          </button>
+                        )}
+                        {(isAdmin || isStaff) && (
+                          <button
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              navigate("/staffpanel");
+                            }}
+                            className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          >
+                            <Users className="w-4 h-4 text-orange-400" />
+                            Panel pracownika
+                          </button>
+                        )}
+                        {(isAdmin || isStaff || isUser) && (
+                          <button
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              navigate("/userpanel");
+                            }}
+                            className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          >
+                            <User className="w-4 h-4 text-cyan-400" />
+                            Panel użytkownika
+                          </button>
+                        )}
+                        <div className="border-t border-purple-400 my-1"></div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 text-red-400" />
+                          Wyloguj
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/login");
+                        }}
+                      >
+                        Zaloguj się
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
-      {/* White footer bar at bottom */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
+      </nav>
 
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
+      {/* Content */}
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header z ikoną UserCog */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-purple-600 p-4 rounded-full">
+                <UserCog className="w-12 h-12 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  System Zarządzania Użytkownikami
+                </h1>
+                <p className="text-gray-300">
+                  Kompleksowe narzędzie do administracji kontami użytkowników i
+                  zarządzania uprawnieniami
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded-lg mb-4">
+              {successMessage}
+            </div>
+          )}
+
+          {/* Sekcja wyszukiwania i filtrów */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Pasek wyszukiwania */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Szukaj po ID, nazwie użytkownika lub email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Przyciski filtrów ról */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setRoleFilter("ALL")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    roleFilter === "ALL"
+                      ? "bg-purple-600 text-white shadow-md"
+                      : "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    Wszystkie
+                  </div>
+                </button>
+                <button
+                  onClick={() => setRoleFilter("USER")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    roleFilter === "USER"
+                      ? "bg-green-600 text-white shadow-md"
+                      : "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Użytkownicy
+                  </div>
+                </button>
+                <button
+                  onClick={() => setRoleFilter("STAFF")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    roleFilter === "STAFF"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Staff
+                  </div>
+                </button>
+                <button
+                  onClick={() => setRoleFilter("ADMIN")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    roleFilter === "ADMIN"
+                      ? "bg-red-600 text-white shadow-md"
+                      : "bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-4 h-4" />
+                    Admini
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Licznik wyników */}
+            <div className="mt-3 text-sm text-gray-300 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span>
+                Znaleziono {filteredUsers.length} z {users.length} użytkowników
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-purple-400" />
+              <h2 className="text-xl font-bold text-white">
+                Lista użytkowników
+              </h2>
+            </div>
+
+            {filteredUsers.length === 0 ? (
+              <div className="text-center py-8">
+                {users.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <UserX className="w-12 h-12 text-gray-500" />
+                    <p className="text-gray-400">
+                      Brak użytkowników do wyświetlenia.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <Search className="w-12 h-12 text-gray-500" />
+                    <p className="text-gray-400">
+                      Nie znaleziono użytkowników spełniających kryteria
+                      wyszukiwania.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearchTerm("");
+                        setRoleFilter("ALL");
+                      }}
+                      className="text-purple-400 hover:text-purple-300 underline"
+                    >
+                      Wyczyść filtry
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto bg-gray-700 border border-gray-600 rounded-lg">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="bg-gray-900 border-b border-gray-600">
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-4 h-4" />
+                          ID
+                        </div>
+                      </th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          Email
+                        </div>
+                      </th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Nazwa użytkownika
+                        </div>
+                      </th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          Aktualna rola
+                        </div>
+                      </th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Edit3 className="w-4 h-4" />
+                          Zmień rolę
+                        </div>
+                      </th>
+                      <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <div className="flex items-center gap-2">
+                          <Trash2 className="w-4 h-4" />
+                          Akcja
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-gray-800 divide-y divide-gray-600">
+                    {filteredUsers.map((user) => (
+                      <tr
+                        key={user.id}
+                        className="hover:bg-gray-700 transition-colors"
+                      >
+                        <td className="py-3 px-4 whitespace-nowrap text-sm font-medium text-white">
+                          #{user.id}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            {user.email}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-300">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-gray-400" />
+                            {user.username}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(
+                              user.role
+                            )}`}
+                          >
+                            {getRoleIcon(user.role)}
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleRoleChange(user.id, "USER")}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
+                                user.role === "USER"
+                                  ? "bg-green-600 text-white shadow-md"
+                                  : "bg-gray-100 text-gray-700 hover:bg-green-100"
+                              }`}
+                              title="Ustaw jako USER"
+                            >
+                              <User className="w-3 h-3" />
+                              USER
+                            </button>
+                            <button
+                              onClick={() => handleRoleChange(user.id, "STAFF")}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
+                                user.role === "STAFF"
+                                  ? "bg-blue-600 text-white shadow-md"
+                                  : "bg-gray-100 text-gray-700 hover:bg-blue-100"
+                              }`}
+                              title="Ustaw jako STAFF"
+                            >
+                              <Shield className="w-3 h-3" />
+                              STAFF
+                            </button>
+                            <button
+                              onClick={() => handleRoleChange(user.id, "ADMIN")}
+                              className={`px-2 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
+                                user.role === "ADMIN"
+                                  ? "bg-red-600 text-white shadow-md"
+                                  : "bg-gray-100 text-gray-700 hover:bg-red-100"
+                              }`}
+                              title="Ustaw jako ADMIN"
+                            >
+                              <Crown className="w-3 h-3" />
+                              ADMIN
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <button
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Usuń
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Czarna stopka jak w MainPanel */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Zasady bezpieczeństwa
+            </a>
+            <a
+              href="/jak-dziala-moblix"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Jak działa MobliX
+            </a>
+            <a
+              href="/regulamin"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+          </div>
+          <div className="text-center text-gray-400 text-sm mt-4">
+            © 2024 MobliX. Wszelkie prawa zastrzeżone.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -17,10 +17,17 @@ import {
   Users,
   LogOut,
   ChevronDown,
+  Search,
 } from "lucide-react";
 import "../styles/MobileResponsive.css";
 import "../styles/UserPanel.css";
 import axios from "axios";
+
+type JwtPayLoad = {
+  sub: string;
+  role: string;
+  exp: number;
+};
 
 interface UserActivity {
   id: number;
@@ -38,6 +45,8 @@ const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -64,6 +73,67 @@ const UserPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
+
+  const fetchFavoriteCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const response = await axios.get<{ count: number }>(
+          "http://localhost:8080/api/favorites/count",
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFavoriteCount(response.data.count || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+
+    if (query) {
+      // Log search from navbar
+      try {
+        const token = localStorage.getItem("token");
+        let userId = null;
+
+        if (token) {
+          try {
+            const decoded = jwtDecode<JwtPayLoad>(token);
+            userId = decoded.sub ? parseInt(decoded.sub) : null;
+          } catch (error) {
+            console.error("Error decoding token:", error);
+          }
+        }
+
+        await axios.post("http://localhost:8080/api/search-logs", {
+          searchQuery: query,
+          brand: null,
+          model: null,
+          minPrice: null,
+          maxPrice: null,
+          userId: userId,
+          sessionId: null,
+          resultsCount: null,
+          searchSource: "navbar",
+        });
+      } catch (error) {
+        console.error("Error logging search:", error);
+      }
+
+      navigate(`/main?search=${encodeURIComponent(query)}`);
+    }
+  };
+
+  const handleMessengerClick = () => navigate("/user/message");
+  const handleNotificationsClick = () => navigate("/user/notifications");
+  const handleWatchedAdsClick = () => navigate("/user/watchedads");
+
+  useEffect(() => {
+    fetchFavoriteCount();
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -216,332 +286,372 @@ const UserPanel: React.FC = () => {
   };
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* White header bar at top */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div
-          onClick={() => navigate("/main")}
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button"
+    <>
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+        {/* Czarny pasek nawigacji */}
+        <nav className="bg-black text-white px-4 py-3 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            {/* Logo */}
+            <div
+              className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+              onClick={() => navigate("/main")}
             >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu">
-                <div className="py-1">
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-ads");
-                    }}
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    Ogłoszenia
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/message");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/personaldetails");
-                    }}
-                  >
-                    <User className="w-4 h-4 text-purple-600" />
-                    Profil
-                  </button>
-                  {isAdmin && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/admin");
-                      }}
-                    >
-                      <Shield className="w-4 h-4 text-red-600" />
-                      Panel administratora
-                    </button>
-                  )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/staffpanel");
-                      }}
-                    >
-                      <Users className="w-4 h-4 text-orange-600" />
-                      Panel pracownika
-                    </button>
-                  )}
-                  {(isAdmin || isStaff || isUser) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <div className="border-t border-gray-200 my-1"></div>
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem("token");
-                      window.location.href = "/";
-                    }}
-                    className="dropdown-logout flex items-center gap-3 px-4 py-2"
-                  >
-                    <LogOut className="w-4 h-4 text-red-500" />
-                    Wyloguj
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+              MobliX
+            </div>
 
-      {/* Main content with modern design */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-[220px] pb-16 max-w-6xl">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-3 rounded-full">
-                  <User className="w-8 h-8" />
+            {/* Wyszukiwarka */}
+            <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Szukaj smartfonów..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              </div>
+            </form>
+
+            {/* Ikony i przyciski */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleMessengerClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Wiadomości"
+              >
+                <MessageSquare className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleNotificationsClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                title="Powiadomienia"
+              >
+                <Bell className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleWatchedAdsClick}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+                title="Ulubione ogłoszenia"
+              >
+                <Heart className="w-6 h-6" />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {favoriteCount > 9 ? "9+" : favoriteCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate("/user/addadvertisement")}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Dodaj ogłoszenie
+              </button>
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                  Twoje konto
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl z-50">
+                    <div className="py-1">
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/your-ads");
+                        }}
+                      >
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
+                        Ogłoszenia
+                      </button>
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/message");
+                        }}
+                      >
+                        <MessageSquare className="w-4 h-4 text-green-400" />
+                        Czat
+                      </button>
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-purple-400" />
+                        Profil
+                      </button>
+                      {isAdmin && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/admin");
+                          }}
+                        >
+                          <Shield className="w-4 h-4 text-red-400" />
+                          Panel administratora
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-orange-400" />
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
+                        <button
+                          className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-cyan-400" />
+                          Panel użytkownika
+                        </button>
+                      )}
+                      <div className="border-t border-purple-400 my-1"></div>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem("token");
+                          window.location.href = "/";
+                        }}
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4 text-red-400" />
+                        Wyloguj
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Content */}
+        <div className="flex-1 px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header z ikoną User */}
+            <div className="bg-gray-800 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="bg-purple-600 p-4 rounded-full">
+                  <User className="w-12 h-12 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold">
+                  <h1 className="text-3xl font-bold text-white">
                     Panel Użytkownika
                   </h1>
-                  <p className="text-blue-100">
+                  <p className="text-gray-300">
                     Zarządzaj swoimi ogłoszeniami i profilem
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 sm:p-8 user-content max-h-[calc(100vh-320px)] overflow-y-auto">
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-xl text-center border border-blue-200">
-                  <div className="flex items-center justify-center mb-2">
-                    <ShoppingBag className="h-6 w-6 text-blue-600" />
+            <div className="space-y-6">
+              {/* Quick Stats - wyraźnie oddzielone */}
+              <div className="bg-gray-800 rounded-lg p-6 border-2 border-purple-500">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-6 h-6 text-purple-400" />
+                  Twoje statystyki
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-lg shadow-lg border border-blue-400">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <ShoppingBag className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-3xl font-bold text-white">
+                        {loading ? "..." : stats.activeAds}
+                      </div>
+                      <div className="text-sm text-blue-100 mt-1">
+                        Aktywne ogłoszenia
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-blue-600">
-                    {loading ? "..." : stats.activeAds}
-                  </div>
-                  <div className="text-xs text-blue-500">
-                    Aktywne ogłoszenia
-                  </div>
-                </div>
 
-                <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl text-center border border-green-200">
-                  <div className="flex items-center justify-center mb-2">
-                    <BarChart3 className="h-6 w-6 text-green-600" />
+                  <div className="bg-gradient-to-br from-green-600 to-green-800 p-6 rounded-lg shadow-lg border border-green-400">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <BarChart3 className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-3xl font-bold text-white">
+                        {loading ? "..." : stats.totalViews}
+                      </div>
+                      <div className="text-sm text-green-100 mt-1">
+                        Wyświetlenia
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-green-600">
-                    {loading ? "..." : stats.totalViews}
-                  </div>
-                  <div className="text-xs text-green-500">Wyświetlenia</div>
-                </div>
 
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl text-center border border-purple-200">
-                  <div className="flex items-center justify-center mb-2">
-                    <Heart className="h-6 w-6 text-purple-600" />
+                  <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-lg shadow-lg border border-purple-400">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Heart className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-3xl font-bold text-white">
+                        {loading ? "..." : stats.favorites}
+                      </div>
+                      <div className="text-sm text-purple-100 mt-1">
+                        Obserwowane
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-purple-600">
-                    {loading ? "..." : stats.favorites}
-                  </div>
-                  <div className="text-xs text-purple-500">Obserwowane</div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Primary Actions */}
-                <button
-                  onClick={() => navigate("/user/addadvertisement")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#ec4899",
-                      "--card-color-2": "#db2777",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <Plus className="w-8 h-8" />
+              {/* Action Buttons - z nagłówkiem */}
+              <div>
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <ShoppingBag className="w-6 h-6 text-purple-400" />
+                  Szybkie akcje
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Primary Actions */}
+                  <button
+                    onClick={() => navigate("/user/addadvertisement")}
+                    className="bg-gradient-to-br from-pink-600 to-pink-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                        <Plus className="w-8 h-8" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">
+                          Dodaj ogłoszenie
+                        </h3>
+                        <p className="text-pink-100 text-sm">
+                          Sprzedaj swój telefon
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">
-                        Dodaj ogłoszenie
-                      </h3>
-                      <p className="text-pink-100 text-sm">
-                        Sprzedaj swój telefon
-                      </p>
-                    </div>
-                  </div>
-                </button>
+                  </button>
 
-                <button
-                  onClick={() => navigate("/user/your-ads")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#f59e0b",
-                      "--card-color-2": "#d97706",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <Edit3 className="w-8 h-8" />
+                  <button
+                    onClick={() => navigate("/user/your-ads")}
+                    className="bg-gradient-to-br from-orange-600 to-orange-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                        <Edit3 className="w-8 h-8" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">
+                          Twoje ogłoszenia
+                        </h3>
+                        <p className="text-amber-100 text-sm">
+                          Zarządzaj ofertami
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">
-                        Twoje ogłoszenia
-                      </h3>
-                      <p className="text-amber-100 text-sm">
-                        Zarządzaj ofertami
-                      </p>
-                    </div>
-                  </div>
-                </button>
+                  </button>
 
-                <button
-                  onClick={() => navigate("/user/message")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#3b82f6",
-                      "--card-color-2": "#1d4ed8",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <MessageSquare className="w-8 h-8" />
+                  <button
+                    onClick={() => navigate("/user/message")}
+                    className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                        <MessageSquare className="w-8 h-8" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">Wiadomości</h3>
+                        <p className="text-blue-100 text-sm">
+                          Komunikacja z kupującymi
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">Wiadomości</h3>
-                      <p className="text-blue-100 text-sm">
-                        Komunikacja z kupującymi
-                      </p>
-                    </div>
-                  </div>
-                </button>
+                  </button>
 
-                {/* Secondary Actions */}
-                <button
-                  onClick={() => navigate("/user/watched-ads")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#10b981",
-                      "--card-color-2": "#059669",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <Eye className="w-8 h-8" />
+                  {/* Secondary Actions */}
+                  <button
+                    onClick={() => navigate("/user/watchedads")}
+                    className="bg-gradient-to-br from-green-600 to-green-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                        <Eye className="w-8 h-8" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">Obserwowane</h3>
+                        <p className="text-emerald-100 text-sm">
+                          Ulubione oferty
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">Obserwowane</h3>
-                      <p className="text-emerald-100 text-sm">
-                        Ulubione oferty
-                      </p>
-                    </div>
-                  </div>
-                </button>
+                  </button>
 
-                <button
-                  onClick={() => navigate("/user/notifications")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#dc2626",
-                      "--card-color-2": "#b91c1c",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <Bell className="w-8 h-8" />
+                  <button
+                    onClick={() => navigate("/user/notifications")}
+                    className="bg-gradient-to-br from-red-600 to-red-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                        <Bell className="w-8 h-8" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">
+                          Powiadomienia
+                        </h3>
+                        <p className="text-red-100 text-sm">Ważne informacje</p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">Powiadomienia</h3>
-                      <p className="text-red-100 text-sm">Ważne informacje</p>
-                    </div>
-                  </div>
-                </button>
+                  </button>
 
-                <button
-                  onClick={() => navigate("/user/personaldetails")}
-                  className="user-card p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
-                  style={
-                    {
-                      "--card-color-1": "#8b5cf6",
-                      "--card-color-2": "#7c3aed",
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="user-card-icon bg-white/20 p-4 rounded-full">
-                      <User className="w-8 h-8" />
+                  <button
+                    onClick={() => navigate("/user/personaldetails")}
+                    className="bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="user-card-icon bg-white/20 p-4 rounded-full">
+                        <User className="w-8 h-8" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-lg font-bold mb-2">Profil</h3>
+                        <p className="text-purple-100 text-sm">Dane osobowe</p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <h3 className="text-lg font-bold mb-2">Profil</h3>
-                      <p className="text-purple-100 text-sm">Dane osobowe</p>
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                </div>
               </div>
 
               {/* Recent Activity Section */}
               <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-purple-400" />
                   Ostatnia aktywność
                 </h3>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
                   {activitiesLoading ? (
-                    <div className="text-gray-600 text-center py-8">
+                    <div className="text-gray-300 text-center py-8">
                       <p>Ładowanie aktywności...</p>
                     </div>
                   ) : activities.length === 0 ? (
-                    <div className="text-gray-600 text-center py-8">
+                    <div className="text-gray-300 text-center py-8">
                       <p>Brak ostatniej aktywności</p>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-gray-400 mt-1">
                         Dodaj swoje pierwsze ogłoszenie!
                       </p>
                     </div>
@@ -557,9 +667,9 @@ const UserPanel: React.FC = () => {
                           <div
                             key={activity.id}
                             onClick={() => handleActivityClick(activity)}
-                            className={`flex items-start gap-3 p-3 min-h-[72px] bg-white rounded-lg border border-gray-200 transition-all ${
+                            className={`flex items-start gap-3 p-3 min-h-[72px] bg-gray-700 rounded-lg border border-gray-600 transition-all ${
                               isClickable
-                                ? "hover:shadow-md hover:border-blue-300 cursor-pointer"
+                                ? "hover:shadow-md hover:border-purple-500 cursor-pointer"
                                 : ""
                             }`}
                           >
@@ -567,7 +677,7 @@ const UserPanel: React.FC = () => {
                               {getActivityIcon(activity.message)}
                             </div>
                             <div className="flex-grow min-w-0">
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-white">
                                 {activity.message}
                               </p>
                               {rating && (
@@ -585,7 +695,7 @@ const UserPanel: React.FC = () => {
                                 </div>
                               )}
                             </div>
-                            <div className="flex-shrink-0 text-xs text-gray-500">
+                            <div className="flex-shrink-0 text-xs text-gray-400">
                               {formatActivityTime(activity.timestamp)}
                             </div>
                           </div>
@@ -598,39 +708,43 @@ const UserPanel: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* White footer bar at bottom */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
-        </div>
+        {/* Czarna stopka jak w MainPanel */}
+        <footer className="bg-black text-white py-6 mt-auto">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+              <a
+                href="/zasady-bezpieczenstwa"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Zasady bezpieczeństwa
+              </a>
+              <a
+                href="/jak-dziala-moblix"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Jak działa MobliX
+              </a>
+              <a
+                href="/regulamin"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Regulamin
+              </a>
+              <a
+                href="/polityka-cookies"
+                className="hover:text-purple-400 transition-colors"
+              >
+                Polityka cookies
+              </a>
+            </div>
+            <div className="text-center text-gray-400 text-sm mt-4">
+              © 2024 MobliX. Wszelkie prawa zastrzeżone.
+            </div>
+          </div>
+        </footer>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Repository;
 import com.example.backend.model.Advertisement;
 import com.example.backend.model.FavoriteAd;
 import com.example.backend.model.User;
+
+import jakarta.transaction.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +26,9 @@ public interface FavoriteAdRepository extends JpaRepository<FavoriteAd, Long> {
     @Modifying
     @Query("DELETE FROM FavoriteAd f WHERE f.advertisement.id = :advertisementId")
     void deleteByAdvertisementId(@Param("advertisementId") Long advertisementId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM FavoriteAd f WHERE f.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }

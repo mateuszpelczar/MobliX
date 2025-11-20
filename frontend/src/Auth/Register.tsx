@@ -64,15 +64,15 @@ const Register: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Tło z MainPanel (rozmazane) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 to-slate-900/30 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
       {/* Formularz rejestracji */}
-      <div className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+      <div className="relative bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">Rejestracja</h2>
+          <h2 className="text-3xl font-bold text-white">Rejestracja</h2>
           <button
             onClick={() => navigate("/")}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <span className="text-2xl">×</span>
           </button>
@@ -80,7 +80,7 @@ const Register: React.FC = () => {
 
         {/* Wybór typu konta */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-gray-300 mb-3">
             Typ konta
           </label>
           <div className="grid grid-cols-2 gap-4">
@@ -89,8 +89,8 @@ const Register: React.FC = () => {
               onClick={() => setAccountType("personal")}
               className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${
                 accountType === "personal"
-                  ? "border-purple-600 bg-purple-50 text-purple-700"
-                  : "border-gray-300 hover:border-purple-400"
+                  ? "border-purple-500 bg-purple-600/20 text-purple-300"
+                  : "border-gray-600 hover:border-purple-500 text-gray-300"
               }`}
             >
               <User className="w-5 h-5" />
@@ -101,8 +101,8 @@ const Register: React.FC = () => {
               onClick={() => setAccountType("business")}
               className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${
                 accountType === "business"
-                  ? "border-purple-600 bg-purple-50 text-purple-700"
-                  : "border-gray-300 hover:border-purple-400"
+                  ? "border-purple-500 bg-purple-600/20 text-purple-300"
+                  : "border-gray-600 hover:border-purple-500 text-gray-300"
               }`}
             >
               <Building2 className="w-5 h-5" />
@@ -115,7 +115,7 @@ const Register: React.FC = () => {
           {/* Dane logowania */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Nazwa użytkownika *
               </label>
               <input
@@ -124,11 +124,11 @@ const Register: React.FC = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Email *
               </label>
               <input
@@ -137,13 +137,13 @@ const Register: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Hasło *
             </label>
             <div className="relative">
@@ -153,20 +153,20 @@ const Register: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 pr-10 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
           </div>
 
           {/* Dane osobowe */}
-          <div className="border-t pt-4 mt-2">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+          <div className="border-t border-gray-700 pt-4 mt-2">
+            <h3 className="text-lg font-semibold text-white mb-3">
               Dane{" "}
               {accountType === "business" ? "osoby kontaktowej" : "osobowe"}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Imię *
                 </label>
                 <input
@@ -175,11 +175,11 @@ const Register: React.FC = () => {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Nazwisko *
                 </label>
                 <input
@@ -188,12 +188,12 @@ const Register: React.FC = () => {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Numer telefonu *
               </label>
               <input
@@ -202,20 +202,20 @@ const Register: React.FC = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
           </div>
 
           {/* Dane firmowe (tylko dla konta business) */}
           {accountType === "business" && (
-            <div className="border-t pt-4 mt-2">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+            <div className="border-t border-gray-700 pt-4 mt-2">
+              <h3 className="text-lg font-semibold text-white mb-3">
                 Dane firmowe
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
                     Nazwa firmy *
                   </label>
                   <input
@@ -224,12 +224,12 @@ const Register: React.FC = () => {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     required={accountType === "business"}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
                       NIP *
                     </label>
                     <input
@@ -238,11 +238,11 @@ const Register: React.FC = () => {
                       value={nip}
                       onChange={(e) => setNip(e.target.value)}
                       required={accountType === "business"}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
                       REGON
                     </label>
                     <input
@@ -250,12 +250,12 @@ const Register: React.FC = () => {
                       placeholder="123456789"
                       value={regon}
                       onChange={(e) => setRegon(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
                     Adres firmy *
                   </label>
                   <input
@@ -264,11 +264,11 @@ const Register: React.FC = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     required={accountType === "business"}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
                     Strona internetowa
                   </label>
                   <input
@@ -276,7 +276,7 @@ const Register: React.FC = () => {
                     placeholder="https://www.przykład.pl"
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -291,11 +291,11 @@ const Register: React.FC = () => {
           </button>
         </form>
 
-        <p className="text-center text-gray-600 text-sm mt-6">
+        <p className="text-center text-gray-300 text-sm mt-6">
           Masz już konto?{" "}
           <Link
             to="/login"
-            className="text-purple-600 hover:underline font-medium"
+            className="text-purple-400 hover:text-purple-300 hover:underline font-medium"
           >
             Zaloguj się
           </Link>

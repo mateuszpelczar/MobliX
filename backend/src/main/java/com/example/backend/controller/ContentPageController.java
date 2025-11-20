@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/content-pages")
-@CrossOrigin(origins = "http://localhost:5173")
 public class ContentPageController {
 
     private final ContentPageService contentPageService;

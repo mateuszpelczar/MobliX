@@ -277,5 +277,17 @@ public class NotificationService {
         notification.setIsRead(false);
         notificationRepository.save(notification);
     }
+
+    //powiadomienie o odrzuceniu ogloszenia przez moderatora
+    public void createAdvertisementRejectedNotification(User user, String advertisementTitle, String rejectReason){
+        Notification notification = new Notification();
+        notification.setUser(user);
+        notification.setType(NotificationType.ADVERTISEMENT_REJECTED);
+        notification.setTitle("Ogłoszenie odrzucone");
+        notification.setMessage("Twoje ogłoszenie \"" + advertisementTitle + "\" zostało odrzucone. " +
+                "Powód odrzucenia: " + rejectReason);
+        notification.setIsRead(false);
+        notificationRepository.save(notification);
+    }
 }
 

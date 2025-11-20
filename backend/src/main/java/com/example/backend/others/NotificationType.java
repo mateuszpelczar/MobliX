@@ -10,5 +10,6 @@ public enum NotificationType {
     NEW_MESSAGE,            // Nowa wiadomość
     ACCOUNT_BLOCKED,        // Konto zablokowane
     ADVERTISEMENT_DELETED,  //ogloszenie usuniete
-    ADVERTISEMENT_WARNING   //ostrzezenie dla ogloszenia  
+    ADVERTISEMENT_WARNING,  //ostrzezenie dla ogloszenia
+    ADVERTISEMENT_REJECTED  //odrzucenie ogloszenia
 }

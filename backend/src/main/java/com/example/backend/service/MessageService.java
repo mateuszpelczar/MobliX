@@ -165,6 +165,12 @@ public class MessageService {
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
         User receiver = userRepository.findByEmail(receiverEmail)
                 .orElseThrow(() -> new RuntimeException("Receiver not found"));
+        
+        // Sprawdź, czy użytkownik nie próbuje wysłać wiadomości do samego siebie
+        if (senderEmail.equals(receiverEmail)) {
+            throw new RuntimeException("Nie możesz wysłać wiadomości do samego siebie");
+        }
+        
         Advertisement advertisement = advertisementRepository.findById(advertisementId)
                 .orElseThrow(() -> new RuntimeException("Advertisement not found"));
 

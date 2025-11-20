@@ -2,31 +2,29 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
+import "../../styles/MobileResponsive.css";
 import {
   Smartphone,
   Camera,
-  Battery,
   Cpu,
-  HardDrive,
-  Shield,
-  Upload,
-  X,
+  Monitor as MonitorIcon,
+  Wifi,
+  Bluetooth,
+  Zap,
+  Plus,
   FileText,
-  DollarSign,
-  Palette,
+  Search,
   MessageSquare,
-  Star,
+  Bell,
+  Heart,
   User,
   Users,
   LogOut,
   ChevronDown,
   LogIn,
-  Save,
-  ShoppingBag,
-  ChevronUp,
-  ChevronDown as ChevronDownIcon,
+  X,
 } from "lucide-react";
-import { FaAndroid, FaApple } from "react-icons/fa";
+import { voivodeships } from "../../data/locations";
 
 type OsType = "Android" | "iOS";
 
@@ -36,87 +34,82 @@ type JwtPayLoad = {
   exp: number;
 };
 
-interface Advertisement {
-  id: number;
-  title: string;
-  description: string;
-  price: number;
-  condition: string;
-  status: "ACTIVE" | "PENDING" | "REJECTED";
-  createdAt: string;
-  updatedAt: string;
+// ---- Add after JwtPayLoad ----
+type Specification = {
+  brand?: string;
+  model?: string;
+  color?: string;
+  osType?: string;
+  osVersion?: string;
+  storage?: string;
+  ram?: string;
+  rearCameras?: string;
+  frontCamera?: string;
+  batteryCapacity?: string;
+  displaySize?: string;
+  displayTech?: string;
+  wifi?: string;
+  bluetooth?: string;
+  ipRating?: string;
+  fastCharging?: string;
+  wirelessCharging?: string;
+  processor?: string;
+  gpu?: string;
+  screenResolution?: string;
+  refreshRate?: string;
+};
+
+type Advertisement = {
+  id?: number;
+  title?: string;
+  price?: number;
+  description?: string;
+  imageUrls?: string[];
+  region?: string;
+  voivodeship?: string;
+  city?: string;
+  locationName?: string;
+  specification?: Specification;
+  includesCharger?: boolean;
   warranty?: string;
-  includesCharger: boolean;
-  userName: string;
-  categoryId: number;
-  categoryName: string;
-  locationId: number;
-  locationName: string;
-  location: string;
-  voivodeship: string;
-  specification: {
-    brand: string;
-    model: string;
-    color: string;
-    osType: string;
-    osVersion: string;
-    storage: string;
-    ram: string;
-    rearCameras: string;
-    frontCamera: string;
-    batteryCapacity: string;
-  };
-  imageUrls: string[];
-}
+  condition?: string;
+  sellerType?: "personal" | "business";
+};
 
-// Helper function to normalize image URLs
-const normalizeImageUrl = (imageUrl: string): string => {
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-    if (
-      imageUrl.includes("/images/") &&
-      !imageUrl.includes("/uploads/images/")
-    ) {
-      return imageUrl.replace("/images/", "/uploads/images/");
-    }
-    return imageUrl;
-  }
-
-  if (imageUrl.startsWith("/images/")) {
-    return `http://localhost:8080/uploads${imageUrl}`;
-  }
-
-  if (imageUrl.startsWith("/uploads/images/")) {
-    return `http://localhost:8080${imageUrl}`;
-  }
-
-  return `http://localhost:8080/uploads/images/${imageUrl}`;
+type UserData = {
+  accountType?: string;
+  // add other fields you need here
 };
 
 const EditAd: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Header-related states
+  const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
-  // Loading & error states
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Form states - inicjalizowane danymi ogłoszenia
+  // Form state (same fields as AddAdvertisement)
   const [title, setTitle] = useState<string>("");
   const [price, setPrice] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [condition, setCondition] = useState<string>("");
-  const [warranty, setWarranty] = useState<string>("");
-  const [includesCharger, setIncludesCharger] = useState<boolean>(false);
-  const [images, setImages] = useState<string[]>([]);
-  const [imageUrl, setImageUrl] = useState<string>("");
+  const [images, setImages] = useState<File[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState<string>("");
 
-  // Obowiązkowe pola specyfikacji
+  // Location fields
+  const [selectedVoivodeship, setSelectedVoivodeship] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [citySearchTerm, setCitySearchTerm] = useState<string>("");
+  const [showCityDropdown, setShowCityDropdown] = useState<boolean>(false);
+
+  // Required specs
   const [brand, setBrand] = useState<string>("");
   const [model, setModel] = useState<string>("");
   const [color, setColor] = useState<string>("");
-  const [osType, setOsType] = useState<string>("");
+  const [osType, setOsType] = useState<OsType>("Android");
   const [osVersion, setOsVersion] = useState<string>("");
   const [storage, setStorage] = useState<string>("");
   const [ram, setRam] = useState<string>("");
@@ -124,94 +117,151 @@ const EditAd: React.FC = () => {
   const [frontCamera, setFrontCamera] = useState<string>("");
   const [batteryCapacity, setBatteryCapacity] = useState<string>("");
 
-  // Category and Location IDs
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [locationId, setLocationId] = useState<number | null>(null);
+  // Optional specs
+  const [displaySize, setDisplaySize] = useState<string>("");
+  const [displayTech, setDisplayTech] = useState<string>("");
+  const [wifi, setWifi] = useState<string>("");
+  const [bluetooth, setBluetooth] = useState<string>("");
+  const [ipRating, setIpRating] = useState<string>("");
+  const [fastCharging, setFastCharging] = useState<string>("");
+  const [wirelessCharging, setWirelessCharging] = useState<string>("");
+  const [processor, setProcessor] = useState<string>("");
+  const [gpu, setGpu] = useState<string>("");
+  const [screenResolution, setScreenResolution] = useState<string>("");
+  const [refreshRate, setRefreshRate] = useState<string>("");
+
+  // Additional info
+  const [includesCharger, setIncludesCharger] = useState<boolean>(false);
+  const [warranty, setWarranty] = useState<string>("");
+  const [condition, setCondition] = useState<string>("NEW");
+
+  // Additional UI
+  const [showAdditionalSpecs, setShowAdditionalSpecs] =
+    useState<boolean>(false);
+
+  // Seller type
+  const [sellerType, setSellerType] = useState<"personal" | "business">(
+    "personal"
+  );
+  const [userAccountType, setUserAccountType] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Authentication logic
+  // Auth
   const token = localStorage.getItem("token");
   let isAdmin = false;
-  let isStaff = false;
   let isUser = false;
+  let isStaff = false;
   let isAuthenticated = false;
-
   if (token) {
     try {
       const decoded = jwtDecode<JwtPayLoad>(token);
       isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
-      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
       isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
-
-      if (decoded.exp && Date.now() / 1000 < decoded.exp) {
+      isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
+      if (decoded.exp && Date.now() / 1000 < decoded.exp)
         isAuthenticated = true;
-      }
-    } catch (err) {
-      console.error("Nieprawidłowy token JWT", err);
+    } catch (e) {
+      console.error("Invalid token", e);
     }
   }
 
-  // Load ad data on component mount
+  // Fetch ad and prefill (data logic copied from AddAdvertisement)
   useEffect(() => {
-    const fetchAdvertisement = async () => {
-      if (!id || !token) {
-        setError("Brak ID ogłoszenia lub tokenu autoryzacji");
-        setLoading(false);
-        return;
-      }
-
+    const fetchAd = async () => {
+      if (!id) return;
       try {
-        const response = await axios.get<Advertisement>(
-          `http://localhost:8080/api/advertisements/${id}`,
+        const resp = await axios.get<Advertisement>(
+          `/api/advertisements/${id}`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
           }
         );
+        const ad = resp.data as Advertisement;
 
-        const ad = response.data;
+        setTitle(ad.title ?? "");
+        setPrice(ad.price?.toString() ?? "");
+        setDescription(ad.description ?? "");
+        setImageUrls(ad.imageUrls ?? []);
 
-        // Populate form fields with ad data
-        setTitle(ad.title);
-        setPrice(ad.price.toString());
-        setDescription(ad.description);
-        setCondition(ad.condition);
-        setWarranty(ad.warranty || "");
-        setIncludesCharger(ad.includesCharger);
-        setImages(ad.imageUrls || []);
+        setSelectedVoivodeship(ad.region ?? ad.voivodeship ?? "");
+        setSelectedCity(ad.city ?? ad.locationName ?? "");
 
-        // Category and Location IDs
-        setCategoryId(ad.categoryId);
-        setLocationId(ad.locationId);
+        setBrand(ad.specification?.brand ?? "");
+        setModel(ad.specification?.model ?? "");
+        setColor(ad.specification?.color ?? "");
+        setOsType((ad.specification?.osType as OsType) ?? "Android");
+        setOsVersion(ad.specification?.osVersion ?? "");
+        setStorage(ad.specification?.storage ?? "");
+        setRam(ad.specification?.ram ?? "");
+        setRearCameras(ad.specification?.rearCameras ?? "");
+        setFrontCamera(ad.specification?.frontCamera ?? "");
+        setBatteryCapacity(ad.specification?.batteryCapacity ?? "");
 
-        // Specification fields
-        setBrand(ad.specification?.brand || "");
-        setModel(ad.specification?.model || "");
-        setColor(ad.specification?.color || "");
-        setOsType(ad.specification?.osType || "");
-        setOsVersion(ad.specification?.osVersion || "");
-        setStorage(ad.specification?.storage || "");
-        setRam(ad.specification?.ram || "");
-        setRearCameras(ad.specification?.rearCameras || "");
-        setFrontCamera(ad.specification?.frontCamera || "");
-        setBatteryCapacity(ad.specification?.batteryCapacity || "");
+        setDisplaySize(ad.specification?.displaySize ?? "");
+        setDisplayTech(ad.specification?.displayTech ?? "");
+        setWifi(ad.specification?.wifi ?? "");
+        setBluetooth(ad.specification?.bluetooth ?? "");
+        setIpRating(ad.specification?.ipRating ?? "");
+        setFastCharging(ad.specification?.fastCharging ?? "");
+        setWirelessCharging(ad.specification?.wirelessCharging ?? "");
+        setProcessor(ad.specification?.processor ?? "");
+        setGpu(ad.specification?.gpu ?? "");
+        setScreenResolution(ad.specification?.screenResolution ?? "");
+        setRefreshRate(ad.specification?.refreshRate ?? "");
 
-        setLoading(false);
-      } catch (err: any) {
-        console.error("Błąd podczas pobierania ogłoszenia:", err);
-        setError(
-          err.response?.data?.message || "Nie udało się pobrać ogłoszenia"
-        );
-        setLoading(false);
+        setIncludesCharger(ad.includesCharger ?? false);
+        setWarranty(ad.warranty ?? "");
+        setCondition(ad.condition ?? "NEW");
+        setSellerType(ad.sellerType ?? "personal");
+      } catch (err) {
+        console.error("Error fetching ad:", err);
       }
     };
 
-    fetchAdvertisement();
+    fetchAd();
   }, [id, token]);
 
-  // Close dropdown when clicking outside
+  // Fetch user account type (same as AddAdvertisement)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const fetchUserData = async () => {
+      if (!token) return;
+      try {
+        const res = await axios.get<UserData>("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const userData = res.data as UserData;
+        setUserAccountType(userData.accountType || null);
+        if (userData.accountType === "business") setSellerType("business");
+      } catch (e) {
+        console.error("Error fetching user data", e);
+      }
+    };
+    fetchUserData();
+  }, [token]);
+
+  // Fetch favorite count for header badge
+  useEffect(() => {
+    const fetchFavoriteCount = async () => {
+      if (!token) return;
+      try {
+        const resp = await fetch("/api/favorites", {
+          headers: { Authorization: token ? `Bearer ${token}` : "" },
+        });
+        if (resp.ok) {
+          const data = (await resp.json()) as any[];
+          setFavoriteCount(Array.isArray(data) ? data.length : 0);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchFavoriteCount();
+  }, [token]);
+
+  // Click outside dropdown
+  useEffect(() => {
+    const h = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
@@ -219,8 +269,8 @@ const EditAd: React.FC = () => {
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
   const handleLogout = () => {
@@ -229,621 +279,912 @@ const EditAd: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (event.target.files && token) {
-      const files = Array.from(event.target.files);
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (query) {
+      try {
+        let userId = null;
+        if (token) {
+          try {
+            const dec = jwtDecode<JwtPayLoad>(token);
+            userId = dec.sub ? parseInt(dec.sub) : null;
+          } catch {}
+        }
+        await axios.post("/api/search-logs", {
+          searchQuery: query,
+          brand: null,
+          model: null,
+          minPrice: null,
+          maxPrice: null,
+          userId,
+          sessionId: null,
+          resultsCount: null,
+          searchSource: "navbar",
+        });
+      } catch (e) {
+        console.error("Search log error", e);
+      }
+      navigate(`/smartfony?search=${encodeURIComponent(query)}`);
+    } else {
+      navigate("/smartfony");
+    }
+  };
 
-      // Check limit before upload
-      if (images.length + files.length > 6) {
-        alert(
-          `Możesz dodać maksymalnie 6 zdjęć. Obecnie masz ${images.length} zdjęć.`
-        );
+  // Images handling (copied from AddAdvertisement; small improvements)
+  const onSelectImages = (fileList: FileList | null) => {
+    if (fileList) {
+      const newFiles = Array.from(fileList);
+      if (images.length + newFiles.length + imageUrls.length <= 6) {
+        setImages((prev) => [...prev, ...newFiles]);
+      } else {
+        alert("Możesz dodać maksymalnie 6 zdjęć");
+      }
+    }
+  };
+
+  const removeLocalImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addImageUrl = () => {
+    if (!newImageUrl.trim()) return;
+    const isValidImageUrl =
+      /\.(jpg|jpeg|png|gif|webp)$/i.test(newImageUrl) ||
+      newImageUrl.includes("imgur.com") ||
+      newImageUrl.includes("i.imgur.com");
+    if (!isValidImageUrl) {
+      alert("Podaj prawidłowy link do obrazu (jpg, png, gif, webp) lub Imgur");
+      return;
+    }
+    if (images.length + imageUrls.length >= 6) {
+      alert("Możesz dodać maksymalnie 6 zdjęć łącznie");
+      return;
+    }
+    let processedUrl = newImageUrl;
+    if (newImageUrl.includes("imgur.com/a/")) {
+      alert(
+        "Link do albumu Imgur nie jest obsługiwany. Użyj bezpośredniego linku do obrazu"
+      );
+      return;
+    } else if (newImageUrl.match(/imgur\.com\/[a-zA-Z0-9]+$/)) {
+      const imageId = newImageUrl.split("/").pop();
+      processedUrl = `https://i.imgur.com/${imageId}.jpg`;
+    }
+    setImageUrls((prev) => [...prev, processedUrl]);
+    setNewImageUrl("");
+  };
+
+  const removeImageUrl = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (images.length === 0) return [];
+    const formData = new FormData();
+    images.forEach((f) => formData.append("files", f));
+    try {
+      const resp = await fetch("/api/advertisements/upload-images", {
+        method: "POST",
+        headers: { Authorization: token ? `Bearer ${token}` : "" },
+        body: formData,
+      });
+      if (!resp.ok) throw new Error("Upload failed");
+      const result = (await resp.json()) as { imageUrls?: string[] };
+      return result.imageUrls ?? [];
+    } catch (e) {
+      console.error("Upload error", e);
+      return [];
+    }
+  };
+
+  // Submit -> PUT to update ad (payload structure taken from AddAdvertisement)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return alert("Brak ID ogłoszenia");
+    if (!selectedVoivodeship || !selectedCity) {
+      alert("Proszę wybierz województwo i miejscowość");
+      return;
+    }
+    try {
+      const tokenLocal = localStorage.getItem("token");
+      if (!tokenLocal) {
+        alert("Musisz być zalogowany");
         return;
       }
 
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("image", file);
-
-        try {
-          const response = await axios.post<string>(
-            "http://localhost:8080/api/advertisements/upload",
-            formData,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
-          const imageUrl = response.data;
-          setImages((prevImages) => [...prevImages, imageUrl]);
-        } catch (error) {
-          console.error("Błąd przesyłania zdjęcia:", error);
-          alert("Nie udało się przesłać zdjęcia");
+      let finalImageUrls: string[] = [];
+      if (images.length > 0) {
+        const uploaded = await uploadImages();
+        if (uploaded.length === 0) {
+          alert("Błąd podczas uploadu zdjęć");
+          return;
         }
+        finalImageUrls = [...finalImageUrls, ...uploaded];
       }
-    }
-  };
+      finalImageUrls = [...finalImageUrls, ...imageUrls];
 
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
-
-  const moveImageUp = (index: number) => {
-    if (index > 0) {
-      const newImages = [...images];
-      [newImages[index - 1], newImages[index]] = [
-        newImages[index],
-        newImages[index - 1],
-      ];
-      setImages(newImages);
-    }
-  };
-
-  const moveImageDown = (index: number) => {
-    if (index < images.length - 1) {
-      const newImages = [...images];
-      [newImages[index], newImages[index + 1]] = [
-        newImages[index + 1],
-        newImages[index],
-      ];
-      setImages(newImages);
-    }
-  };
-
-  const handleAddImageFromUrl = () => {
-    if (!imageUrl.trim()) {
-      alert("Proszę wpisać adres URL zdjęcia");
-      return;
-    }
-
-    if (images.length >= 6) {
-      alert("Możesz dodać maksymalnie 6 zdjęć");
-      return;
-    }
-
-    // Basic URL validation
-    try {
-      new URL(imageUrl);
-    } catch {
-      alert("Nieprawidłowy adres URL");
-      return;
-    }
-
-    setImages([...images, imageUrl]);
-    setImageUrl("");
-  };
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    // Validation
-    if (!title.trim() || !price.trim() || !description.trim()) {
-      alert("Proszę wypełnić wszystkie wymagane pola");
-      return;
-    }
-
-    if (!id || !token) {
-      alert("Brak ID ogłoszenia lub tokenu autoryzacji");
-      return;
-    }
-
-    if (!categoryId || !locationId) {
-      alert("Brak danych kategorii lub lokalizacji");
-      return;
-    }
-
-    try {
-      const updateData = {
+      const payload = {
         title,
         description,
-        price: parseFloat(price),
-        condition,
-        warranty: warranty || null,
+        price: parseFloat(price || "0"),
+        categoryId: 1,
+        region: selectedVoivodeship,
+        city: selectedCity,
+        imageUrls: finalImageUrls,
+        specification: {
+          brand,
+          model,
+          color,
+          osType,
+          storage,
+          ram,
+          osVersion: osVersion || null,
+          rearCameras: rearCameras || null,
+          frontCamera: frontCamera || null,
+          batteryCapacity: batteryCapacity || null,
+          displaySize: displaySize || null,
+          displayTech: displayTech || null,
+          wifi: wifi || null,
+          bluetooth: bluetooth || null,
+          ipRating: ipRating || null,
+          fastCharging: fastCharging || null,
+          wirelessCharging: wirelessCharging || null,
+          processor: processor || null,
+          gpu: gpu || null,
+          screenResolution: screenResolution || null,
+          refreshRate: refreshRate || null,
+        },
         includesCharger,
-        categoryId,
-        locationId,
-        brand,
-        model,
-        color,
-        osType,
-        osVersion,
-        storage,
-        ram,
-        rearCameras,
-        frontCamera,
-        batteryCapacity,
-        imageUrls: images,
+        warranty: warranty || null,
+        condition,
+        sellerType,
       };
 
-      await axios.put(
-        `http://localhost:8080/api/advertisements/${id}`,
-        updateData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const resp = await fetch(`/api/advertisements/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenLocal}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-      alert("Ogłoszenie zostało zaktualizowane!");
-      navigate("/user/your-ads");
-    } catch (err: any) {
-      console.error("Błąd podczas aktualizacji ogłoszenia:", err);
-      alert(
-        err.response?.data?.message || "Nie udało się zaktualizować ogłoszenia"
-      );
+      if (resp.ok) {
+        alert("Ogłoszenie zaktualizowane!");
+        navigate("/user/your-ads");
+      } else {
+        const txt = await resp.text();
+        alert("Błąd aktualizacji: " + resp.status + " - " + txt);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Błąd sieci: " + (e instanceof Error ? e.message : String(e)));
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-4">Dostęp zabroniony</h2>
-          <p className="text-gray-600 mb-4">
-            Musisz być zalogowany, aby edytować ogłoszenie.
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Powrót do strony głównej
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // UI helpers for city dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest(".city-dropdown-container")) {
+        setShowCityDropdown(false);
+      }
+    };
+    if (showCityDropdown)
+      document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [showCityDropdown]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Ładowanie ogłoszenia...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-4 text-red-600">Błąd</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate("/user/your-ads")}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Powrót do ogłoszeń
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Render
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        {/* Logo in top left */}
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Header (kept like previous EditAd) */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
+          </div>
 
-        {/* Account dropdown in top right corner */}
-        <div className="panel-buttons">
-          {isAuthenticated ? (
+          <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </form>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() =>
+                token ? navigate("/user/message") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() =>
+                token ? navigate("/user/notifications") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() =>
+                token ? navigate("/user/watchedads") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione"
+            >
+              <Heart className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() =>
+                token ? navigate("/user/addadvertisement") : navigate("/login")
+              }
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Dodaj ogłoszenie
+            </button>
+
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="account-dropdown-button"
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <User className="w-4 h-4" />
-                Twoje konto
+                <User className="w-5 h-5" /> Twoje konto{" "}
                 <ChevronDown
                   className={`w-4 h-4 transition-transform ${
                     isDropdownOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
-
               {isDropdownOpen && (
-                <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                  <div className="py-1">
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/user/your-ads");
-                      }}
-                    >
-                      <ShoppingBag className="w-4 h-4 text-blue-600" />
-                      Ogłoszenia
-                    </button>
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/user/message");
-                      }}
-                    >
-                      <MessageSquare className="w-4 h-4 text-green-600" />
-                      Chat
-                    </button>
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/user/ratings");
-                      }}
-                    >
-                      <Star className="w-4 h-4 text-yellow-500" />
-                      Oceny
-                    </button>
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/user/personaldetails");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-purple-600" />
-                      Profil
-                    </button>
-                    {isAdmin && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
+                  {token ? (
+                    <>
                       <button
                         onClick={() => {
                           setIsDropdownOpen(false);
-                          navigate("/adminpanel");
+                          navigate("/user/your-ads");
                         }}
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        <Shield className="w-4 h-4 text-red-600" />
-                        Panel administratora
+                        Twoje ogłoszenia
                       </button>
-                    )}
-                    {(isAdmin || isStaff) && (
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
                         onClick={() => {
                           setIsDropdownOpen(false);
-                          navigate("/staffpanel");
+                          navigate("/user/message");
                         }}
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        <Users className="w-4 h-4 text-orange-600" />
-                        Panel pracownika
+                        Chat
                       </button>
-                    )}
-                    {(isAdmin || isStaff || isUser) && (
+                      <div className="border-t border-purple-400 my-1"></div>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/userpanel");
-                        }}
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        <User className="w-4 h-4 text-blue-600" />
-                        Panel użytkownika
+                        Wyloguj
                       </button>
-                    )}
-                    <div className="border-t border-gray-200 my-1"></div>
+                    </>
+                  ) : (
                     <button
-                      onClick={handleLogout}
-                      className="dropdown-logout flex items-center gap-3 px-4 py-2"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/login");
+                      }}
+                      className="w-full text-left px-4 py-2 bg-black hover:bg-black flex items-center gap-3 text-white rounded-lg"
                     >
-                      <LogOut className="w-4 h-4 text-red-500" />
-                      Wyloguj się
+                      <LogIn className="w-4 h-4 text-white" /> Zaloguj się
                     </button>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
-          ) : (
-            <button
-              onClick={() => navigate("/")}
-              className="auth-button login-button text-sm sm:text-base"
-            >
-              <LogIn className="w-4 h-4 sm:w-5 sm:h-5" />
-              Zaloguj się
-            </button>
-          )}
+          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Main Content */}
-      <div className="panel-content-with-search flex-grow w-full overflow-y-auto">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-          {/* Form */}
-          <div className="bg-white rounded-lg shadow-lg p-3 sm:p-4 lg:p-6 max-w-4xl mx-auto max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center gap-3 mb-4 sm:mb-6">
-              <Smartphone className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">
-                Edytuj ogłoszenie
-              </h1>
+      {/* Main content: keep EditAd visual style (black panel, purple border) */}
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-black text-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 border-4 border-purple-600 animate-fade-in">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg shadow-lg">
+                <Plus className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                  Edytuj ogłoszenie
+                </h1>
+                <p className="text-gray-300 mt-1">
+                  Zmień dane ogłoszenia i zapisz
+                </p>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Podstawowe informacje
-                </h2>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Basic info, photos, specs and additional info blocks
+                  — structure and classes intentionally match previous EditAd,
+                  but field names and behavior were taken from AddAdvertisement */}
+              <div className="border-2 border-purple-500 rounded-xl p-6 bg-black">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-purple-600 p-2 rounded-lg">
+                    <FileText className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">
+                    Informacje podstawowe *
+                  </h2>
+                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Title */}
-                  <div className="lg:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tytuł ogłoszenia *
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Tytuł *
                     </label>
                     <input
-                      type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="np. iPhone 13 128GB w doskonałym stanie"
+                      placeholder="Np. iPhone 15 Pro 256 GB"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       required
                     />
                   </div>
-
-                  {/* Price */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Cena *
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Cena (PLN) *
                     </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="number"
-                        value={price}
-                        onChange={(e) => setPrice(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="2500"
-                        min="1"
-                        required
-                      />
-                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                        PLN
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div className="lg:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Opis *
-                    </label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={5}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Opisz szczegółowo stan telefonu, dołączone akcesoria, powód sprzedaży..."
+                    <input
+                      type="number"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="np. 4299"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       required
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Device Specifications */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Smartphone className="w-5 h-5" />
-                  Specyfikacja urządzenia
-                </h2>
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Opis{" "}
+                    <span className="text-xs text-gray-400 ml-2">
+                      {description.length}/2000
+                    </span>
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 2000)
+                        setDescription(e.target.value);
+                    }}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    rows={4}
+                  />
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Brand */}
+                {/* Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Marka *
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Województwo *
                     </label>
-                    <input
-                      type="text"
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="Apple, Samsung, Xiaomi..."
+                    <select
+                      value={selectedVoivodeship}
+                      onChange={(e) => {
+                        setSelectedVoivodeship(e.target.value);
+                        setSelectedCity("");
+                      }}
                       required
-                    />
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Wybierz województwo</option>
+                      {voivodeships.map((v) => (
+                        <option key={v.name} value={v.name}>
+                          {v.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Model */}
+                  <div className="city-dropdown-container relative">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Miejscowość *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Wpisz nazwę miejscowości..."
+                        value={selectedCity || citySearchTerm}
+                        onChange={(e) => {
+                          setCitySearchTerm(e.target.value);
+                          setSelectedCity("");
+                          setShowCityDropdown(true);
+                        }}
+                        onFocus={() => setShowCityDropdown(true)}
+                        disabled={!selectedVoivodeship}
+                        className="w-full px-4 py-3 pr-10 rounded-lg border border-gray-600 bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        required
+                      />
+                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      {showCityDropdown &&
+                        selectedVoivodeship &&
+                        (citySearchTerm || !selectedCity) && (
+                          <div className="absolute z-50 w-full mt-1 bg-white text-black border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {voivodeships
+                              .find((v) => v.name === selectedVoivodeship)
+                              ?.cities.filter((city) =>
+                                city
+                                  .toLowerCase()
+                                  .includes(
+                                    (citySearchTerm || "").toLowerCase()
+                                  )
+                              )
+                              .slice(0, 20)
+                              .map((city) => (
+                                <button
+                                  key={city}
+                                  type="button"
+                                  className="w-full px-4 py-2 text-left hover:bg-purple-50"
+                                  onClick={() => {
+                                    setSelectedCity(city);
+                                    setCitySearchTerm("");
+                                    setShowCityDropdown(false);
+                                  }}
+                                >
+                                  {city}
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Photos */}
+              <div className="border border-purple-500 rounded-xl p-6 bg-black">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Zdjęcia</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Wybierz pliki ({images.length + imageUrls.length}/6)
+                    </label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => onSelectImages(e.target.files)}
+                      disabled={images.length + imageUrls.length >= 6}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                    />
+                    {images.length > 0 && (
+                      <div className="flex gap-2 mt-3">
+                        {images.map((img, idx) => (
+                          <div key={idx} className="relative">
+                            <img
+                              src={URL.createObjectURL(img)}
+                              alt={`preview${idx}`}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeLocalImage(idx)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Dodaj linki do zdjęć ({images.length + imageUrls.length}
+                      /6)
+                    </label>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        value={newImageUrl}
+                        onChange={(e) => setNewImageUrl(e.target.value)}
+                        placeholder="https://i.imgur.com/abc123.jpg"
+                        className="flex-1 px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        disabled={images.length + imageUrls.length >= 6}
+                      />
+                      <button
+                        type="button"
+                        onClick={addImageUrl}
+                        disabled={
+                          !newImageUrl.trim() ||
+                          images.length + imageUrls.length >= 6
+                        }
+                        className="px-4 py-3 bg-purple-600 text-white rounded-lg"
+                      >
+                        Dodaj
+                      </button>
+                    </div>
+
+                    {imageUrls.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-300">Dodane linki:</p>
+                        {imageUrls.map((url, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 p-2 bg-gray-900 rounded-lg"
+                          >
+                            <img
+                              src={url}
+                              alt={`link${idx}`}
+                              className="w-12 h-12 object-cover rounded"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "https://dummyimage.com/48x48/ccc/fff&text=Error";
+                              }}
+                            />
+                            <span className="flex-1 text-sm text-white truncate">
+                              {url}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeImageUrl(idx)}
+                              className="p-1 text-red-500 hover:bg-red-100 rounded"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400 mt-2">
+                      💡 Możesz dodać łącznie do 6 zdjęć (pliki + linki). Dla
+                      Imgur: użyj bezpośredniego linku do obrazu
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Specs */}
+              <div className="border-2 border-green-200 rounded-xl p-6 bg-black">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-green-600 p-2 rounded-lg">
+                    <Smartphone className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">
+                    Specyfikacja smartfona *
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Marka *
+                    </label>
+                    <select
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                      required
+                    >
+                      <option value="">Wybierz markę</option>
+                      <option>Apple</option>
+                      <option>Samsung</option>
+                      <option>Xiaomi</option>
+                      <option>Huawei</option>
+                      <option>OnePlus</option>
+                      <option>Google</option>
+                      <option>Nothing</option>
+                      <option>Realme</option>
+                      <option>Oppo</option>
+                      <option>Vivo</option>
+                      <option>Motorola</option>
+                      <option>Sony</option>
+                      <option>Inne</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
                       Model *
                     </label>
                     <input
-                      type="text"
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="iPhone 13, Galaxy S22..."
+                      placeholder="np. iPhone 15 Pro"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
                       required
                     />
                   </div>
 
-                  {/* Color */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
                       Kolor *
                     </label>
-                    <div className="relative">
-                      <Palette className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Midnight, White, Blue..."
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* OS Type */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      System operacyjny *
-                    </label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          value="Android"
-                          checked={osType === "Android"}
-                          onChange={(e) => setOsType(e.target.value as OsType)}
-                          className="mr-2"
-                        />
-                        <FaAndroid className="w-5 h-5 text-green-500 mr-1" />
-                        Android
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          value="iOS"
-                          checked={osType === "iOS"}
-                          onChange={(e) => setOsType(e.target.value as OsType)}
-                          className="mr-2"
-                        />
-                        <FaApple className="w-5 h-5 text-gray-600 mr-1" />
-                        iOS
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* OS Version */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Wersja systemu *
-                    </label>
                     <input
-                      type="text"
-                      value={osVersion}
-                      onChange={(e) => setOsVersion(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="14.0, 17.0..."
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      placeholder="np. Tytanowy"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
                       required
                     />
                   </div>
+                </div>
 
-                  {/* Storage */}
+                {/* rest of specs (os, memory, camera, battery) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pamięć wewnętrzna *
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      System operacyjny *
                     </label>
-                    <div className="relative">
-                      <HardDrive className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={storage}
-                        onChange={(e) => setStorage(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="128GB, 256GB, 1TB..."
-                        required
-                      />
-                    </div>
+                    <select
+                      value={osType}
+                      onChange={(e) => setOsType(e.target.value as OsType)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                      required
+                    >
+                      <option value="Android">Android</option>
+                      <option value="iOS">iOS</option>
+                    </select>
                   </div>
-
-                  {/* RAM */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      RAM *
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Wersja systemu
                     </label>
-                    <div className="relative">
-                      <Cpu className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={ram}
-                        onChange={(e) => setRam(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="4GB, 6GB, 8GB..."
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Rear Cameras */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat tylny * (MP)
-                    </label>
-                    <div className="relative">
-                      <Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={rearCameras}
-                        onChange={(e) => setRearCameras(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="48MP, 12MP + 12MP..."
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Front Camera */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aparat przedni * (MP)
-                    </label>
-                    <div className="relative">
-                      <Camera className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={frontCamera}
-                        onChange={(e) => setFrontCamera(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="12MP, 32MP..."
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Battery */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bateria * (mAh)
-                    </label>
-                    <div className="relative">
-                      <Battery className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="text"
-                        value={batteryCapacity}
-                        onChange={(e) => setBatteryCapacity(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="3240mAh, 4500mAh..."
-                        required
-                      />
-                    </div>
+                    <input
+                      value={osVersion}
+                      onChange={(e) => setOsVersion(e.target.value)}
+                      placeholder="np. Android 14 / iOS 17"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                    />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Pamięć wewnętrzna *
+                    </label>
+                    <select
+                      value={storage}
+                      onChange={(e) => setStorage(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                      required
+                    >
+                      <option value="">Wybierz pojemność</option>
+                      <option>64 GB</option>
+                      <option>128 GB</option>
+                      <option>256 GB</option>
+                      <option>512 GB</option>
+                      <option>1 TB</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Pamięć RAM *
+                    </label>
+                    <select
+                      value={ram}
+                      onChange={(e) => setRam(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                      required
+                    >
+                      <option value="">Wybierz RAM</option>
+                      <option>4 GB</option>
+                      <option>6 GB</option>
+                      <option>8 GB</option>
+                      <option>12 GB</option>
+                      <option>16 GB</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Aparat główny (MP) *
+                    </label>
+                    <input
+                      value={rearCameras}
+                      onChange={(e) => setRearCameras(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Aparat przedni (MP) *
+                    </label>
+                    <input
+                      value={frontCamera}
+                      onChange={(e) => setFrontCamera(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-300 mb-2 block">
+                    Pojemność baterii * (mAh)
+                  </label>
+                  <input
+                    value={batteryCapacity}
+                    onChange={(e) => setBatteryCapacity(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAdditionalSpecs(!showAdditionalSpecs)}
+                  className="w-full mt-6 px-4 py-3 bg-gray-800 rounded-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MonitorIcon className="h-5 w-5 text-purple-400" />
+                      <span className="font-semibold">
+                        Dodatkowe specyfikacje (opcjonalne)
+                      </span>
+                    </div>
+                    <ChevronDown
+                      className={`h-5 w-5 ${
+                        showAdditionalSpecs ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {showAdditionalSpecs && (
+                  <div className="mt-4 space-y-6 p-4 bg-gray-900 rounded-lg border border-gray-600">
+                    {/* additional inputs kept minimal and matching AddAdvertisement */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <MonitorIcon className="h-5 w-5" /> Wyświetlacz
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                          value={displaySize}
+                          onChange={(e) => setDisplaySize(e.target.value)}
+                          placeholder="Przekątna"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                        <input
+                          value={displayTech}
+                          onChange={(e) => setDisplayTech(e.target.value)}
+                          placeholder="Technologia"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Wifi className="h-5 w-5" /> Łączność
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input
+                          value={wifi}
+                          onChange={(e) => setWifi(e.target.value)}
+                          placeholder="Wi‑Fi"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                        <input
+                          value={bluetooth}
+                          onChange={(e) => setBluetooth(e.target.value)}
+                          placeholder="Bluetooth"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                        <input
+                          value={ipRating}
+                          onChange={(e) => setIpRating(e.target.value)}
+                          placeholder="IP rating"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Zap className="h-5 w-5" /> Ładowanie
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                          value={fastCharging}
+                          onChange={(e) => setFastCharging(e.target.value)}
+                          placeholder="Ładowanie przewodowe"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                        <input
+                          value={wirelessCharging}
+                          onChange={(e) => setWirelessCharging(e.target.value)}
+                          placeholder="Ładowanie bezprzewodowe"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Cpu className="h-5 w-5" /> Procesor i grafika
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                          value={processor}
+                          onChange={(e) => setProcessor(e.target.value)}
+                          placeholder="Procesor"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                        <input
+                          value={gpu}
+                          onChange={(e) => setGpu(e.target.value)}
+                          placeholder="GPU"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <MonitorIcon className="h-5 w-5" /> Wyświetlacz -
+                        szczegóły
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                          value={screenResolution}
+                          onChange={(e) => setScreenResolution(e.target.value)}
+                          placeholder="Rozdzielczość"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                        <input
+                          value={refreshRate}
+                          onChange={(e) => setRefreshRate(e.target.value)}
+                          placeholder="Hz"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Additional Information */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
+              {/* Additional info */}
+              <div className="border border-purple-500 rounded-xl p-6 bg-black">
+                <h3 className="text-lg font-semibold text-white mb-4">
                   Dodatkowe informacje
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Condition */}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stan *
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
+                      Stan urządzenia *
                     </label>
                     <select
                       value={condition}
                       onChange={(e) => setCondition(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
                       required
                     >
                       <option value="">Wybierz stan</option>
@@ -854,184 +1195,43 @@ const EditAd: React.FC = () => {
                       <option value="ACCEPTABLE">Zadowalający</option>
                     </select>
                   </div>
-
-                  {/* Warranty */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="text-sm font-medium text-gray-300 mb-2 block">
                       Gwarancja
                     </label>
                     <input
-                      type="text"
                       value={warranty}
-                      onChange={(e) => setWarranty(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="np. 12 miesięcy"
+                      onChange={(e) => {
+                        if (e.target.value.length <= 500)
+                          setWarranty(e.target.value);
+                      }}
+                      placeholder="np. 24 miesiące"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-600 bg-gray-900 text-white"
                     />
                   </div>
-
-                  {/* Includes Charger */}
-                  <div className="md:col-span-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={includesCharger}
-                        onChange={(e) => setIncludesCharger(e.target.checked)}
-                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-700">
-                        W zestawie ładowarka z kablem
-                      </span>
-                    </label>
-                  </div>
                 </div>
-              </div>
 
-              {/* Image Upload */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Camera className="w-5 h-5" />
-                  Zdjęcia
-                </h2>
-
-                <div className="space-y-4">
-                  {/* Existing images grid */}
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                      {images.map((imageUrl, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={normalizeImageUrl(imageUrl)}
-                            alt={`Zdjęcie ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
-                            onError={(e) => {
-                              console.error(
-                                `Błąd ładowania zdjęcia ${index}:`,
-                                imageUrl
-                              );
-                              e.currentTarget.src =
-                                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect fill='%23ddd' width='100' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EBrak%3C/text%3E%3C/svg%3E";
-                            }}
-                          />
-
-                          {/* Move up button */}
-                          {index > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => moveImageUp(index)}
-                              className="absolute top-1 left-1 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
-                              title="Przenieś w górę"
-                            >
-                              <ChevronUp className="w-4 h-4" />
-                            </button>
-                          )}
-
-                          {/* Move down button */}
-                          {index < images.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={() => moveImageDown(index)}
-                              className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-600"
-                              title="Przenieś w dół"
-                            >
-                              <ChevronDownIcon className="w-4 h-4" />
-                            </button>
-                          )}
-
-                          {/* Delete button */}
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute bottom-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                            title="Usuń zdjęcie"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Upload button */}
-                  <div>
+                <div className="mt-4">
+                  <label className="flex items-center gap-3">
                     <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors w-full justify-center"
-                      disabled={images.length >= 6}
-                    >
-                      <Upload className="w-5 h-5" />
-                      Dodaj zdjęcia z komputera
-                    </button>
-                    <p className="text-sm text-gray-500 mt-2">
-                      {images.length >= 6
-                        ? "Osiągnięto limit 6 zdjęć"
-                        : `Możesz dodać jeszcze ${
-                            6 - images.length
-                          } zdjęć. Pierwsze zdjęcie będzie zdjęciem głównym.`}
-                    </p>
-                  </div>
-
-                  {/* URL input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lub wklej adres URL zdjęcia
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddImageFromUrl();
-                          }
-                        }}
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="https://example.com/image.jpg"
-                        disabled={images.length >= 6}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddImageFromUrl}
-                        disabled={images.length >= 6 || !imageUrl.trim()}
-                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                      >
-                        Dodaj
-                      </button>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Wklej bezpośredni link do zdjęcia (max. 6 zdjęć łącznie)
-                    </p>
-                  </div>
+                      type="checkbox"
+                      checked={includesCharger}
+                      onChange={(e) => setIncludesCharger(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 bg-gray-900 border-gray-600 rounded"
+                    />{" "}
+                    <span className="text-gray-300">
+                      Ładowarka z kablem w zestawie
+                    </span>
+                  </label>
                 </div>
               </div>
 
-              {/* Submit buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
+              <div className="flex justify-center pt-6">
                 <button
                   type="submit"
-                  className="flex items-center justify-center gap-2 bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium text-lg flex-1 sm:flex-initial"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 px-8 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
                 >
-                  <Save className="w-5 h-5" />
                   Zapisz zmiany
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigate("/user/your-ads")}
-                  className="flex items-center justify-center gap-2 bg-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-400 transition-colors font-medium text-lg flex-1 sm:flex-initial"
-                >
-                  <X className="w-5 h-5" />
-                  Anuluj
                 </button>
               </div>
             </form>
@@ -1039,36 +1239,28 @@ const EditAd: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
+      {/* Footer (kept like before) */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a href="/jak-dziala-moblix" className="hover:text-purple-400">
+              Jak działa MobliX
+            </a>
+            <a href="/polityka-cookies" className="hover:text-purple-400">
+              Polityka cookies
+            </a>
+            <a href="/regulamin" className="hover:text-purple-400">
+              Regulamin
+            </a>
+            <a href="/zasady-bezpieczenstwa" className="hover:text-purple-400">
+              Zasady bezpieczeństwa
+            </a>
+          </div>
+          <div className="text-center mt-4 text-gray-400 text-xs">
+            © 2024 MobliX. Wszystkie prawa zastrzeżone.
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

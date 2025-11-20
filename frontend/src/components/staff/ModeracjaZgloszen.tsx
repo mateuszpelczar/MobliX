@@ -2,12 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
-import "../../styles/MobileResponsive.css";
-import "../../styles/StaffPanel.css";
 import {
   MessageSquare,
   ShoppingBag,
-  Star,
   User,
   Shield,
   Users,
@@ -21,10 +18,14 @@ import {
   XCircle,
   Clock,
   Package,
-  ChevronUp,
   Trash2,
   AlertOctagon,
   FileText,
+  Bell,
+  Heart,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 type JwtPayLoad = {
@@ -63,9 +64,11 @@ const ModeracjaZgloszen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("ALL");
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [favoriteCount, setFavoriteCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const reportsPerPage = 5;
 
   // Modal states
   const [showActionModal, setShowActionModal] = useState(false);
@@ -93,11 +96,45 @@ const ModeracjaZgloszen: React.FC = () => {
 
   useEffect(() => {
     fetchReports();
+    fetchFavoriteCount();
   }, []);
 
   useEffect(() => {
     filterReports();
   }, [activeTab, reports, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
+
+  const fetchFavoriteCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch("http://localhost:8080/api/favorites", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFavoriteCount(data.length);
+      }
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
+
+  const handleMessengerClick = () => navigate("/user/message");
+  const handleNotificationsClick = () => navigate("/user/notifications");
+  const handleWatchedAdsClick = () => navigate("/user/watchedads");
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate(
+      searchTerm.trim()
+        ? `/smartfony?search=${searchTerm.trim()}`
+        : "/smartfony"
+    );
+  };
 
   const fetchReports = async () => {
     try {
@@ -141,16 +178,6 @@ const ModeracjaZgloszen: React.FC = () => {
     }
 
     setFilteredReports(filtered);
-  };
-
-  const toggleRow = (reportId: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(reportId)) {
-      newExpanded.delete(reportId);
-    } else {
-      newExpanded.add(reportId);
-    }
-    setExpandedRows(newExpanded);
   };
 
   const handleAcceptClick = (report: AdvertisementReport) => {
@@ -297,436 +324,508 @@ const ModeracjaZgloszen: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredReports.length / reportsPerPage);
+  const indexOfLastReport = currentPage * reportsPerPage;
+  const indexOfFirstReport = indexOfLastReport - reportsPerPage;
+  const currentReports = filteredReports.slice(
+    indexOfFirstReport,
+    indexOfLastReport
+  );
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+        <div className="text-center">
+          <Flag className="w-12 h-12 text-purple-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-300">Ładowanie zgłoszeń...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full">
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/main")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button flex items-center gap-2"
-            >
-              <User className="w-4 h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/your-ads");
-                    }}
-                  >
-                    <ShoppingBag className="w-4 h-4 text-blue-600" />
-                    Ogłoszenia
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/message");
-                    }}
-                  >
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    Czat
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/ratings");
-                    }}
-                  >
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    Oceny
-                  </button>
-                  <button
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      navigate("/user/personaldetails");
-                    }}
-                  >
-                    <User className="w-4 h-4 text-purple-600" />
-                    Profil
-                  </button>
-                  {isAdmin && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/admin");
-                      }}
-                    >
-                      <Shield className="w-4 h-4 text-red-600" />
-                      Panel administratora
-                    </button>
-                  )}
-                  {(isAdmin || isStaff) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/staffpanel");
-                      }}
-                    >
-                      <Users className="w-4 h-4 text-orange-600" />
-                      Panel pracownika
-                    </button>
-                  )}
-                  {(isAdmin || isStaff || isUser) && (
-                    <button
-                      className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate("/userpanel");
-                      }}
-                    >
-                      <User className="w-4 h-4 text-blue-600" />
-                      Panel użytkownika
-                    </button>
-                  )}
-                  <button
-                    onClick={handleLogout}
-                    className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
-                  >
-                    <LogOut className="w-4 h-4 text-red-600" />
-                    Wyloguj
-                  </button>
-                </div>
-              </div>
-            )}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
           </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-32 pb-12 max-w-6xl">
-          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full flex flex-col gap-6">
-            {/* Nagłówek */}
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-7 h-7 text-orange-600" />
-                Moderacja zgłoszeń
-              </h1>
-              <p className="text-gray-600">
-                Zarządzaj zgłoszeniami dotyczącymi ogłoszeń
-              </p>
-            </div>
-
-            {/* Search */}
-            <div className="relative flex-grow mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          {/* Wyszukiwarka */}
+          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-2xl">
+            <div className="relative">
               <input
                 type="text"
-                placeholder="Szukaj zgłoszeń..."
+                placeholder="Szukaj smartfonów..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
+          </form>
 
-            {/* Tabs */}
-            <div className="bg-white rounded-lg shadow mb-6">
-              <div className="flex border-b border-gray-200">
-                <button
-                  onClick={() => setActiveTab("ALL")}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === "ALL"
-                      ? "border-b-2 border-purple-600 text-purple-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Wszystkie ({getTabCount("ALL")})
-                </button>
-                <button
-                  onClick={() => setActiveTab("PENDING")}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === "PENDING"
-                      ? "border-b-2 border-yellow-600 text-yellow-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Oczekujące ({getTabCount("PENDING")})
-                </button>
-                <button
-                  onClick={() => setActiveTab("ACCEPTED")}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === "ACCEPTED"
-                      ? "border-b-2 border-green-600 text-green-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Rozwiązane ({getTabCount("ACCEPTED")})
-                </button>
-                <button
-                  onClick={() => setActiveTab("REJECTED")}
-                  className={`px-6 py-3 font-medium transition-colors ${
-                    activeTab === "REJECTED"
-                      ? "border-b-2 border-red-600 text-red-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Odrzucone ({getTabCount("REJECTED")})
-                </button>
-              </div>
-            </div>
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleMessengerClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
+            </button>
+            <button
+              onClick={handleNotificationsClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+            <button
+              onClick={handleWatchedAdsClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => navigate("/user/addadvertisement")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Dodaj ogłoszenie
+            </button>
 
-            {/* Error message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-800">{error}</p>
-                <button
-                  onClick={fetchReports}
-                  className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  Spróbuj ponownie
-                </button>
-              </div>
-            )}
-
-            {/* Reports Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              {filteredReports.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Brak zgłoszeń w tej kategorii</p>
-                </div>
-              ) : (
-                <div className="reports-table-container overflow-x-auto max-h-[450px] overflow-y-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0 z-10">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Data zgłoszenia
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Tytuł ogłoszenia
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Zgłoszono przez
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Właściciel
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Powód
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Akcje
-                        </th>
-                        <th className="px-6 py-3 bg-gray-50"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredReports.map((report) => (
-                        <React.Fragment key={report.id}>
-                          <tr className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gray-400" />
-                                {new Date(report.createdAt).toLocaleDateString(
-                                  "pl-PL"
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <div className="flex items-center gap-2">
-                                <Package className="w-4 h-4 text-purple-600" />
-                                {report.advertisementTitle}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                {report.reporterName}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-blue-600" />
-                                {report.ownerName}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
-                                {report.reasonLabel}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {getStatusBadge(report.status)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {report.status === "PENDING" && (
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleAcceptClick(report)}
-                                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-1"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                    Akceptuj
-                                  </button>
-                                  <button
-                                    onClick={() => handleReject(report.id)}
-                                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center gap-1"
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                    Odrzuć
-                                  </button>
-                                </div>
-                              )}
-                              {report.status !== "PENDING" &&
-                                report.reviewedByName && (
-                                  <span className="text-gray-500 text-xs">
-                                    Przez: {report.reviewedByName}
-                                  </span>
-                                )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                              <button
-                                onClick={() => toggleRow(report.id)}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                {expandedRows.has(report.id) ? (
-                                  <ChevronUp className="w-5 h-5" />
-                                ) : (
-                                  <ChevronDown className="w-5 h-5" />
-                                )}
-                              </button>
-                            </td>
-                          </tr>
-                          {expandedRows.has(report.id) && (
-                            <tr className="bg-gray-50">
-                              <td colSpan={8} className="px-6 py-4">
-                                <div className="space-y-3">
-                                  {report.comment && (
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                                        <FileText className="w-4 h-4" />
-                                        Komentarz zgłaszającego:
-                                      </p>
-                                      <p className="text-sm text-gray-600 bg-white p-3 rounded border border-gray-200">
-                                        {report.comment}
-                                      </p>
-                                    </div>
-                                  )}
-                                  {report.moderatorNote && (
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-700 mb-1">
-                                        Notatka moderatora:
-                                      </p>
-                                      <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
-                                        {report.moderatorNote}
-                                      </p>
-                                    </div>
-                                  )}
-                                  {report.reviewedAt && (
-                                    <div className="text-xs text-gray-500">
-                                      Rozpatrzone:{" "}
-                                      {new Date(
-                                        report.reviewedAt
-                                      ).toLocaleString("pl-PL")}
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Twoje konto
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl z-50">
+                  <div className="py-1">
+                    <button
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/user/your-ads");
+                      }}
+                    >
+                      <ShoppingBag className="w-4 h-4 text-blue-400" />
+                      Ogłoszenia
+                    </button>
+                    <button
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/user/message");
+                      }}
+                    >
+                      <MessageSquare className="w-4 h-4 text-green-400" />
+                      Czat
+                    </button>
+                    <button
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/user/personaldetails");
+                      }}
+                    >
+                      <User className="w-4 h-4 text-purple-400" />
+                      Profil
+                    </button>
+                    {isAdmin && (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/admin");
+                        }}
+                      >
+                        <Shield className="w-4 h-4 text-red-400" />
+                        Panel administratora
+                      </button>
+                    )}
+                    {(isAdmin || isStaff) && (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/staffpanel");
+                        }}
+                      >
+                        <Users className="w-4 h-4 text-orange-400" />
+                        Panel pracownika
+                      </button>
+                    )}
+                    {(isAdmin || isStaff || isUser) && (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/userpanel");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-cyan-400" />
+                        Panel użytkownika
+                      </button>
+                    )}
+                    <div className="border-t border-purple-400 my-1"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 text-red-400" />
+                      Wyloguj
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
+      </nav>
 
-        {/* Footer */}
-        <div className="panel-footer w-full py-2 mt-auto">
-          <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-            <a
-              href="/zasady-bezpieczenstwa"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-            >
-              Zasady bezpieczeństwa
-            </a>
+      {/* Content */}
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header z ikoną Flag */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-orange-600 p-4 rounded-full">
+                <Flag className="w-12 h-12 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  Moderacja zgłoszeń
+                </h1>
+                <p className="text-gray-300">
+                  Zarządzaj zgłoszeniami dotyczącymi ogłoszeń
+                </p>
+              </div>
+            </div>
+          </div>
 
+          {/* Tabs */}
+          <div className="bg-gray-800 rounded-lg shadow-lg mb-6 border border-gray-700">
+            <div className="flex flex-wrap border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab("ALL")}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === "ALL"
+                    ? "border-b-2 border-purple-500 text-purple-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Wszystkie ({getTabCount("ALL")})
+              </button>
+              <button
+                onClick={() => setActiveTab("PENDING")}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === "PENDING"
+                    ? "border-b-2 border-yellow-500 text-yellow-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Oczekujące ({getTabCount("PENDING")})
+              </button>
+              <button
+                onClick={() => setActiveTab("ACCEPTED")}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === "ACCEPTED"
+                    ? "border-b-2 border-green-500 text-green-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Rozwiązane ({getTabCount("ACCEPTED")})
+              </button>
+              <button
+                onClick={() => setActiveTab("REJECTED")}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === "REJECTED"
+                    ? "border-b-2 border-red-500 text-red-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Odrzucone ({getTabCount("REJECTED")})
+              </button>
+            </div>
+          </div>
+
+          {/* Error message */}
+          {error && (
+            <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
+              <p className="text-red-300">{error}</p>
+              <button
+                onClick={fetchReports}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Spróbuj ponownie
+              </button>
+            </div>
+          )}
+
+          {/* Reports Cards */}
+          {currentReports.length === 0 ? (
+            <div className="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
+              <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+              <p className="text-gray-400 text-lg">
+                Brak zgłoszeń w tej kategorii
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {currentReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-purple-500 transition-all"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Package className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-lg font-semibold text-white">
+                          {report.advertisementTitle}
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-400 mt-3">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>
+                            {new Date(report.createdAt).toLocaleDateString(
+                              "pl-PL"
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          <span>Zgłosił: {report.reporterName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-blue-400" />
+                          <span>Właściciel: {report.ownerName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-4 h-4 text-orange-400" />
+                          <span className="px-2 py-1 bg-orange-900/30 border border-orange-700 text-orange-300 rounded text-xs">
+                            {report.reasonLabel}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="ml-4">{getStatusBadge(report.status)}</div>
+                  </div>
+
+                  {report.comment && (
+                    <div className="bg-gray-700/50 rounded-lg p-3 mb-3">
+                      <p className="text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Komentarz zgłaszającego:
+                      </p>
+                      <p className="text-sm text-gray-400">{report.comment}</p>
+                    </div>
+                  )}
+
+                  {report.moderatorNote && (
+                    <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 mb-3">
+                      <p className="text-sm font-medium text-blue-300 mb-1">
+                        Notatka moderatora:
+                      </p>
+                      <p className="text-sm text-blue-400">
+                        {report.moderatorNote}
+                      </p>
+                    </div>
+                  )}
+
+                  {report.status === "PENDING" && (
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={() => handleAcceptClick(report)}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Akceptuj
+                      </button>
+                      <button
+                        onClick={() => handleReject(report.id)}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Odrzuć
+                      </button>
+                    </div>
+                  )}
+
+                  {report.status !== "PENDING" && report.reviewedByName && (
+                    <div className="text-xs text-gray-500 mt-3">
+                      Rozpatrzone przez: {report.reviewedByName}
+                      {report.reviewedAt && (
+                        <span className="ml-2">
+                          •{" "}
+                          {new Date(report.reviewedAt).toLocaleString("pl-PL")}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-700"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <span className="text-gray-300 px-4">
+                Strona {currentPage} z {totalPages}
+              </span>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((page) => {
+                  if (totalPages <= 5) return true;
+                  if (page === 1 || page === totalPages) return true;
+                  if (page >= currentPage - 1 && page <= currentPage + 1)
+                    return true;
+                  return false;
+                })
+                .map((page, index, array) => {
+                  if (index > 0 && array[index - 1] !== page - 1) {
+                    return (
+                      <React.Fragment key={`ellipsis-${page}`}>
+                        <span className="text-gray-500">...</span>
+                        <button
+                          onClick={() => handlePageChange(page)}
+                          className={`px-4 py-2 rounded-lg transition-colors border ${
+                            currentPage === page
+                              ? "bg-purple-600 text-white border-purple-500"
+                              : "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  }
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-4 py-2 rounded-lg transition-colors border ${
+                        currentPage === page
+                          ? "bg-purple-600 text-white border-purple-500"
+                          : "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-700"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Czarna stopka jak w MainPanel */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
             <a
               href="/jak-dziala-moblix"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+              className="hover:text-purple-400 transition-colors"
             >
               Jak działa MobliX
             </a>
             <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+            <a
               href="/regulamin"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+              className="hover:text-purple-400 transition-colors"
             >
               Regulamin
             </a>
             <a
-              href="/polityka-cookies"
-              className="text-black hover:text-gray-600 transition-colors py-1 text-center"
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
             >
-              Polityka cookies
+              Zasady bezpieczeństwa
             </a>
           </div>
+          <div className="text-center mt-4 text-gray-400 text-xs">
+            © 2024 MobliX. Wszystkie prawa zastrzeżone.
+          </div>
         </div>
-      </div>
+      </footer>
 
       {/* Action Modal */}
       {showActionModal && selectedReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <AlertTriangle className="w-6 h-6 text-orange-600" />
+          <div className="bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 border-4 border-purple-600">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-6 h-6 text-orange-400" />
               Wybierz akcję
             </h3>
 
-            <div className="mb-4 p-3 bg-gray-50 rounded">
-              <p className="text-sm text-gray-700">
-                <strong>Ogłoszenie:</strong> {selectedReport.advertisementTitle}
+            <div className="mb-4 p-3 bg-gray-700 rounded">
+              <p className="text-sm text-gray-300">
+                <strong className="text-white">Ogłoszenie:</strong>{" "}
+                {selectedReport.advertisementTitle}
               </p>
-              <p className="text-sm text-gray-700">
-                <strong>Powód:</strong> {selectedReport.reasonLabel}
+              <p className="text-sm text-gray-300">
+                <strong className="text-white">Powód:</strong>{" "}
+                {selectedReport.reasonLabel}
               </p>
             </div>
 
             <div className="space-y-4">
               {/* Delete Action */}
-              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-                <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+              <div className="border border-red-700 rounded-lg p-4 bg-red-900/30">
+                <h4 className="font-semibold text-red-300 mb-2 flex items-center gap-2">
                   <Trash2 className="w-5 h-5" />
                   Usuń ogłoszenie
                 </h4>
-                <p className="text-sm text-red-700 mb-3">
+                <p className="text-sm text-red-400 mb-3">
                   Ogłoszenie zostanie trwale usunięte. Właściciel otrzyma
                   powiadomienie.
                 </p>
@@ -740,19 +839,19 @@ const ModeracjaZgloszen: React.FC = () => {
               </div>
 
               {/* Warning Action */}
-              <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
-                <h4 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+              <div className="border border-yellow-700 rounded-lg p-4 bg-yellow-900/30">
+                <h4 className="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
                   <AlertOctagon className="w-5 h-5" />
                   Wyślij ostrzeżenie
                 </h4>
-                <p className="text-sm text-yellow-700 mb-3">
+                <p className="text-sm text-yellow-400 mb-3">
                   Właściciel otrzyma ostrzeżenie. Ogłoszenie pozostanie aktywne.
                 </p>
                 <textarea
                   value={warningText}
                   onChange={(e) => setWarningText(e.target.value)}
                   placeholder="Wpisz treść ostrzeżenia dla właściciela..."
-                  className="w-full px-3 py-2 border border-yellow-300 rounded focus:ring-2 focus:ring-yellow-500 focus:border-transparent mb-3"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded focus:ring-2 focus:ring-yellow-500 focus:border-transparent mb-3"
                   rows={4}
                 />
                 <button
@@ -771,7 +870,7 @@ const ModeracjaZgloszen: React.FC = () => {
                 setSelectedReport(null);
                 setWarningText("");
               }}
-              className="w-full mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
+              className="w-full mt-4 px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition-colors"
               disabled={actionLoading}
             >
               Anuluj

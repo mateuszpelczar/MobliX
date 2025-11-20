@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import {
@@ -8,35 +8,32 @@ import {
   LogOut,
   ShoppingBag,
   MessageSquare,
-  Star,
   Shield,
   Users,
   MapPin,
-  Calendar,
   Smartphone,
   Heart,
-  Eye,
-  Share2,
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
   Phone,
   Mail,
   MessageCircle,
-  Clock,
   Package,
-  Monitor,
-  Battery,
-  Camera,
-  HardDrive,
-  Palette,
   Check,
   LogIn,
-  Wifi,
-  Bluetooth,
   Building2,
+  Search,
+  Bell,
+  Plus,
+  Hash,
+  Globe,
+  Eye,
+  Share2,
 } from "lucide-react";
 import "../../styles/MobileResponsive.css";
+
+interface FavoriteCheckResponse {
+  isFavorite: boolean;
+}
 
 interface SellerInfo {
   sellerType: string;
@@ -95,31 +92,6 @@ interface SmartphoneData {
     warranty: string;
     includesCharger: boolean;
   };
-}
-
-interface Review {
-  id: number;
-  userId: number;
-  advertisementId: number;
-  advertisementTitle?: string; // Opcjonalne, bo nie zawsze jest potrzebne
-  advertisementStatus?: string; // Status ogłoszenia
-  userName: string; // email użytkownika
-  rating: number;
-  comment: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  rejectionReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Report {
-  id: number;
-  userId: number;
-  userName: string;
-  reason: string;
-  description: string;
-  dateReported: string;
-  status: "pending" | "reviewed" | "resolved";
 }
 
 // Rozszerzone dane smartfonów
@@ -278,28 +250,14 @@ const smartphones: SmartphoneData[] = [
 const SmartphoneDetails: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
-  const reviewId = searchParams.get("reviewId");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
   const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Reviews states
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
-  const [reviewError, setReviewError] = useState<string | null>(null);
-  const [reviewSuccess, setReviewSuccess] = useState<string | null>(null);
-
-  // Edit review states
-  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
-  const [editReviewData, setEditReviewData] = useState({
-    rating: 5,
-    comment: "",
-    advertisementId: 0,
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDetailedSpecs, setShowDetailedSpecs] = useState(false);
+  const [sellerAds, setSellerAds] = useState<SmartphoneData[]>([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   // Report states
   const [showReportForm, setShowReportForm] = useState(false);
@@ -310,24 +268,21 @@ const SmartphoneDetails: React.FC = () => {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Effect to scroll to specific review if reviewId is provided
-  useEffect(() => {
-    if (reviewId) {
-      const timer = setTimeout(() => {
-        const reviewElement = document.getElementById(`review-${reviewId}`);
-        if (reviewElement) {
-          reviewElement.scrollIntoView({ behavior: "smooth", block: "center" });
-          // Add highlight effect
-          reviewElement.style.backgroundColor = "#fef3c7";
-          setTimeout(() => {
-            reviewElement.style.backgroundColor = "";
-          }, 3000);
-        }
-      }, 500); // Wait for component to fully render
-
-      return () => clearTimeout(timer);
+  const getCurrentUserEmail = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return "";
+    try {
+      const decoded: any = jwtDecode(token);
+      return decoded.sub || "";
+    } catch (error) {
+      return "";
     }
-  }, [reviewId, reviews]);
+  };
+
+  const isCurrentUserOwner = () => {
+    const currentUserEmail = getCurrentUserEmail();
+    return currentUserEmail && sellerInfo?.email === currentUserEmail;
+  };
 
   useEffect(() => {
     const incrementViewCount = async () => {
@@ -356,26 +311,31 @@ const SmartphoneDetails: React.FC = () => {
 
   // Pobieranie danych smartfona z API jeśli nie ma w statycznych danych
   useEffect(() => {
+    console.log("🔵 useEffect triggered, id:", id);
     const fetchPhone = async () => {
-      if (phone) {
-        setPhoneData(phone);
-        return; // Jeśli jest w statycznych danych, użyj ich
-      }
-
       if (!id) {
+        console.log("🔴 No ID provided");
         setError("Brak ID smartfona");
         setLoading(false);
         return;
       }
 
+      // Zawsze pobieraj z API dla świeżych danych
       try {
+        console.log("⏳ Starting fetch, setting loading=true");
         setLoading(true);
+        setError(null);
         const response = await fetch(
           `http://localhost:8080/api/advertisements/${id}`
         );
 
+        console.log("📡 Response status:", response.status);
+
         if (response.ok) {
           const ad = await response.json();
+          console.log("API Response:", ad);
+          console.log("Warranty from API:", ad.warranty);
+          console.log("IncludesCharger from API:", ad.includesCharger);
           // Mapowanie danych z backendu na format frontend
           const mappedPhone: SmartphoneData = {
             id: ad.id,
@@ -420,26 +380,32 @@ const SmartphoneDetails: React.FC = () => {
               refreshRate: ad.specification?.refreshRate || "",
             },
             additionalInfo: {
-              warranty: ad.warranty || "",
-              includesCharger: ad.includesCharger || false,
+              warranty: ad.warranty || "Brak danych",
+              includesCharger:
+                ad.includesCharger !== undefined ? ad.includesCharger : false,
             },
           };
+          console.log("Mapped additionalInfo:", mappedPhone.additionalInfo);
+          console.log("✅ Setting phoneData:", mappedPhone.title);
           setPhoneData(mappedPhone);
         } else if (response.status === 404) {
+          console.log("🔴 404 - Ad not found");
           setError("Smartphone nie istnieje");
         } else {
+          console.log("🔴 Error response:", response.status);
           setError("Błąd podczas pobierania danych");
         }
       } catch (error) {
-        console.error("Błąd podczas pobierania smartfona:", error);
+        console.error("🔴 Błąd podczas pobierania smartfona:", error);
         setError("Błąd połączenia z serwerem");
       } finally {
+        console.log("✔️ Setting loading=false");
         setLoading(false);
       }
     };
 
     fetchPhone();
-  }, [id, phone]);
+  }, [id]);
 
   // Pobieranie danych sprzedawcy
   useEffect(() => {
@@ -449,7 +415,6 @@ const SmartphoneDetails: React.FC = () => {
       try {
         // Sprawdzenie czy użytkownik jest zalogowany
         const token = localStorage.getItem("token");
-        setIsLoggedIn(!!token);
 
         const headers: HeadersInit = {};
         if (token) {
@@ -470,8 +435,143 @@ const SmartphoneDetails: React.FC = () => {
       }
     };
 
+    const fetchSellerAds = async () => {
+      if (!id) return;
+
+      try {
+        const token = localStorage.getItem("token");
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        // Pobierz wszystkie ogłoszenia
+        const adsResponse = await fetch(
+          `http://localhost:8080/api/advertisements`,
+          { headers }
+        );
+
+        if (adsResponse.ok) {
+          const allAds = await adsResponse.json();
+          console.log("All ads:", allAds);
+          console.log("Current ad ID:", id);
+
+          // Filtruj ogłoszenia - tylko aktywne i różne od bieżącego
+          const activeAds = allAds.filter(
+            (ad: any) => ad.id !== parseInt(id) && ad.status === "ACTIVE"
+          );
+
+          console.log("Active ads:", activeAds);
+
+          // Wybierz 2 losowe ogłoszenia
+          const shuffled = activeAds.sort(() => 0.5 - Math.random());
+          const randomAds = shuffled.slice(0, 2);
+
+          // Mapuj dane do formatu SmartphoneData
+          const mappedAds = randomAds.map((ad: any) => ({
+            id: ad.id,
+            title: ad.title,
+            brand: ad.specification?.brand || "",
+            model: ad.specification?.model || "",
+            price: ad.price,
+            location: ad.location || "Brak lokalizacji",
+            condition: ad.condition || "nowy",
+            images:
+              ad.imageUrls && ad.imageUrls.length > 0
+                ? ad.imageUrls
+                : ["https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia"],
+            seller: ad.userName || "Użytkownik",
+            sellerPhone: "Dostępny po zalogowaniu",
+            sellerEmail: "Dostępny po zalogowaniu",
+            dateAdded: ad.createdAt || ad.dateAdded,
+            views: ad.viewCount || 0,
+            likes: 0,
+            description: ad.description,
+            specifications: {
+              brand: ad.specification?.brand || "",
+              model: ad.specification?.model || "",
+              storage: ad.specification?.storage || "",
+              ram: ad.specification?.ram || "",
+              color: ad.specification?.color || "",
+              batteryCapacity: ad.specification?.batteryCapacity || "",
+              screenSize: ad.specification?.displaySize || "",
+              cameraMP: ad.specification?.rearCameras || "",
+              osType: ad.specification?.osType || "",
+              osVersion: ad.specification?.osVersion || "",
+              frontCamera: ad.specification?.frontCamera || "",
+              displayTech: ad.specification?.displayTech || "",
+              wifi: ad.specification?.wifi || "",
+              bluetooth: ad.specification?.bluetooth || "",
+              ipRating: ad.specification?.ipRating || "",
+              fastCharging: ad.specification?.fastCharging || "",
+              wirelessCharging: ad.specification?.wirelessCharging || "",
+              processor: ad.specification?.processor || "",
+              gpu: ad.specification?.gpu || "",
+              screenResolution: ad.specification?.screenResolution || "",
+              refreshRate: ad.specification?.refreshRate || "",
+            },
+            additionalInfo: {
+              warranty: ad.warranty || "Brak danych",
+              includesCharger:
+                ad.includesCharger !== undefined ? ad.includesCharger : false,
+            },
+          }));
+
+          setSellerAds(mappedAds);
+        }
+      } catch (error) {
+        console.error("Błąd podczas pobierania ogłoszeń:", error);
+      }
+    };
+
     fetchSellerInfo();
+    fetchSellerAds();
   }, [id]);
+
+  // Sprawdzenie czy ogłoszenie jest w ulubionych
+  useEffect(() => {
+    const checkIfFavorite = async () => {
+      const token = localStorage.getItem("token");
+      if (!token || !id) return;
+
+      try {
+        const response = await axios.get<FavoriteCheckResponse>(
+          `http://localhost:8080/api/favorites/${id}/check`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data && typeof response.data.isFavorite === "boolean") {
+          setIsFavorite(response.data.isFavorite);
+        }
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+      }
+    };
+
+    checkIfFavorite();
+    fetchFavoriteCount();
+  }, [id]);
+
+  const fetchFavoriteCount = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await axios.get<any[]>(
+        "http://localhost:8080/api/favorites",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setFavoriteCount(response.data.length);
+    } catch (error) {
+      console.error("Error fetching favorite count:", error);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -500,28 +600,6 @@ const SmartphoneDetails: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [id]); // Re-run when id changes
-
-  // Sprawdź czy ogłoszenie jest w ulubionych
-  useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      const token = localStorage.getItem("token");
-      if (!token || !id) return;
-
-      try {
-        const response = await axios.get<{ isFavorite: boolean }>(
-          `http://localhost:8080/api/favorites/${id}/check`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setIsLiked(Boolean(response.data?.isFavorite));
-      } catch (error) {
-        console.error("Error checking favorite status:", error);
-      }
-    };
-
-    checkFavoriteStatus();
-  }, [id]);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -592,71 +670,16 @@ const SmartphoneDetails: React.FC = () => {
     );
   }
 
-  const getConditionColor = (condition: string) => {
-    switch (condition) {
-      case "NEW":
-      case "nowy":
-        return "bg-green-100 text-green-800";
-      case "LIKE_NEW":
-        return "bg-emerald-100 text-emerald-800";
-      case "VERY_GOOD":
-        return "bg-blue-100 text-blue-800";
-      case "GOOD":
-        return "bg-yellow-100 text-yellow-800";
-      case "ACCEPTABLE":
-        return "bg-orange-100 text-orange-800";
-      case "używany":
-        return "bg-blue-100 text-blue-800";
-      case "uszkodzony":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getConditionLabel = (condition: string) => {
-    switch (condition) {
-      case "NEW":
-        return "Nowy";
-      case "LIKE_NEW":
-        return "Jak nowy";
-      case "VERY_GOOD":
-        return "Bardzo dobry";
-      case "GOOD":
-        return "Dobry";
-      case "ACCEPTABLE":
-        return "Zadowalający";
-      case "nowy":
-        return "Nowy";
-      case "używany":
-        return "Używany";
-      case "uszkodzony":
-        return "Uszkodzony";
-      default:
-        return condition;
-    }
-  };
-
-  const handlePrevImage = () => {
-    if (phoneData) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? phoneData.images.length - 1 : prev - 1
-      );
-    }
-  };
-
-  const handleNextImage = () => {
-    if (phoneData) {
-      setCurrentImageIndex((prev) =>
-        prev === phoneData.images.length - 1 ? 0 : prev + 1
-      );
-    }
-  };
-
   const handleContactSeller = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
+      return;
+    }
+
+    // Sprawdź czy użytkownik nie próbuje wysłać wiadomości do samego siebie
+    if (isCurrentUserOwner()) {
+      alert("Nie możesz wysłać wiadomości do samego siebie");
       return;
     }
 
@@ -669,7 +692,6 @@ const SmartphoneDetails: React.FC = () => {
     }
   };
 
-  // Przełącz stan ulubionych
   const handleToggleFavorite = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -677,28 +699,63 @@ const SmartphoneDetails: React.FC = () => {
       return;
     }
 
-    if (!id) return;
-
     try {
-      if (isLiked) {
-        // Usuń z ulubionych
+      if (isFavorite) {
         await axios.delete(`http://localhost:8080/api/favorites/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-        setIsLiked(false);
+        setIsFavorite(false);
+        alert("Usunięto z ulubionych");
       } else {
-        // Dodaj do ulubionych
         await axios.post(
           `http://localhost:8080/api/favorites/${id}`,
           {},
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
-        setIsLiked(true);
+        setIsFavorite(true);
+        alert("Dodano do ulubionych");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error toggling favorite:", error);
+      if (error.response?.data?.error) {
+        alert(error.response.data.error);
+      } else if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Wystąpił błąd. Spróbuj ponownie.");
+      }
+    }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = phoneData?.title || "Ogłoszenie na MobliX";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Sprawdź to ogłoszenie: ${title}`,
+          url: url,
+        });
+      } catch (error) {
+        console.log("Udostępnianie anulowane", error);
+      }
+    } else {
+      // Fallback - kopiuj link
+      try {
+        await navigator.clipboard.writeText(url);
+        alert("Link skopiowany do schowka!");
+      } catch (error) {
+        console.error("Błąd kopiowania:", error);
+        alert("Nie można skopiować linku");
+      }
     }
   };
 
@@ -757,149 +814,230 @@ const SmartphoneDetails: React.FC = () => {
     }
   };
 
-  return (
-    <div className="panel-layout flex flex-col min-h-screen max-w-full overflow-x-hidden bg-white">
-      {/* Header */}
-      <div className="panel-header px-2 sm:px-4 flex justify-between items-center w-full bg-white">
-        {/* Logo in top left */}
-        <div
-          className="panel-logo text-lg sm:text-xl md:text-2xl font-bold cursor-pointer"
-          onClick={() => navigate("/")}
-          style={{ userSelect: "none" }}
-        >
-          MobliX
-        </div>
+  console.log(
+    "🎨 Rendering - loading:",
+    loading,
+    "error:",
+    error,
+    "phoneData:",
+    phoneData ? phoneData.title : null
+  );
 
-        {/* Account dropdown in top right corner */}
-        <div className="panel-buttons">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="account-dropdown-button text-sm sm:text-base whitespace-nowrap px-2 sm:px-4"
-            >
-              <User className="w-3 h-3 sm:w-4 sm:h-4" />
-              Twoje konto
-              <ChevronDown
-                className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ml-1 ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      {/* Czarny pasek nawigacji */}
+      <nav className="bg-black text-white px-4 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div
+            className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
+            onClick={() => navigate("/main")}
+          >
+            MobliX
+          </div>
+
+          {/* Wyszukiwarka */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchQuery.trim())
+                navigate(`/smartfony?search=${searchQuery.trim()}`);
+              else navigate("/smartfony");
+            }}
+            className="flex-1 max-w-2xl"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Szukaj smartfonów..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
+          </form>
+
+          {/* Ikony i przyciski */}
+          <div className="flex items-center gap-3">
+            {/* Ikona czatu */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/message") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Wiadomości"
+            >
+              <MessageSquare className="w-6 h-6" />
             </button>
-            {isDropdownOpen && (
-              <div className="dropdown-menu right-0 w-48 sm:w-56 z-50">
-                <div className="py-1">
+
+            {/* Ikona powiadomień */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/notifications") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Powiadomienia"
+            >
+              <Bell className="w-6 h-6" />
+            </button>
+
+            {/* Ikona ulubionych */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/watchedads") : navigate("/login")
+              }
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              title="Ulubione ogłoszenia"
+            >
+              <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
+                </span>
+              )}
+            </button>
+
+            {/* Przycisk dodaj ogłoszenie */}
+            <button
+              onClick={() =>
+                token ? navigate("/user/addadvertisement") : navigate("/login")
+              }
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Dodaj ogłoszenie
+            </button>
+
+            {/* Dropdown Twoje konto */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Twoje konto
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
                   {token ? (
                     <>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/your-ads");
                         }}
                       >
-                        <ShoppingBag className="w-4 h-4 text-blue-600" />
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
                         Ogłoszenia
                       </button>
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/message");
                         }}
                       >
-                        <MessageSquare className="w-4 h-4 text-green-600" />
+                        <MessageSquare className="w-4 h-4 text-green-400" />
                         Chat
                       </button>
-
                       <button
-                        className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           navigate("/user/personaldetails");
                         }}
                       >
-                        <User className="w-4 h-4 text-purple-600" />
+                        <User className="w-4 h-4 text-purple-300" />
                         Profil
                       </button>
                       {isAdmin && (
                         <button
                           onClick={handleGoToAdminPanel}
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                         >
-                          <Shield className="w-4 h-4 text-red-600" />
+                          <Shield className="w-4 h-4 text-red-400" />
                           Panel administratora
                         </button>
                       )}
                       {(isAdmin || isStaff) && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                           onClick={() => {
                             setIsDropdownOpen(false);
                             navigate("/staffpanel");
                           }}
                         >
-                          <Users className="w-4 h-4 text-orange-600" />
+                          <Users className="w-4 h-4 text-orange-400" />
                           Panel pracownika
                         </button>
                       )}
                       {(isAdmin || isStaff || isUser) && (
                         <button
-                          className="dropdown-item w-full text-left bg-white text-black flex items-center gap-3 px-4 py-2"
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                           onClick={() => {
                             setIsDropdownOpen(false);
                             navigate("/userpanel");
                           }}
                         >
-                          <User className="w-4 h-4 text-blue-600" />
+                          <User className="w-4 h-4 text-cyan-400" />
                           Panel użytkownika
                         </button>
                       )}
-                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="border-t border-purple-400 my-1"></div>
                       <button
                         onClick={handleLogout}
-                        className="dropdown-logout flex items-center gap-3 px-4 py-2"
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        <LogOut className="w-4 h-4 text-red-500" />
+                        <LogOut className="w-4 h-4 text-red-400" />
                         Wyloguj
                       </button>
                     </>
                   ) : (
                     <button
-                      className="dropdown-logout w-full text-left flex items-center gap-3 px-4 py-2"
+                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/login");
                       }}
                     >
-                      <LogIn className="w-4 h-4 text-green-600" />
+                      <LogIn className="w-4 h-4 text-white" />
                       Zaloguj się
                     </button>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Content */}
-      <div className="panel-content flex-grow w-full overflow-y-auto">
-        <div className="container mx-auto px-4 relative pt-32 pb-12 max-w-7xl">
+      {/* Główna zawartość */}
+      <div className="flex-1 px-4 py-8">
+        <div className="max-w-7xl mx-auto">
           {loading && (
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
-              <p>Ładowanie danych ogłoszenia...</p>
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-white text-lg">
+                Ładowanie danych ogłoszenia...
+              </p>
             </div>
           )}
 
           {error && (
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-red-600 mb-2">Błąd</h2>
-              <p className="text-gray-600">{error}</p>
+            <div className="p-8 text-center">
+              <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Błąd</h2>
+              <p className="text-gray-200 text-lg">{error}</p>
               <button
                 onClick={() => navigate("/smartfony")}
-                className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="mt-4 px-6 py-2 bg-white text-purple-900 rounded-lg hover:bg-gray-100 transition-colors font-semibold"
               >
                 Powrót do katalogu
               </button>
@@ -907,719 +1045,612 @@ const SmartphoneDetails: React.FC = () => {
           )}
 
           {!loading && !error && phoneData && (
-            <div
-              className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-10 w-full overflow-y-auto"
-              style={{
-                maxHeight: "calc(100vh - 200px)",
-                scrollbarWidth: "thin",
-                scrollbarColor: "#8B5CF6 #F3F4F6",
-              }}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Images Section */}
-                <div className="space-y-4">
-                  <div className="relative">
-                    <img
-                      src={phoneData.images[currentImageIndex]}
-                      alt={phoneData.title}
-                      className="w-full h-96 object-cover rounded-lg"
-                    />
-                    {phoneData.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={handlePrevImage}
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow-md hover:bg-opacity-100 transition-all"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleNextImage}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full shadow-md hover:bg-opacity-100 transition-all"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 px-3 py-1 rounded-full text-white text-sm">
-                          {currentImageIndex + 1} / {phoneData.images.length}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Thumbnail Images */}
-                  {phoneData.images.length > 1 && (
-                    <div className="flex gap-2 overflow-x-auto">
-                      {phoneData.images.map((image, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                            currentImageIndex === index
-                              ? "border-purple-600"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          <img
-                            src={image}
-                            alt={`${phoneData.title} ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Description */}
-                  <div className="bg-white p-4 rounded-lg border border-gray-200">
-                    <h3 className="font-semibold text-gray-900 mb-4">Opis</h3>
-                    <p className="text-gray-700 leading-relaxed">
-                      {phoneData.description}
-                    </p>
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 md:gap-6">
+              {/* Lewa kolumna - Zdjęcia */}
+              <div className="space-y-4">
+                {/* Główne zdjęcie */}
+                <div className="relative bg-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700">
+                  <img
+                    src={phoneData.images[currentImageIndex]}
+                    alt={phoneData.title}
+                    className="w-full h-[400px] md:h-[500px] object-contain p-4"
+                  />
                 </div>
 
-                {/* Details Section */}
-                <div className="space-y-6">
-                  {/* Title and Price */}
-                  <div>
-                    <div className="flex items-start justify-between mb-2">
-                      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex-1">
-                        {phoneData.title}
-                      </h1>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={handleToggleFavorite}
-                          className={`p-2 rounded-full transition-colors ${
-                            isLiked
-                              ? "bg-red-100 text-red-600"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          <Heart
-                            className={`w-5 h-5 ${
-                              isLiked ? "fill-current" : ""
-                            }`}
-                          />
-                        </button>
-                        <button className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
-                          <Share2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
+                {/* Miniaturki - max 6 zdjęć */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {phoneData.images.slice(0, 6).map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`relative border-2 rounded-lg overflow-hidden aspect-square bg-purple-900/30 backdrop-blur-sm shadow-md ${
+                        currentImageIndex === index
+                          ? "border-purple-400 ring-2 ring-purple-300"
+                          : "border-gray-700"
+                      } hover:border-purple-400 transition-all`}
+                    >
+                      <img
+                        src={image}
+                        alt={`${phoneData.title} ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
 
-                    <div className="flex items-center gap-2 mb-4">
-                      <span
-                        className={`px-3 py-1 text-sm rounded-full ${getConditionColor(
-                          phoneData.condition
-                        )}`}
-                      >
-                        {getConditionLabel(phoneData.condition)}
+                {/* Opis */}
+                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+                  <h3 className="text-xl font-bold text-white mb-4">Opis</h3>
+                  <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">
+                    {phoneData.description}
+                  </p>
+                </div>
+
+                {/* Specyfikacja podstawowa */}
+                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+                  <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                    <Smartphone className="w-5 h-5 text-purple-300" />
+                    Specyfikacja
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Marka</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.brand || "Brak danych"}
                       </span>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <Eye className="w-4 h-4" />
-                        <span className="text-sm">
-                          {phoneData.views} wyświetleń
-                        </span>
-                      </div>
                     </div>
-
-                    <div className="flex items-center gap-3 mb-4">
-                      {phoneData.originalPrice && (
-                        <span className="text-xl text-gray-500 line-through">
-                          {phoneData.originalPrice.toLocaleString()} zł
-                        </span>
-                      )}
-                      <span className="text-3xl font-bold text-gray-900">
-                        {phoneData.price.toLocaleString()} zł
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Model</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.model || "Brak danych"}
                       </span>
-                      {phoneData.originalPrice && (
-                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-medium">
-                          -
-                          {Math.round(
-                            (1 - phoneData.price / phoneData.originalPrice) *
-                              100
-                          )}
-                          %
-                        </span>
-                      )}
                     </div>
-
-                    <div className="flex items-center gap-4 text-gray-600 text-sm">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {phoneData.location}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(phoneData.dateAdded).toLocaleDateString(
-                          "pl-PL"
-                        )}
-                      </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Kolor</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.color || "Brak danych"}
+                      </span>
                     </div>
-                  </div>
-
-                  {/* Contact Section - Informacje o sprzedawcy */}
-                  <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      {sellerInfo?.sellerType === "business" ? (
-                        <Building2 className="w-5 h-5 text-purple-600" />
-                      ) : (
-                        <User className="w-5 h-5 text-purple-600" />
-                      )}
-                      Sprzedawca
-                    </h3>
-
-                    {sellerInfo ? (
-                      <div className="space-y-3">
-                        {/* Nazwa sprzedawcy */}
-                        <div>
-                          <p className="font-semibold text-gray-900 text-lg">
-                            {sellerInfo.sellerType === "business" &&
-                            sellerInfo.companyName
-                              ? sellerInfo.companyName
-                              : sellerInfo.name}
-                          </p>
-                          <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                            <Clock className="w-4 h-4" />
-                            Sprzedający od {sellerInfo.yearJoined}
-                          </p>
-                        </div>
-
-                        {/* Dane firmowe - tylko dla firm */}
-                        {sellerInfo.sellerType === "business" && (
-                          <div className="border-t border-gray-200 pt-3 space-y-2">
-                            {sellerInfo.address && (
-                              <div className="text-sm">
-                                <span className="text-gray-600">Adres: </span>
-                                <span className="text-gray-900">
-                                  {sellerInfo.address}
-                                </span>
-                              </div>
-                            )}
-                            {sellerInfo.nip && (
-                              <div className="text-sm">
-                                <span className="text-gray-600">NIP: </span>
-                                <span className="text-gray-900">
-                                  {sellerInfo.nip}
-                                </span>
-                              </div>
-                            )}
-                            {sellerInfo.regon && (
-                              <div className="text-sm">
-                                <span className="text-gray-600">REGON: </span>
-                                <span className="text-gray-900">
-                                  {sellerInfo.regon}
-                                </span>
-                              </div>
-                            )}
-                            {sellerInfo.website && (
-                              <div className="text-sm">
-                                <span className="text-gray-600">Strona: </span>
-                                <a
-                                  href={sellerInfo.website}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-purple-600 hover:underline"
-                                >
-                                  {sellerInfo.website}
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Kontakt - tylko dla zalogowanych */}
-                        {isLoggedIn &&
-                        (sellerInfo.phone || sellerInfo.email) ? (
-                          <div className="border-t border-gray-200 pt-3 space-y-2">
-                            {sellerInfo.phone && (
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-gray-600" />
-                                <a
-                                  href={`tel:${sellerInfo.phone}`}
-                                  className="text-purple-600 hover:underline"
-                                >
-                                  {sellerInfo.phone}
-                                </a>
-                              </div>
-                            )}
-                            {sellerInfo.email && (
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-4 h-4 text-gray-600" />
-                                <a
-                                  href={`mailto:${sellerInfo.email}`}
-                                  className="text-purple-600 hover:underline"
-                                >
-                                  {sellerInfo.email}
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        ) : !isLoggedIn ? (
-                          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
-                            <p className="text-sm text-purple-800 flex items-center gap-2">
-                              <LogIn className="w-4 h-4" />
-                              Zaloguj się, aby zobaczyć dane kontaktowe
-                            </p>
-                          </div>
-                        ) : null}
-
-                        {/* Przycisk wiadomości */}
-                        <button
-                          onClick={handleContactSeller}
-                          className="w-full mt-3 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                        >
-                          <MessageCircle className="w-5 h-5" />
-                          Napisz wiadomość
-                        </button>
-                      </div>
-                    ) : (
-                      // Fallback jeśli nie ma danych sprzedawcy
-                      <div>
-                        <p className="font-medium text-gray-900 mb-2">
-                          {phoneData.seller}
-                        </p>
-                        <button
-                          onClick={handleContactSeller}
-                          className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          Napisz wiadomość
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Basic Specifications */}
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Smartphone className="w-5 h-5 text-purple-600" />
-                      Specyfikacja podstawowa
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Marka i Model */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Package className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Marka:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.brand}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Smartphone className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Model:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.model}
-                        </span>
-                      </div>
-
-                      {/* Kolor */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Palette className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Kolor:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.color}
-                        </span>
-                      </div>
-
-                      {/* System operacyjny */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Smartphone className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">System:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.osType || "Brak danych"}{" "}
-                          {phoneData.specifications.osVersion || ""}
-                        </span>
-                      </div>
-
-                      {/* Pamięć */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <HardDrive className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Pamięć:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.storage}
-                        </span>
-                      </div>
-
-                      {/* RAM */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Package className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">RAM:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.ram}
-                        </span>
-                      </div>
-
-                      {/* Aparat główny */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Camera className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Aparat:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.cameraMP}
-                        </span>
-                      </div>
-
-                      {/* Aparat przedni */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Camera className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Przedni:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.frontCamera ||
-                            "Brak danych"}
-                        </span>
-                      </div>
-
-                      {/* Bateria */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-20">
-                          <Battery className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Bateria:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.batteryCapacity}
-                        </span>
-                      </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">System operacyjny</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.osType || "Brak danych"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Wersja systemu</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.osVersion || "Brak danych"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Pamięć wewnętrzna</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.storage || "Brak danych"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Pamięć RAM</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.ram || "Brak danych"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Aparat główny (MP)</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.cameraMP || "Brak danych"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-gray-700">
+                      <span className="text-gray-400">Aparat przedni (MP)</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.frontCamera || "Brak danych"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2">
+                      <span className="text-gray-400">Pojemność baterii</span>
+                      <span className="text-white font-semibold">
+                        {phoneData.specifications.batteryCapacity ||
+                          "Brak danych"}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Advanced Specifications */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <Monitor className="w-5 h-5 text-gray-600" />
-                      Specyfikacja szczegółowa
-                    </h3>
-                    <div className="space-y-3">
-                      {/* Procesor */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <HardDrive className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Procesor:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.processor || "Brak danych"}
-                        </span>
-                      </div>
+                  {/* Przycisk rozwijania specyfikacji szczegółowej */}
+                  <button
+                    onClick={() => setShowDetailedSpecs(!showDetailedSpecs)}
+                    className="w-full mt-4 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>
+                      {showDetailedSpecs ? "Ukryj" : "Pokaż"} specyfikację
+                      szczegółową
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${
+                        showDetailedSpecs ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-                      {/* GPU */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <HardDrive className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">GPU:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.gpu || "Brak danych"}
-                        </span>
-                      </div>
-
-                      {/* Ekran */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Monitor className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Ekran:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                  {/* Specyfikacja szczegółowa - rozwijana */}
+                  {showDetailedSpecs && (
+                    <div className="mt-4 space-y-2 text-sm border-t border-gray-700 pt-4">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Przekątna ekranu</span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.screenSize || "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Technologia wyświetlacza */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Monitor className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Technologia:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Technologia</span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.displayTech ||
                             "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Rozdzielczość */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Monitor className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Rozdzielczość:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.screenResolution ||
-                            "Brak danych"}
-                        </span>
-                      </div>
-
-                      {/* Częstotliwość odświeżania */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Monitor className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Odświeżanie:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {phoneData.specifications.refreshRate ||
-                            "Brak danych"}
-                        </span>
-                      </div>
-
-                      {/* Wi-Fi */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Wifi className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">Wi-Fi:</span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Wi-Fi</span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.wifi || "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Bluetooth */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Bluetooth className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Bluetooth:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Bluetooth</span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.bluetooth || "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Odporność */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Shield className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Odporność:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Odporność</span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.ipRating || "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Ładowanie przewodowe */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Monitor className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Ładowanie przewodowe:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">
+                          Ładowanie przewodowe
+                        </span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.fastCharging ||
                             "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Ładowanie bezprzewodowe */}
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2 w-48">
-                          <Monitor className="w-4 h-4 text-gray-600" />
-                          <span className="text-sm text-gray-600">
-                            Ładowanie bezprzewodowe:
-                          </span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">
+                          Ładowanie bezprzewodowe
+                        </span>
+                        <span className="text-white font-semibold">
                           {phoneData.specifications.wirelessCharging ||
                             "Brak danych"}
                         </span>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Info */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 mb-4">
-                      Dodatkowe informacje
-                    </h3>
-                    <div className="space-y-3">
-                      {/* Stan urządzenia */}
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-600">
-                          Stan urządzenia:
-                        </span>
-                        <span
-                          className={`text-sm font-medium px-2 py-0.5 rounded ${getConditionColor(
-                            phoneData.condition
-                          )}`}
-                        >
-                          {getConditionLabel(phoneData.condition)}
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Procesor</span>
+                        <span className="text-white font-semibold">
+                          {phoneData.specifications.processor || "Brak danych"}
                         </span>
                       </div>
-
-                      {/* Gwarancja */}
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-600" />
-                        <span className="text-sm text-gray-600">
-                          Gwarancja:
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Karta graficzna</span>
+                        <span className="text-white font-semibold">
+                          {phoneData.specifications.gpu || "Brak danych"}
                         </span>
-                        <span className="text-sm font-medium text-gray-900">
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Rozdzielczość</span>
+                        <span className="text-white font-semibold">
+                          {phoneData.specifications.screenResolution ||
+                            "Brak danych"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">
+                          Częstotliwość odświeżania (Hz)
+                        </span>
+                        <span className="text-white font-semibold">
+                          {phoneData.specifications.refreshRate ||
+                            "Brak danych"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Stan urządzenia</span>
+                        <span className="text-white font-semibold">
+                          {phoneData?.condition === "NEW" && "Nowy"}
+                          {phoneData?.condition === "LIKE_NEW" && "Jak nowy"}
+                          {phoneData?.condition === "VERY_GOOD" &&
+                            "Bardzo dobry"}
+                          {phoneData?.condition === "GOOD" && "Dobry"}
+                          {phoneData?.condition === "ACCEPTABLE" &&
+                            "Zadowalający"}
+                          {!phoneData?.condition && "Brak danych"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-700">
+                        <span className="text-gray-400">Gwarancja</span>
+                        <span className="text-white font-semibold">
                           {phoneData.additionalInfo?.warranty || "Brak danych"}
                         </span>
                       </div>
-
-                      {/* W zestawie */}
-                      <div className="space-y-1">
-                        <div className="text-sm text-gray-600">W zestawie:</div>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-400">
+                          Ładowarka z kablem w zestawie
+                        </span>
+                        <span className="text-white font-semibold">
                           {phoneData.additionalInfo?.includesCharger ? (
-                            <span className="flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                              <Check className="w-3 h-3" /> Ładowarka z kablem
+                            <span className="flex items-center gap-1 text-green-600">
+                              <Check className="w-4 h-4" /> Tak
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-500">
-                              Tylko telefon
-                            </span>
+                            <span className="text-red-600">Nie</span>
                           )}
-                        </div>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Przycisk zgłoszenia na pełną szerokość */}
+                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+                  <button
+                    onClick={() => setShowReportForm(!showReportForm)}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <AlertTriangle className="w-5 h-5" />
+                    Zgłoś ogłoszenie
+                  </button>
+
+                  {showReportForm && token && (
+                    <div className="mt-4">
+                      <h4 className="font-medium mb-4 text-white">
+                        Zgłoś problem z tym ogłoszeniem
+                      </h4>
+
+                      {/* Reason */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Powód zgłoszenia
+                        </label>
+                        <select
+                          value={reportForm.reason}
+                          onChange={(e) => {
+                            setReportForm({
+                              ...reportForm,
+                              reason: e.target.value,
+                            });
+                          }}
+                          className="w-full px-3 py-2 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        >
+                          <option value="">Wybierz powód</option>
+                          <option value="fraud">
+                            Oszustwo / fałszywe ogłoszenie
+                          </option>
+                          <option value="spam">Spam / treści promocyjne</option>
+                          <option value="inappropriate">
+                            Nieodpowiednie treści
+                          </option>
+                          <option value="duplicate">Duplikat ogłoszenia</option>
+                          <option value="fake_seller">
+                            Podejrzany sprzedawca
+                          </option>
+                          <option value="other">Inne</option>
+                        </select>
+                      </div>
+
+                      {/* Description */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                          Opis problemu
+                        </label>
+                        <textarea
+                          value={reportForm.description}
+                          onChange={(e) => {
+                            setReportForm({
+                              ...reportForm,
+                              description: e.target.value,
+                            });
+                          }}
+                          className="w-full px-3 py-2 bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          rows={4}
+                          placeholder="Opisz szczegółowo problem z tym ogłoszeniem..."
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSubmitReport}
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          Wyślij zgłoszenie
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowReportForm(false);
+                            setReportForm({ reason: "", description: "" });
+                          }}
+                          className="bg-purple-600/50 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors font-medium"
+                        >
+                          Anuluj
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!token && (
+                    <p className="text-purple-400 text-sm mt-4 flex items-center">
+                      <LogIn className="w-4 h-4 inline mr-2" />
+                      Zaloguj się, aby zgłosić problem z tym ogłoszeniem
+                    </p>
+                  )}
+
+                  {/* Safety Notice */}
+                  <div className="mt-6 bg-gray-700 border border-gray-600 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-white mb-1">
+                          Zasady bezpieczeństwa
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Zawsze sprawdź telefon przed zakupem. Spotkaj się w
+                          publicznym miejscu. Nie przekazuj pieniędzy przed
+                          sprawdzeniem urządzenia.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Report Section */}
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-gray-900">Zgłoś problem</h3>
-                  {token && (
+              <div className="space-y-4">
+                {/* Tytuł, cena, status */}
+                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+                  <h1 className="text-xl md:text-2xl font-bold text-white mb-4">
+                    {phoneData?.title}
+                  </h1>
+                  <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-4">
+                    {phoneData?.price.toLocaleString()} zł
+                  </div>
+                  <div className="flex items-center gap-2 md:gap-4 text-gray-400 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      <span className="text-sm">
+                        <>
+                          {phoneData?.condition === "NEW" && "Nowy"}
+                          {phoneData?.condition === "LIKE_NEW" && "Jak nowy"}
+                          {phoneData?.condition === "VERY_GOOD" &&
+                            "Bardzo dobry"}
+                          {phoneData?.condition === "GOOD" && "Dobry"}
+                          {phoneData?.condition === "ACCEPTABLE" &&
+                            "Zadowalający"}
+                        </>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      <span className="text-sm">{phoneData?.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      <span className="text-sm">
+                        {phoneData?.views} wyświetleń
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Przyciski ulubione i udostępnij */}
+                  <div className="flex gap-3 mt-4">
                     <button
-                      onClick={() => setShowReportForm(!showReportForm)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm flex items-center gap-2"
+                      onClick={handleToggleFavorite}
+                      className={`flex-1 ${
+                        isFavorite
+                          ? "bg-red-600 hover:bg-red-700"
+                          : "bg-gray-700 hover:bg-gray-600"
+                      } text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2`}
                     >
-                      <AlertTriangle className="w-4 h-4" />
-                      Zgłoś
+                      <Heart
+                        className={`w-5 h-5 ${isFavorite ? "fill-white" : ""}`}
+                      />
+                      <span className="text-sm">
+                        {isFavorite ? "Ulubione" : "Dodaj"}
+                      </span>
                     </button>
-                  )}
+                    <button
+                      onClick={handleShare}
+                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Share2 className="w-5 h-5" />
+                      <span className="text-sm">Udostępnij</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Report Form */}
-                {showReportForm && token && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h4 className="font-medium mb-4 text-red-800">
-                      Zgłoś problem z tym ogłoszeniem
-                    </h4>
+                {/* Informacje o sprzedawcy */}
+                {sellerInfo && (
+                  <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                      {sellerInfo.sellerType === "BUSINESS" ? (
+                        <Building2 className="w-5 h-5 text-blue-400" />
+                      ) : (
+                        <User className="w-5 h-5 text-purple-400" />
+                      )}
+                      Sprzedawca
+                    </h3>
+                    <div className="space-y-3 text-gray-400">
+                      <div>
+                        <p className="font-semibold text-white text-lg">
+                          {sellerInfo.sellerType === "BUSINESS" &&
+                          sellerInfo.companyName
+                            ? sellerInfo.companyName
+                            : sellerInfo.name}
+                        </p>
+                        {sellerInfo.sellerType === "BUSINESS" &&
+                          sellerInfo.name && (
+                            <p className="text-sm text-gray-400 mt-1">
+                              Przedstawiciel: {sellerInfo.name}
+                            </p>
+                          )}
+                        <p className="text-sm text-gray-400 mt-1">
+                          {sellerInfo.sellerType === "BUSINESS"
+                            ? "Sprzedawca firmowy"
+                            : "Sprzedawca prywatny"}
+                        </p>
+                      </div>
 
-                    {/* Reason */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Powód zgłoszenia
-                      </label>
-                      <select
-                        value={reportForm.reason}
-                        onChange={(e) =>
-                          setReportForm({
-                            ...reportForm,
-                            reason: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                      >
-                        <option value="">Wybierz powód</option>
-                        <option value="fraud">
-                          Oszustwo / fałszywe ogłoszenie
-                        </option>
-                        <option value="spam">Spam / treści promocyjne</option>
-                        <option value="inappropriate">
-                          Nieodpowiednie treści
-                        </option>
-                        <option value="duplicate">Duplikat ogłoszenia</option>
-                        <option value="fake_seller">
-                          Podejrzany sprzedawca
-                        </option>
-                        <option value="other">Inne</option>
-                      </select>
-                    </div>
+                      <div className="text-sm">
+                        <p className="text-gray-400">
+                          Na Moblix od {sellerInfo.yearJoined}
+                        </p>
+                      </div>
 
-                    {/* Description */}
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Opis problemu
-                      </label>
-                      <textarea
-                        value={reportForm.description}
-                        onChange={(e) =>
-                          setReportForm({
-                            ...reportForm,
-                            description: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        rows={4}
-                        placeholder="Opisz szczegółowo problem z tym ogłoszeniem..."
-                      />
-                    </div>
+                      {/* Dane kontaktowe */}
+                      {token && (
+                        <div className="border-t border-gray-700 pt-3 space-y-2">
+                          {sellerInfo.email && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="w-4 h-4 text-gray-500" />
+                              <a
+                                href={`mailto:${sellerInfo.email}`}
+                                className="text-purple-400 hover:underline"
+                              >
+                                {sellerInfo.email}
+                              </a>
+                            </div>
+                          )}
+                          {sellerInfo.phone && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="w-4 h-4 text-gray-500" />
+                              <a
+                                href={`tel:${sellerInfo.phone}`}
+                                className="text-purple-400 hover:underline"
+                              >
+                                {sellerInfo.phone}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSubmitReport}
-                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        Wyślij zgłoszenie
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowReportForm(false);
-                          setReportForm({ reason: "", description: "" });
-                        }}
-                        className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                      >
-                        Anuluj
-                      </button>
+                      {/* Dane firmowe - tylko dla firm */}
+                      {sellerInfo.sellerType === "BUSINESS" && (
+                        <div className="border-t border-gray-700 pt-3 space-y-2 text-sm">
+                          {sellerInfo.nip && (
+                            <div className="flex items-start gap-2">
+                              <Hash className="w-4 h-4 text-purple-300 mt-0.5" />
+                              <div>
+                                <span className="text-gray-400">NIP: </span>
+                                <span className="text-white font-medium">
+                                  {sellerInfo.nip}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {sellerInfo.regon && (
+                            <div className="flex items-start gap-2">
+                              <Hash className="w-4 h-4 text-purple-300 mt-0.5" />
+                              <div>
+                                <span className="text-gray-400">REGON: </span>
+                                <span className="text-white font-medium">
+                                  {sellerInfo.regon}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {sellerInfo.address && (
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
+                              <div>
+                                <span className="text-gray-400">Adres: </span>
+                                <span className="text-white font-medium">
+                                  {sellerInfo.address}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {sellerInfo.website && (
+                            <div className="flex items-start gap-2">
+                              <Globe className="w-4 h-4 text-gray-500 mt-0.5" />
+                              <a
+                                href={sellerInfo.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-purple-600 hover:underline font-medium"
+                              >
+                                {sellerInfo.website}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!token && (
+                        <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 mt-3">
+                          <p className="text-sm text-purple-400 flex items-center gap-2 font-medium">
+                            <LogIn className="w-4 h-4" />
+                            Zaloguj się, aby zobaczyć dane kontaktowe
+                          </p>
+                        </div>
+                      )}
+
+                      {!isCurrentUserOwner() && (
+                        <button
+                          onClick={handleContactSeller}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 mt-3"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          Wyślij wiadomość
+                        </button>
+                      )}
+                      {isCurrentUserOwner() && (
+                        <div className="bg-gray-700 border border-gray-600 rounded-lg p-3 mt-3">
+                          <p className="text-sm text-gray-400 text-center font-medium">
+                            To jest Twoje ogłoszenie
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {!token && (
-                  <p className="text-gray-500 text-sm">
-                    <LogIn className="w-4 h-4 inline mr-2" />
-                    Zaloguj się, aby zgłosić problem z tym ogłoszeniem
-                  </p>
-                )}
-              </div>
-
-              {/* Safety Notice */}
-              <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-yellow-800 mb-1">
-                      Zasady bezpieczeństwa
-                    </h4>
-                    <p className="text-sm text-yellow-700">
-                      Zawsze sprawdź telefon przed zakupem. Spotkaj się w
-                      publicznym miejscu. Nie przekazuj pieniędzy przed
-                      sprawdzeniem urządzenia.
+                {/* Inne przykładowe ogłoszenia */}
+                <div className="bg-gray-800 rounded-lg p-6 md:p-8 shadow-xl border border-gray-700 mt-40 relative top-32 min-h-[600px] max-w-4xl mx-auto">
+                  <h3 className="font-bold text-white mb-6 flex items-center gap-2 text-xl">
+                    <ShoppingBag className="w-6 h-6 text-purple-300" />
+                    Inne przykładowe ogłoszenia na tej stronie
+                  </h3>
+                  {sellerAds.length > 0 ? (
+                    <div className="space-y-6">
+                      {sellerAds.map((ad) => (
+                        <div
+                          key={ad.id}
+                          onClick={() => navigate(`/smartfon/${ad.id}`)}
+                          className="flex gap-6 p-6 bg-gray-700/50 hover:bg-gray-700 rounded-xl cursor-pointer transition-colors border-2 border-gray-600 hover:border-purple-500"
+                        >
+                          <img
+                            src={ad.images[0]}
+                            alt={ad.title}
+                            className="w-40 h-40 object-cover rounded-lg"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium text-xl truncate mb-3">
+                              {ad.title}
+                            </h4>
+                            <p className="text-purple-400 font-bold text-2xl mb-3">
+                              {ad.price.toLocaleString()} zł
+                            </p>
+                            <div className="flex items-center gap-2 text-gray-400 text-base">
+                              <MapPin className="w-5 h-5" />
+                              <span>{ad.location}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm">
+                      Brak innych ogłoszeń
                     </p>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1627,36 +1658,40 @@ const SmartphoneDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="panel-footer w-full py-2 mt-auto">
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap justify-center items-center h-full gap-x-1 gap-y-2 sm:gap-4 md:gap-6 lg:gap-8 text-xs xs:text-sm sm:text-base px-1 sm:px-2">
-          <a
-            href="/zasady-bezpieczenstwa"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Zasady bezpieczeństwa
-          </a>
-
-          <a
-            href="/jak-dziala-moblix"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Jak działa MobliX
-          </a>
-          <a
-            href="/regulamin"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Regulamin
-          </a>
-          <a
-            href="/polityka-cookies"
-            className="text-black hover:text-gray-600 transition-colors py-1 text-center"
-          >
-            Polityka cookies
-          </a>
+      {/* Czarna stopka */}
+      <footer className="bg-black text-white py-6 mt-auto">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <a
+              href="/jak-dziala-moblix"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Jak działa MobliX
+            </a>
+            <a
+              href="/polityka-cookies"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Polityka cookies
+            </a>
+            <a
+              href="/regulamin"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/zasady-bezpieczenstwa"
+              className="hover:text-purple-400 transition-colors"
+            >
+              Zasady bezpieczeństwa
+            </a>
+          </div>
+          <div className="text-center mt-4 text-gray-400 text-xs">
+            © 2024 MobliX. Wszystkie prawa zastrzeżone.
+          </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

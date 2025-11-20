@@ -11,6 +11,7 @@ com\example\backend\service\JwtService.class
 com\example\backend\service\UserService.class
 com\example\backend\model\Notification.class
 com\example\backend\others\AdvertisementStatus.class
+com\example\backend\model\ContentPage.class
 com\example\backend\BackendApplication.class
 com\example\backend\service\SearchLogService.class
 com\example\backend\controller\SearchLogController$SearchLogRequest.class
@@ -33,6 +34,7 @@ com\example\backend\others\NotificationType.class
 com\example\backend\repository\SearchLogRepository.class
 com\example\backend\model\Advertisement.class
 com\example\backend\others\RegisterRequest.class
+com\example\backend\service\AdminStatsService.class
 com\example\backend\dto\LogDTO.class
 com\example\backend\model\Image.class
 com\example\backend\others\ReviewReportRequest.class
@@ -68,6 +70,7 @@ com\example\backend\repository\LocationRepository.class
 com\example\backend\repository\ImageRepository.class
 com\example\backend\service\LogService.class
 com\example\backend\controller\UserController.class
+com\example\backend\repository\ContentPageRepository.class
 com\example\backend\repository\ReportSummaryRepository.class
 com\example\backend\controller\SearchLogController.class
 com\example\backend\dto\AdvertisementReportDTO.class
@@ -75,10 +78,13 @@ com\example\backend\repository\UserRepository.class
 com\example\backend\repository\ConversationRepository.class
 com\example\backend\controller\LogController.class
 com\example\backend\model\SmartphoneSpecification.class
+com\example\backend\service\ContentPageService.class
 com\example\backend\controller\FavoriteAdController.class
 com\example\backend\dto\UserModerationDTO.class
 com\example\backend\others\ReportStatus.class
+com\example\backend\controller\AdminStatsController.class
 com\example\backend\model\User.class
+com\example\backend\controller\ContentPageController.class
 com\example\backend\security\JwtAuthenticationFilter.class
 com\example\backend\repository\ReportRepository.class
 com\example\backend\repository\SmartphoneSpecificationRepository.class
