@@ -21,8 +21,11 @@ import {
   Users,
   LogOut,
   ChevronDown,
-  LogIn,
   X,
+  Shield,
+  Building2,
+  ShoppingBag,
+  Save,
 } from "lucide-react";
 import { voivodeships } from "../../data/locations";
 
@@ -34,7 +37,7 @@ type JwtPayLoad = {
   exp: number;
 };
 
-// ---- Add after JwtPayLoad ----
+// -------- Typy danych (proste interfejsy) --------
 type Specification = {
   brand?: string;
   model?: string;
@@ -59,39 +62,40 @@ type Specification = {
   refreshRate?: string;
 };
 
-type Advertisement = {
-  id?: number;
-  title?: string;
-  price?: number;
-  description?: string;
-  imageUrls?: string[];
-  region?: string;
-  voivodeship?: string;
-  city?: string;
-  locationName?: string;
-  specification?: Specification;
-  includesCharger?: boolean;
-  warranty?: string;
-  condition?: string;
-  sellerType?: "personal" | "business";
-};
-
 type UserData = {
   accountType?: string;
-  // add other fields you need here
+};
+
+// Typ dla ogłoszenia używany w komponencie
+type Advertisement = {
+  id?: number | string;
+  title?: string;
+  price?: number | null;
+  description?: string | null;
+  imageUrls?: string[];
+  region?: string | null;
+  voivodeship?: string | null;
+  city?: string | null;
+  locationName?: string | null;
+  specification?: Specification | null;
+  includesCharger?: boolean;
+  warranty?: string | null;
+  condition?: string | null;
+  sellerType?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 const EditAd: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Header-related states
+  // ---------- Stan komponentu (pola formularza i UI) ----------
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [favoriteCount, setFavoriteCount] = useState(0);
 
-  // Form state (same fields as AddAdvertisement)
   const [title, setTitle] = useState<string>("");
   const [price, setPrice] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -99,13 +103,11 @@ const EditAd: React.FC = () => {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState<string>("");
 
-  // Location fields
   const [selectedVoivodeship, setSelectedVoivodeship] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [citySearchTerm, setCitySearchTerm] = useState<string>("");
   const [showCityDropdown, setShowCityDropdown] = useState<boolean>(false);
 
-  // Required specs
   const [brand, setBrand] = useState<string>("");
   const [model, setModel] = useState<string>("");
   const [color, setColor] = useState<string>("");
@@ -117,7 +119,6 @@ const EditAd: React.FC = () => {
   const [frontCamera, setFrontCamera] = useState<string>("");
   const [batteryCapacity, setBatteryCapacity] = useState<string>("");
 
-  // Optional specs
   const [displaySize, setDisplaySize] = useState<string>("");
   const [displayTech, setDisplayTech] = useState<string>("");
   const [wifi, setWifi] = useState<string>("");
@@ -130,63 +131,57 @@ const EditAd: React.FC = () => {
   const [screenResolution, setScreenResolution] = useState<string>("");
   const [refreshRate, setRefreshRate] = useState<string>("");
 
-  // Additional info
   const [includesCharger, setIncludesCharger] = useState<boolean>(false);
   const [warranty, setWarranty] = useState<string>("");
   const [condition, setCondition] = useState<string>("NEW");
 
-  // Additional UI
   const [showAdditionalSpecs, setShowAdditionalSpecs] =
     useState<boolean>(false);
-
-  // Seller type
   const [sellerType, setSellerType] = useState<"personal" | "business">(
     "personal"
   );
-  const [userAccountType, setUserAccountType] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auth
+  // ---------- Autoryzacja ----------
   const token = localStorage.getItem("token");
   let isAdmin = false;
   let isUser = false;
   let isStaff = false;
-  let isAuthenticated = false;
+
   if (token) {
     try {
       const decoded = jwtDecode<JwtPayLoad>(token);
       isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
       isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
       isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
-      if (decoded.exp && Date.now() / 1000 < decoded.exp)
-        isAuthenticated = true;
+      // token expiration check kept for potential use elsewhere
     } catch (e) {
       console.error("Invalid token", e);
     }
   }
 
-  // Fetch ad and prefill (data logic copied from AddAdvertisement)
+  // ---------- Pobieranie ogłoszenia i wypełnianie formularza ----------
   useEffect(() => {
     const fetchAd = async () => {
       if (!id) return;
       try {
+        // Typujemy odpowiedź jako Advertisement
         const resp = await axios.get<Advertisement>(
           `/api/advertisements/${id}`,
           {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           }
         );
-        const ad = resp.data as Advertisement;
+        const ad = resp.data;
 
+        // Wypełnij pola formularza z odpowiedzi
         setTitle(ad.title ?? "");
         setPrice(ad.price?.toString() ?? "");
         setDescription(ad.description ?? "");
         setImageUrls(ad.imageUrls ?? []);
-
         setSelectedVoivodeship(ad.region ?? ad.voivodeship ?? "");
         setSelectedCity(ad.city ?? ad.locationName ?? "");
-
         setBrand(ad.specification?.brand ?? "");
         setModel(ad.specification?.model ?? "");
         setColor(ad.specification?.color ?? "");
@@ -197,7 +192,6 @@ const EditAd: React.FC = () => {
         setRearCameras(ad.specification?.rearCameras ?? "");
         setFrontCamera(ad.specification?.frontCamera ?? "");
         setBatteryCapacity(ad.specification?.batteryCapacity ?? "");
-
         setDisplaySize(ad.specification?.displaySize ?? "");
         setDisplayTech(ad.specification?.displayTech ?? "");
         setWifi(ad.specification?.wifi ?? "");
@@ -209,11 +203,10 @@ const EditAd: React.FC = () => {
         setGpu(ad.specification?.gpu ?? "");
         setScreenResolution(ad.specification?.screenResolution ?? "");
         setRefreshRate(ad.specification?.refreshRate ?? "");
-
         setIncludesCharger(ad.includesCharger ?? false);
         setWarranty(ad.warranty ?? "");
         setCondition(ad.condition ?? "NEW");
-        setSellerType(ad.sellerType ?? "personal");
+        setSellerType((ad.sellerType as "personal" | "business") ?? "personal");
       } catch (err) {
         console.error("Error fetching ad:", err);
       }
@@ -222,7 +215,7 @@ const EditAd: React.FC = () => {
     fetchAd();
   }, [id, token]);
 
-  // Fetch user account type (same as AddAdvertisement)
+  // ---------- Pobierz dane użytkownika (accountType) ----------
   useEffect(() => {
     const fetchUserData = async () => {
       if (!token) return;
@@ -230,8 +223,7 @@ const EditAd: React.FC = () => {
         const res = await axios.get<UserData>("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const userData = res.data as UserData;
-        setUserAccountType(userData.accountType || null);
+        const userData = res.data;
         if (userData.accountType === "business") setSellerType("business");
       } catch (e) {
         console.error("Error fetching user data", e);
@@ -240,7 +232,7 @@ const EditAd: React.FC = () => {
     fetchUserData();
   }, [token]);
 
-  // Fetch favorite count for header badge
+  // ---------- Pobierz liczbę ulubionych do paska nagłówka ----------
   useEffect(() => {
     const fetchFavoriteCount = async () => {
       if (!token) return;
@@ -259,7 +251,7 @@ const EditAd: React.FC = () => {
     fetchFavoriteCount();
   }, [token]);
 
-  // Click outside dropdown
+  // ---------- Dropdown: klik poza elementem zamyka dropdown ----------
   useEffect(() => {
     const h = (event: MouseEvent) => {
       if (
@@ -279,6 +271,7 @@ const EditAd: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
+  // ---------- Logowanie wyszukiwania z paska (navbar) ----------
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();
@@ -311,7 +304,7 @@ const EditAd: React.FC = () => {
     }
   };
 
-  // Images handling (copied from AddAdvertisement; small improvements)
+  // ---------- Obsługa zdjęć (pliki + linki) ----------
   const onSelectImages = (fileList: FileList | null) => {
     if (fileList) {
       const newFiles = Array.from(fileList);
@@ -378,7 +371,7 @@ const EditAd: React.FC = () => {
     }
   };
 
-  // Submit -> PUT to update ad (payload structure taken from AddAdvertisement)
+  // ---------- Zatwierdzenie formularza: PUT aktualizacja ogłoszenia ----------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return alert("Brak ID ogłoszenia");
@@ -404,6 +397,7 @@ const EditAd: React.FC = () => {
       }
       finalImageUrls = [...finalImageUrls, ...imageUrls];
 
+      // Backend expects flattened fields (CreateAdvertisementDTO), not nested `specification`.
       const payload = {
         title,
         description,
@@ -412,29 +406,28 @@ const EditAd: React.FC = () => {
         region: selectedVoivodeship,
         city: selectedCity,
         imageUrls: finalImageUrls,
-        specification: {
-          brand,
-          model,
-          color,
-          osType,
-          storage,
-          ram,
-          osVersion: osVersion || null,
-          rearCameras: rearCameras || null,
-          frontCamera: frontCamera || null,
-          batteryCapacity: batteryCapacity || null,
-          displaySize: displaySize || null,
-          displayTech: displayTech || null,
-          wifi: wifi || null,
-          bluetooth: bluetooth || null,
-          ipRating: ipRating || null,
-          fastCharging: fastCharging || null,
-          wirelessCharging: wirelessCharging || null,
-          processor: processor || null,
-          gpu: gpu || null,
-          screenResolution: screenResolution || null,
-          refreshRate: refreshRate || null,
-        },
+        // Flattened specification fields required by backend DTO
+        brand,
+        model,
+        color,
+        osType,
+        osVersion: osVersion || null,
+        storage,
+        ram,
+        rearCameras: rearCameras || null,
+        frontCamera: frontCamera || null,
+        batteryCapacity: batteryCapacity || null,
+        displaySize: displaySize || null,
+        displayTech: displayTech || null,
+        wifi: wifi || null,
+        bluetooth: bluetooth || null,
+        ipRating: ipRating || null,
+        fastCharging: fastCharging || null,
+        wirelessCharging: wirelessCharging || null,
+        processor: processor || null,
+        gpu: gpu || null,
+        screenResolution: screenResolution || null,
+        refreshRate: refreshRate || null,
         includesCharger,
         warranty: warranty || null,
         condition,
@@ -463,7 +456,7 @@ const EditAd: React.FC = () => {
     }
   };
 
-  // UI helpers for city dropdown
+  // ---------- Pomocnik: zamykanie dropdown z listą miast ----------
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -476,10 +469,15 @@ const EditAd: React.FC = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [showCityDropdown]);
 
-  // Render
+  // NOTE: Editing is handled via the main form submit (handleSubmit).
+  // Removed modal/list-edit helpers and references to global variables
+  // like `setAds`, `setShowEditModal` and `editImages` which do not exist
+  // in this standalone edit page.
+
+  // ---------- Render (UI) ----------
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
-      {/* Header (kept like previous EditAd) */}
+      {/* Nagłówek - czarny pasek (taki jak w MainPanel) */}
       <nav className="bg-black text-white px-4 py-3 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div
@@ -529,6 +527,11 @@ const EditAd: React.FC = () => {
               title="Ulubione"
             >
               <Heart className="w-6 h-6" />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                  {favoriteCount > 9 ? "9+" : favoriteCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() =>
@@ -563,7 +566,8 @@ const EditAd: React.FC = () => {
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
-                        Twoje ogłoszenia
+                        <ShoppingBag className="w-4 h-4 text-blue-400" />
+                        Ogłoszenia
                       </button>
                       <button
                         onClick={() => {
@@ -572,13 +576,61 @@ const EditAd: React.FC = () => {
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
+                        <MessageSquare className="w-4 h-4 text-green-400" />
                         Chat
                       </button>
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/user/personaldetails");
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                      >
+                        <User className="w-4 h-4 text-purple-300" />
+                        Profil
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/admin");
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                        >
+                          <Shield className="w-4 h-4 text-red-400" />
+                          Panel administratora
+                        </button>
+                      )}
+                      {(isAdmin || isStaff) && (
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/staffpanel");
+                          }}
+                        >
+                          <Users className="w-4 h-4 text-orange-400" />
+                          Panel pracownika
+                        </button>
+                      )}
+                      {(isAdmin || isStaff || isUser) && (
+                        <button
+                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            navigate("/userpanel");
+                          }}
+                        >
+                          <User className="w-4 h-4 text-cyan-400" />
+                          Panel użytkownika
+                        </button>
+                      )}
                       <div className="border-t border-purple-400 my-1"></div>
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
                       >
+                        <LogOut className="w-4 h-4 text-red-400" />
                         Wyloguj
                       </button>
                     </>
@@ -590,7 +642,7 @@ const EditAd: React.FC = () => {
                       }}
                       className="w-full text-left px-4 py-2 bg-black hover:bg-black flex items-center gap-3 text-white rounded-lg"
                     >
-                      <LogIn className="w-4 h-4 text-white" /> Zaloguj się
+                      Zaloguj się
                     </button>
                   )}
                 </div>
@@ -600,13 +652,13 @@ const EditAd: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main content: keep EditAd visual style (black panel, purple border) */}
+      {/* Główne okno formularza */}
       <div className="flex-1 px-4 py-8">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-black text-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 border-4 border-purple-600 animate-fade-in">
+          <div className="bg-black rounded-2xl shadow-2xl p-6 sm:p-8 md:p-10 border-4 border-purple-600 animate-fade-in">
             <div className="flex items-center gap-3 mb-8">
               <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg shadow-lg">
-                <Plus className="h-8 w-8 text-white" />
+                <Smartphone className="h-8 w-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-white">
@@ -619,9 +671,7 @@ const EditAd: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Basic info, photos, specs and additional info blocks
-                  — structure and classes intentionally match previous EditAd,
-                  but field names and behavior were taken from AddAdvertisement */}
+              {/* Informacje podstawowe */}
               <div className="border-2 border-purple-500 rounded-xl p-6 bg-black">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-purple-600 p-2 rounded-lg">
@@ -678,7 +728,7 @@ const EditAd: React.FC = () => {
                   />
                 </div>
 
-                {/* Location */}
+                {/* Lokalizacja - wybór województwa i miasta */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -687,6 +737,7 @@ const EditAd: React.FC = () => {
                     <select
                       value={selectedVoivodeship}
                       onChange={(e) => {
+                        // Ustaw województwo i czyść miasto (użytkownik wybierze ponownie)
                         setSelectedVoivodeship(e.target.value);
                         setSelectedCity("");
                       }}
@@ -757,7 +808,7 @@ const EditAd: React.FC = () => {
                 </div>
               </div>
 
-              {/* Photos */}
+              {/* Zdjęcia */}
               <div className="border border-purple-500 rounded-xl p-6 bg-black">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
@@ -840,10 +891,10 @@ const EditAd: React.FC = () => {
                               src={url}
                               alt={`link${idx}`}
                               className="w-12 h-12 object-cover rounded"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  "https://dummyimage.com/48x48/ccc/fff&text=Error";
-                              }}
+                              onError={(e) =>
+                                ((e.target as HTMLImageElement).src =
+                                  "https://dummyimage.com/48x48/ccc/fff&text=Error")
+                              }
                             />
                             <span className="flex-1 text-sm text-white truncate">
                               {url}
@@ -859,6 +910,7 @@ const EditAd: React.FC = () => {
                         ))}
                       </div>
                     )}
+
                     <p className="text-xs text-gray-400 mt-2">
                       💡 Możesz dodać łącznie do 6 zdjęć (pliki + linki). Dla
                       Imgur: użyj bezpośredniego linku do obrazu
@@ -867,7 +919,7 @@ const EditAd: React.FC = () => {
                 </div>
               </div>
 
-              {/* Specs */}
+              {/* Specyfikacja */}
               <div className="border-2 border-green-200 rounded-xl p-6 bg-black">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-green-600 p-2 rounded-lg">
@@ -933,7 +985,7 @@ const EditAd: React.FC = () => {
                   </div>
                 </div>
 
-                {/* rest of specs (os, memory, camera, battery) */}
+                {/* Pozostałe pola specyfikacji */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="text-sm font-medium text-gray-300 mb-2 block">
@@ -1060,7 +1112,7 @@ const EditAd: React.FC = () => {
 
                 {showAdditionalSpecs && (
                   <div className="mt-4 space-y-6 p-4 bg-gray-900 rounded-lg border border-gray-600">
-                    {/* additional inputs kept minimal and matching AddAdvertisement */}
+                    {/* Dodatkowe pola */}
                     <div>
                       <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <MonitorIcon className="h-5 w-5" /> Wyświetlacz
@@ -1171,7 +1223,7 @@ const EditAd: React.FC = () => {
                 )}
               </div>
 
-              {/* Additional info */}
+              {/* Dodatkowe informacje */}
               <div className="border border-purple-500 rounded-xl p-6 bg-black">
                 <h3 className="text-lg font-semibold text-white mb-4">
                   Dodatkowe informacje
@@ -1218,7 +1270,7 @@ const EditAd: React.FC = () => {
                       checked={includesCharger}
                       onChange={(e) => setIncludesCharger(e.target.checked)}
                       className="w-4 h-4 text-purple-600 bg-gray-900 border-gray-600 rounded"
-                    />{" "}
+                    />
                     <span className="text-gray-300">
                       Ładowarka z kablem w zestawie
                     </span>
@@ -1226,11 +1278,20 @@ const EditAd: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-center pt-6">
+              {/* Przyciski */}
+              <div className="flex gap-3 justify-end mt-6 pt-6 border-t border-gray-700">
+                <button
+                  onClick={() => navigate("/user/your-ads")}
+                  type="button"
+                  className="px-6 py-2 rounded-lg border border-gray-600 text-white hover:bg-gray-700 transition-colors"
+                >
+                  Anuluj
+                </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 px-8 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all"
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
                 >
+                  <Save className="h-5 w-5" />
                   Zapisz zmiany
                 </button>
               </div>
@@ -1239,7 +1300,7 @@ const EditAd: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer (kept like before) */}
+      {/* Stopka */}
       <footer className="bg-black text-white py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
