@@ -21,6 +21,8 @@ import {
   Users,
   LogOut,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X,
   Shield,
   Building2,
@@ -142,6 +144,31 @@ const EditAd: React.FC = () => {
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ---------- Zmiana kolejnosci wyswietlania zdjec ----------
+  const moveLocalImage = (index: number, direction: "left" | "right") => {
+    setImages((prev) => {
+      const arr = [...prev];
+      const newIndex = direction === "left" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= arr.length) return prev;
+      const tmp = arr[newIndex];
+      arr[newIndex] = arr[index];
+      arr[index] = tmp;
+      return arr;
+    });
+  };
+
+  const moveImageUrl = (index: number, direction: "left" | "right") => {
+    setImageUrls((prev) => {
+      const arr = [...prev];
+      const newIndex = direction === "left" ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= arr.length) return prev;
+      const tmp = arr[newIndex];
+      arr[newIndex] = arr[index];
+      arr[index] = tmp;
+      return arr;
+    });
+  };
 
   // ---------- Autoryzacja ----------
   const token = localStorage.getItem("token");
@@ -840,13 +867,34 @@ const EditAd: React.FC = () => {
                               alt={`preview${idx}`}
                               className="w-16 h-16 object-cover rounded-lg"
                             />
-                            <button
-                              type="button"
-                              onClick={() => removeLocalImage(idx)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
+                            <div className="absolute -top-2 -right-2 flex flex-col gap-1">
+                              <button
+                                type="button"
+                                onClick={() => moveLocalImage(idx, "left")}
+                                disabled={idx === 0}
+                                className="bg-gray-700 text-white rounded p-1"
+                                title="Przenieś w lewo"
+                              >
+                                <ChevronLeft className="h-3 w-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveLocalImage(idx, "right")}
+                                disabled={idx === images.length - 1}
+                                className="bg-gray-700 text-white rounded p-1"
+                                title="Przenieś w prawo"
+                              >
+                                <ChevronRight className="h-3 w-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeLocalImage(idx)}
+                                className="bg-red-500 text-white rounded-full p-1 mt-1"
+                                title="Usuń"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -899,13 +947,34 @@ const EditAd: React.FC = () => {
                             <span className="flex-1 text-sm text-white truncate">
                               {url}
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => removeImageUrl(idx)}
-                              className="p-1 text-red-500 hover:bg-red-100 rounded"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => moveImageUrl(idx, "left")}
+                                disabled={idx === 0}
+                                className="p-1 bg-gray-700 text-white rounded"
+                                title="Przenieś w lewo"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveImageUrl(idx, "right")}
+                                disabled={idx === imageUrls.length - 1}
+                                className="p-1 bg-gray-700 text-white rounded"
+                                title="Przenieś w prawo"
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeImageUrl(idx)}
+                                className="p-1 text-red-500 hover:bg-red-100 rounded"
+                                title="Usuń"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

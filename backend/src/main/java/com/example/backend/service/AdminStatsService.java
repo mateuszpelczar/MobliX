@@ -10,6 +10,7 @@ import com.example.backend.others.AdvertisementStatus;
 import com.example.backend.others.ReportStatus;
 import com.example.backend.repository.AdvertisementReportRepository;
 import com.example.backend.repository.AdvertisementRepository;
+import com.example.backend.repository.LogRepository;
 import com.example.backend.repository.SearchLogRepository;
 import com.example.backend.repository.UserRepository;
 
@@ -20,15 +21,17 @@ public class AdminStatsService {
   private final AdvertisementRepository advertisementRepository;
   private final AdvertisementReportRepository reportRepository;
   private final SearchLogRepository searchLogRepository;
+  private final LogRepository logRepository;
 
   public AdminStatsService(UserRepository userRepository, AdvertisementRepository advertisementRepository,AdvertisementReportRepository reportRepository,
-  SearchLogRepository searchLogRepository
+  SearchLogRepository searchLogRepository, LogRepository logRepository
   )
   {
     this.userRepository = userRepository;
     this.advertisementRepository = advertisementRepository;
     this.reportRepository = reportRepository;
     this.searchLogRepository = searchLogRepository;
+    this.logRepository = logRepository;
   }
 
   public Map<String,Object> getAdminDashboard(){
@@ -76,7 +79,14 @@ public class AdminStatsService {
         // Użytkownicy, którzy dodali ogłoszenia
         long adActiveUsers = advertisementRepository.countDistinctUserByCreatedAtAfter(startOfDay);
 
-        return searchActiveUsers + adActiveUsers;
+        long loginDistinct = 0;
+        try{
+          loginDistinct = logRepository.countDistinctUserEmailByCategoryAndTimestampAfter("authentication", startOfDay);
+      } catch (Exception ex) {
+        loginDistinct = 0;
+      }
+       
+        return searchActiveUsers + adActiveUsers + loginDistinct;
     }
 
     private long getNewAdsLast24Hours() {

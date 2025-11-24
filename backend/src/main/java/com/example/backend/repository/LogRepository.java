@@ -41,4 +41,10 @@ public interface LogRepository extends  JpaRepository<Log,Long>{
   @Query("UPDATE Log l SET l.user = null WHERE l.user.id = :userId")
   void nullifyUserIdForUser(@Param("userId") Long userId);
   
+  @Query("SELECT COUNT(l) FROM Log l WHERE l.category = :category AND l.timestamp >= :since")
+  long countByCategoryAndTimestampAfter(@Param("category") String category, @Param("since") java.time.LocalDateTime since);
+
+    @Query("SELECT COUNT(DISTINCT l.userEmail) FROM Log l WHERE l.category = :category AND l.timestamp >= :since")
+  long countDistinctUserEmailByCategoryAndTimestampAfter(@Param("category") String category, @Param("since") java.time.LocalDateTime since);
+
 }

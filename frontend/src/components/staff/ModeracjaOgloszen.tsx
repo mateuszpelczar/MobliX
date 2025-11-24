@@ -37,6 +37,7 @@ type Advertisement = {
   createdAt: string;
   userName: string; // Backend wysyła userName zamiast user object
   imageUrls: string[]; // Backend wysyła imageUrls zamiast images array
+  approvedAt?: string | null; // local field to track when staff approved an ad (optional)
 };
 
 const ModeracjaOgloszen: React.FC = () => {
@@ -124,13 +125,31 @@ const ModeracjaOgloszen: React.FC = () => {
 
       const data = await response.json();
       console.log("Fetched advertisements data:", data);
-      // Sort by createdAt descending (newest first)
-      const sortedData = data.sort((a: Advertisement, b: Advertisement) => {
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      });
-      setAdvertisements(sortedData);
+      // Ensure PENDING ads appear first, then ACTIVE/others.
+      const sortAdvertisements = (arr: Advertisement[]) =>
+        arr.slice().sort((a: Advertisement, b: Advertisement) => {
+          // PENDING always first
+          if (a.status === "PENDING" && b.status !== "PENDING") return -1;
+          if (b.status === "PENDING" && a.status !== "PENDING") return 1;
+
+          // If both ACTIVE, prefer approvedAt (most recently approved first)
+          if (a.status === "ACTIVE" && b.status === "ACTIVE") {
+            const aApproved = a.approvedAt
+              ? new Date(a.approvedAt).getTime()
+              : 0;
+            const bApproved = b.approvedAt
+              ? new Date(b.approvedAt).getTime()
+              : 0;
+            if (aApproved || bApproved) return bApproved - aApproved;
+          }
+
+          // Fallback: newest created first
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
+      setAdvertisements(sortAdvertisements(data));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Wystąpił błąd");
     } finally {
@@ -210,8 +229,39 @@ const ModeracjaOgloszen: React.FC = () => {
         throw new Error("Błąd podczas aktualizacji statusu");
       }
 
-      // Odśwież listę ogłoszeń
-      fetchAdvertisements();
+      // Update local state so PENDING ads show first and newly accepted stays on top
+      setAdvertisements((prev) => {
+        const updated = prev.map((ad) =>
+          ad.id === id
+            ? {
+                ...ad,
+                status,
+                approvedAt:
+                  status === "ACTIVE"
+                    ? new Date().toISOString()
+                    : ad.approvedAt,
+              }
+            : ad
+        );
+        // inline sorting: PENDING first, then ACTIVE by approvedAt, then newest created
+        return updated.slice().sort((a: Advertisement, b: Advertisement) => {
+          if (a.status === "PENDING" && b.status !== "PENDING") return -1;
+          if (b.status === "PENDING" && a.status !== "PENDING") return 1;
+          if (a.status === "ACTIVE" && b.status === "ACTIVE") {
+            const aApproved = a.approvedAt
+              ? new Date(a.approvedAt).getTime()
+              : 0;
+            const bApproved = b.approvedAt
+              ? new Date(b.approvedAt).getTime()
+              : 0;
+            if (aApproved || bApproved) return bApproved - aApproved;
+          }
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+      });
+
       alert(
         `Ogłoszenie zostało ${
           status === "ACTIVE" ? "zatwierdzone" : "odrzucone"

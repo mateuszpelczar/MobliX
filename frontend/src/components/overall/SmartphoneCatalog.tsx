@@ -95,6 +95,7 @@ const SmartphoneCatalog: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favoriteCount, setFavoriteCount] = useState(0);
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
 
   // Pobieranie smartfonów z API
   useEffect(() => {
@@ -121,8 +122,8 @@ const SmartphoneCatalog: React.FC = () => {
                 : ["https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia"],
             seller: ad.userName || "Użytkownik",
             dateAdded: ad.createdAt || ad.dateAdded,
-            views: 0, // Backend nie ma jeszcze tego pola
-            likes: 0, // Backend nie ma jeszcze tego pola
+            views: ad.viewCount ?? 0,
+            likes: 0,
             description: ad.description,
             specifications: {
               storage: ad.specification?.storage || "",
@@ -164,6 +165,7 @@ const SmartphoneCatalog: React.FC = () => {
   // Fetch favorite count
   useEffect(() => {
     fetchFavoriteCount();
+    fetchUserFavorites();
   }, []);
 
   const fetchFavoriteCount = async () => {
@@ -180,6 +182,59 @@ const SmartphoneCatalog: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching favorite count:", error);
+    }
+  };
+
+  const fetchUserFavorites = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await axios.get<any[]>(
+        "http://localhost:8080/api/favorites",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (response.data) {
+        const ids = response.data
+          .map((ad) => ad.id)
+          .filter((id) => typeof id === "number");
+        setFavoriteIds(ids);
+      }
+    } catch (error) {
+      console.error("Error fetching user favorites:", error);
+    }
+  };
+
+  const toggleFavorite = async (e: React.MouseEvent, adId: number) => {
+    e.stopPropagation();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      if (favoriteIds.includes(adId)) {
+        await axios.delete(`http://localhost:8080/api/favorites/${adId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavoriteIds((prev) => prev.filter((id) => id !== adId));
+        setFavoriteCount((c) => Math.max(0, c - 1));
+      } else {
+        await axios.post(
+          `http://localhost:8080/api/favorites/${adId}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setFavoriteIds((prev) => [...prev, adId]);
+        setFavoriteCount((c) => c + 1);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
     }
   };
 
@@ -831,12 +886,12 @@ const SmartphoneCatalog: React.FC = () => {
                               )}
                             </div>
 
-                            <div className="flex items-center gap-2 text-gray-400 text-xs">
+                            <div className="flex items-center gap-2 text-white-400 text-xs">
                               <MapPin className="w-3 h-3" />
                               <span>{phone.location}</span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-gray-500 text-xs">
+                            <div className="flex items-center gap-2 text-white-500 text-xs">
                               <Calendar className="w-3 h-3" />
                               <span>
                                 {new Date(phone.dateAdded).toLocaleDateString(
@@ -845,14 +900,29 @@ const SmartphoneCatalog: React.FC = () => {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-4 text-gray-500 text-xs">
+                            <div className="flex items-center gap-4 text-white-500 text-xs">
                               <div className="flex items-center gap-1">
                                 <Eye className="w-3 h-3" />
                                 <span>{phone.views}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Heart className="w-3 h-3" />
-                                <span>{phone.likes}</span>
+                                <button
+                                  onClick={(e) => toggleFavorite(e, phone.id)}
+                                  className="p-0"
+                                  title={
+                                    favoriteIds.includes(phone.id)
+                                      ? "Usuń z ulubionych"
+                                      : "Dodaj do ulubionych"
+                                  }
+                                >
+                                  <Heart
+                                    className={`w-3 h-3 ${
+                                      favoriteIds.includes(phone.id)
+                                        ? "text-red-500"
+                                        : "text-gray-400"
+                                    }`}
+                                  />
+                                </button>
                               </div>
                             </div>
 
