@@ -11,7 +11,8 @@ target/
 out/
 
 # Spring / app config (sekrety)
-backend/src/main/resources/application-prod.properties
+backend/src/main/resources/application.properties
+
 .env
 *.env
 .env.*
