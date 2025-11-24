@@ -37,7 +37,7 @@ type Notification = {
     | "AD_DELETED"
     | "AD_ENDED"
     | "TERMS_UPDATED"
-    | "NEW_MESSAGE";
+    | "MESSAGE_RECEIVED";
   title: string;
   message: string;
   createdAt: string;
@@ -214,7 +214,7 @@ const Notifications: React.FC = () => {
       case "AD_DELETED":
       case "AD_ENDED":
         return <X className="w-6 h-6 text-red-400" />;
-      case "NEW_MESSAGE":
+      case "MESSAGE_RECEIVED":
         return <MessageSquare className="w-6 h-6 text-orange-400" />;
       default:
         return <Bell className="w-6 h-6 text-gray-400" />;

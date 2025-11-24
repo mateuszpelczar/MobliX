@@ -429,7 +429,7 @@ const WatchedAds: React.FC = () => {
                 Dodaj ogłoszenia do ulubionych klikając ikonę serduszka
               </p>
               <button
-                onClick={() => navigate("/smartfonecatalog")}
+                onClick={() => navigate("/smartfony")}
                 className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/50"
               >
                 Przeglądaj ogłoszenia

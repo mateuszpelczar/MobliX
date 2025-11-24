@@ -1001,7 +1001,7 @@ const SmartphoneDetails: React.FC = () => {
                     </>
                   ) : (
                     <button
-                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
+                      className="w-full text-left px-4 py-2 bg-black-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/login");

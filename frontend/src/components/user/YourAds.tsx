@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import axios from "axios";
 import {
   MessageSquare,
   ShoppingBag,
@@ -343,6 +342,55 @@ const YourAds: React.FC = () => {
 
   const handleWatchedAdsClick = () => {
     navigate("/user/watchedads");
+  };
+
+  // Inicjuje edycję ogłoszenia: najpierw ustawiamy status na PENDING
+  // (trafia do moderacji), aktualizujemy lokalny stan i przechodzimy do formularza edycji.
+  const handleEditInitiate = async (adId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      console.log(`Initiating edit for ad ${adId}: setting status to PENDING`);
+
+      const resp = await fetch(
+        `http://localhost:8080/api/advertisements/${adId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: "PENDING" }),
+        }
+      );
+
+      console.log("Patch status response:", resp.status);
+
+      if (resp.ok) {
+        // Aktualizuj lokalny stan - oznacz ogłoszenie jako oczekujące
+        setAds((prev) =>
+          prev.map((a) => (a.id === adId ? { ...a, status: "pending" } : a))
+        );
+
+        // Zamknij dropdown i przejdź do edycji
+        setAdDropdownOpen(null);
+        navigate(`/user/edit-ad/${adId}`);
+      } else {
+        const errText = await resp.text();
+        console.error("Nie udało się ustawić statusu na PENDING:", errText);
+        // Nawet jeśli status PATCH nie zadziała, przejdź do edycji (backend i tak ustawi PENDING przy PUT)
+        setAdDropdownOpen(null);
+        navigate(`/user/edit-ad/${adId}`);
+      }
+    } catch (error) {
+      console.error("Błąd podczas inicjacji edycji:", error);
+      setAdDropdownOpen(null);
+      navigate(`/user/edit-ad/${adId}`);
+    }
   };
 
   return (
@@ -690,8 +738,7 @@ const YourAds: React.FC = () => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate(`/user/edit-ad/${ad.id}`);
-                                    setAdDropdownOpen(null);
+                                    handleEditInitiate(ad.id);
                                   }}
                                   className="w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600 flex items-center gap-2"
                                 >
@@ -732,8 +779,7 @@ const YourAds: React.FC = () => {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate(`/user/edit-ad/${ad.id}`);
-                                      setAdDropdownOpen(null);
+                                      handleEditInitiate(ad.id);
                                     }}
                                     className="w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600 flex items-center gap-2"
                                   >
