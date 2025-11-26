@@ -167,12 +167,32 @@ public class NotificationService {
         for (FavoriteAd favorite : favorites) {
             Notification notification = new Notification();
             notification.setUser(favorite.getUser());
-            notification.setAdvertisement(advertisement);
-            notification.setType(NotificationType.AD_DELETED);
+            // Do not set the Advertisement entity here to avoid referencing a transient/soon-to-be-deleted
+            // entity during the same transaction. Store no direct link; front-end can use title/message.
+            notification.setAdvertisement(null);
+            // AD_DELETED is not present in DB CHECK constraint (V7 migration)
+            // use ADVERTISEMENT_DELETED which is allowed by the constraint
+            notification.setType(NotificationType.ADVERTISEMENT_DELETED);
             notification.setTitle(advertisement.getTitle());
             notification.setMessage("Ogłoszenie zostało usunięte i nie jest już dostępne");
             
             notificationRepository.save(notification);
+        }
+    }
+
+    // Create ad-deleted notifications for a list of user IDs. Does not reference Advertisement entity.
+    @Transactional
+    public void createAdDeletedNotificationForUserIds(List<Long> userIds, String advertisementTitle) {
+        for (Long userId : userIds) {
+            userRepository.findById(userId).ifPresent(user -> {
+                Notification notification = new Notification();
+                notification.setUser(user);
+                notification.setAdvertisement(null);
+                notification.setType(NotificationType.ADVERTISEMENT_DELETED);
+                notification.setTitle(advertisementTitle);
+                notification.setMessage("Ogłoszenie zostało usunięte i nie jest już dostępne");
+                notificationRepository.save(notification);
+            });
         }
     }
 

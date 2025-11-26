@@ -62,7 +62,20 @@ public class AdminStatsService {
 
   private long getTodayActivityCount(){
     LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
-    return searchLogRepository.countByCreatedAtAfter(startOfDay);
+    long searchCount = 0;
+    long loginCount = 0;
+    try {
+      searchCount = searchLogRepository.countByCreatedAtAfter(startOfDay);
+    } catch (Exception ex) {
+      searchCount = 0;
+    }
+    try {
+      // zliczamy wszystkie logowania (każde logowanie jako jedno zdarzenie)
+      loginCount = logRepository.countByCategoryAndTimestampAfter("authentication", startOfDay);
+    } catch (Exception ex) {
+      loginCount = 0;
+    }
+    return searchCount + loginCount;
   }
 
   private long getNewUsersLast7Days() {
@@ -117,7 +130,27 @@ public class AdminStatsService {
       LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(2);
 
       long todayActivity = getTodayActivityCount();
-      long yesterdayActivity = searchLogRepository.countByCreatedAtBetween(twoDaysAgo, yesterday);
+
+      // wyszukiwania z okresu twoDaysAgo..yesterday (tak jak wcześniej)
+      long yesterdaySearch = 0;
+      try {
+        yesterdaySearch = searchLogRepository.countByCreatedAtBetween(twoDaysAgo, yesterday);
+      } catch (Exception ex) {
+        yesterdaySearch = 0;
+      }
+
+      // logowania w okresie twoDaysAgo..yesterday
+      long yesterdayLogin = 0;
+      try {
+        long sinceTwoDays = logRepository.countByCategoryAndTimestampAfter("authentication", twoDaysAgo);
+        long sinceYesterday = logRepository.countByCategoryAndTimestampAfter("authentication", yesterday);
+        long between = sinceTwoDays - sinceYesterday;
+        yesterdayLogin = Math.max(0, between);
+      } catch (Exception ex) {
+        yesterdayLogin = 0;
+      }
+
+      long yesterdayActivity = yesterdaySearch + yesterdayLogin;
 
       if(yesterdayActivity == 0) return 0;
       return ((double) (todayActivity - yesterdayActivity) / yesterdayActivity) * 100;

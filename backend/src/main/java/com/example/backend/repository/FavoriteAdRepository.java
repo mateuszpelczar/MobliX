@@ -23,6 +23,7 @@ public interface FavoriteAdRepository extends JpaRepository<FavoriteAd, Long> {
     boolean existsByUserAndAdvertisement(User user, Advertisement advertisement);
     void deleteByUserAndAdvertisement(User user, Advertisement advertisement);
     long countByUser(User user);
+
     @Modifying
     @Query("DELETE FROM FavoriteAd f WHERE f.advertisement.id = :advertisementId")
     void deleteByAdvertisementId(@Param("advertisementId") Long advertisementId);
@@ -31,4 +32,10 @@ public interface FavoriteAdRepository extends JpaRepository<FavoriteAd, Long> {
     @Transactional
     @Query("DELETE FROM FavoriteAd f WHERE f.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+    
+    // @Modifying
+    // @Transactional
+    // @Query("DELETE FROM FavoriteAd f WHERE f.advertisement.id = :adId")
+    // void deleteByAdvertisementId(@Param("adId") Long advertisementId);
+
 }

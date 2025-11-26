@@ -11,7 +11,7 @@ target/
 out/
 
 # Spring / app config (sekrety)
-backend/src/main/resources/application.properties
+C:\MobliX\backend\src\main\resources\application.properties
 
 .env
 *.env

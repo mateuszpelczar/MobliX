@@ -23,6 +23,9 @@ public interface AdvertisementReportRepository extends JpaRepository<Advertiseme
   //zgloszenia dla konkretnego ogloszenia
   List<AdvertisementReport> findByAdvertisementIdOrderByCreatedAtDesc(Long advertisementId);
 
+  // usuwa zgloszenia powiazane z ogloszeniem
+  void deleteByAdvertisementId(Long advertisementId);
+
   // do staff i admin panel
   long countByStatus(ReportStatus status);
 

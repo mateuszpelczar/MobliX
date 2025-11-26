@@ -72,6 +72,31 @@ interface Advertisement {
   imageUrls: string[];
 }
 
+// -------- Typy danych (proste interfejsy) --------
+type Specification = {
+  brand?: string;
+  model?: string;
+  color?: string;
+  osType?: string;
+  osVersion?: string;
+  storage?: string;
+  ram?: string;
+  rearCameras?: string;
+  frontCamera?: string;
+  batteryCapacity?: string;
+  displaySize?: string;
+  displayTech?: string;
+  wifi?: string;
+  bluetooth?: string;
+  ipRating?: string;
+  fastCharging?: string;
+  wirelessCharging?: string;
+  processor?: string;
+  gpu?: string;
+  screenResolution?: string;
+  refreshRate?: string;
+};
+
 // Helper function to normalize image URLs
 const normalizeImageUrl = (imageUrl: string): string => {
   // If already a full URL, return as is

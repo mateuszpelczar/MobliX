@@ -25,9 +25,9 @@ import {
 
 type Conversation = {
   id: number;
-  advertisementId: number;
-  advertisementTitle: string;
-  advertisementImageUrl: string;
+  advertisementId: number | null;
+  advertisementTitle: string | null;
+  advertisementImageUrl: string | null;
   otherUserName: string;
   otherUserEmail: string;
   lastMessage: string;
@@ -171,7 +171,12 @@ const MessageComponent: React.FC = () => {
         }
       );
 
-      setSelectedConversation(response.data);
+      // Ensure the conversation is not presented as tied to the advertisement
+      const conv = response.data;
+      conv.advertisementId = null;
+      conv.advertisementTitle = null;
+      conv.advertisementImageUrl = null;
+      setSelectedConversation(conv);
       await fetchMessages(response.data.id);
 
       // Odśwież listę konwersacji
@@ -267,11 +272,12 @@ const MessageComponent: React.FC = () => {
         return;
       }
 
+      // Send message without advertisement association
       await axios.post(
         "http://localhost:8080/api/messages/send",
         {
           receiverEmail: selectedConversation.otherUserEmail,
-          advertisementId: selectedConversation.advertisementId,
+          // do not include advertisementId to keep messages ad-agnostic
           content: newMessage,
         },
         {
@@ -680,16 +686,22 @@ const MessageComponent: React.FC = () => {
                         <h3 className="font-semibold text-white">
                           {selectedConversation.otherUserName}
                         </h3>
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/smartfon/${selectedConversation.advertisementId}`
-                            )
-                          }
-                          className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
-                        >
-                          {selectedConversation.advertisementTitle}
-                        </button>
+                        {selectedConversation.advertisementId ? (
+                          <button
+                            onClick={() =>
+                              navigate(
+                                `/smartfon/${selectedConversation.advertisementId}`
+                              )
+                            }
+                            className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            {selectedConversation.advertisementTitle}
+                          </button>
+                        ) : (
+                          <div className="text-xs text-gray-400">
+                            Ogólna konwersacja
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

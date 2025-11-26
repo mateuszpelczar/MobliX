@@ -4,16 +4,13 @@ import java.time.LocalDateTime;
 
 public class ConversationDTO {
     private Long id;
-    private Long advertisementId;
-    private String advertisementTitle;
-    private String advertisementImageUrl;
     private String otherUserName;
     private String otherUserEmail;
     private String lastMessage;
     private LocalDateTime lastMessageTime;
     private Integer unreadCount;
 
-    // Getters and Setters
+  
     public Long getId() {
         return id;
     }
@@ -22,29 +19,7 @@ public class ConversationDTO {
         this.id = id;
     }
 
-    public Long getAdvertisementId() {
-        return advertisementId;
-    }
-
-    public void setAdvertisementId(Long advertisementId) {
-        this.advertisementId = advertisementId;
-    }
-
-    public String getAdvertisementTitle() {
-        return advertisementTitle;
-    }
-
-    public void setAdvertisementTitle(String advertisementTitle) {
-        this.advertisementTitle = advertisementTitle;
-    }
-
-    public String getAdvertisementImageUrl() {
-        return advertisementImageUrl;
-    }
-
-    public void setAdvertisementImageUrl(String advertisementImageUrl) {
-        this.advertisementImageUrl = advertisementImageUrl;
-    }
+    
 
     public String getOtherUserName() {
         return otherUserName;

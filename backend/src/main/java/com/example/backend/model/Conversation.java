@@ -11,8 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+ 
 
-//klasa reprezentujaca rozmowy miedzy uzytkownikami
 @Entity
 @Table(name="conversations")
 public class Conversation {
@@ -22,9 +22,6 @@ public class Conversation {
 
     private String topic;
 
-    @ManyToOne
-    @JoinColumn(name = "advertisement_id")
-    private Advertisement advertisement;
 
     @ManyToOne
     @JoinColumn(name = "user1_id")
@@ -43,11 +40,10 @@ public class Conversation {
     // Konstruktory
     public Conversation() {}
 
-    public Conversation(Long id, String topic, Advertisement advertisement, User user1, User user2, 
+    public Conversation(Long id, String topic, User user1, User user2, 
                        LocalDateTime createdAt, LocalDateTime updatedAt, List<Message> messages) {
         this.id = id;
         this.topic = topic;
-        this.advertisement = advertisement;
         this.user1 = user1;
         this.user2 = user2;
         this.createdAt = createdAt;
@@ -55,20 +51,18 @@ public class Conversation {
         this.messages = messages;
     }
 
-    // Gettery
     public Long getId() { return id; }
     public String getTopic() { return topic; }
-    public Advertisement getAdvertisement() { return advertisement; }
+    // Advertisement snapshot removed
     public User getUser1() { return user1; }
     public User getUser2() { return user2; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public List<Message> getMessages() { return messages; }
 
-    // Settery
     public void setId(Long id) { this.id = id; }
     public void setTopic(String topic) { this.topic = topic; }
-    public void setAdvertisement(Advertisement advertisement) { this.advertisement = advertisement; }
+    
     public void setUser1(User user1) { this.user1 = user1; }
     public void setUser2(User user2) { this.user2 = user2; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

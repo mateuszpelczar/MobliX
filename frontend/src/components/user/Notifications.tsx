@@ -53,6 +53,8 @@ type JwtPayLoad = {
   exp: number;
 };
 
+const ITEMS_PER_PAGE = 3;
+
 const Notifications: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -61,6 +63,9 @@ const Notifications: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favoriteCount, setFavoriteCount] = useState(0);
+
+  // pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Fetch notifications from API
   useEffect(() => {
@@ -91,7 +96,24 @@ const Notifications: React.FC = () => {
 
     fetchNotifications();
     fetchFavoriteCount();
+    // eslint-disable-next-line
   }, [navigate]);
+
+  // keep currentPage valid when notifications change (e.g. delete)
+  useEffect(() => {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(notifications.length / ITEMS_PER_PAGE)
+    );
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+    // if there are no notifications, reset to page 1
+    if (notifications.length === 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line
+  }, [notifications]);
 
   const fetchFavoriteCount = async () => {
     const token = localStorage.getItem("token");
@@ -238,6 +260,21 @@ const Notifications: React.FC = () => {
   };
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  // pagination calculations
+  const totalPages = Math.max(
+    1,
+    Math.ceil(notifications.length / ITEMS_PER_PAGE)
+  );
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = startIdx + ITEMS_PER_PAGE;
+  const displayedNotifications = notifications.slice(startIdx, endIdx);
+
+  const goToPage = (page: number) => {
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    setCurrentPage(page);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
@@ -468,7 +505,7 @@ const Notifications: React.FC = () => {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/50 border-2 border-purple-400"
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-bold transition-all duration-200"
                 >
                   <CheckCircle className="w-5 h-5" />
                   <span>Oznacz wszystkie jako przeczytane</span>
@@ -501,75 +538,127 @@ const Notifications: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`group relative bg-gray-800/50 backdrop-blur-sm border rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 hover:border-purple-500 cursor-pointer ${
-                    !notification.isRead
-                      ? "border-purple-500 bg-purple-900/20"
-                      : "border-gray-700"
-                  }`}
-                >
-                  {!notification.isRead && (
-                    <div className="absolute top-4 right-4 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                  )}
+            <>
+              <div className="space-y-4">
+                {displayedNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`group relative bg-gray-800/50 backdrop-blur-sm border rounded-xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/20 hover:border-purple-500 cursor-pointer ${
+                      !notification.isRead
+                        ? "border-purple-500 bg-purple-900/20"
+                        : "border-gray-700"
+                    }`}
+                  >
+                    {!notification.isRead && (
+                      <div className="absolute top-4 right-4 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                    )}
 
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-12 h-12 rounded-full bg-gray-900/50 flex items-center justify-center border border-gray-700 group-hover:border-purple-500 transition-colors">
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-grow space-y-2 min-w-0">
-                      <h3 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">
-                        {notification.title}
-                      </h3>
-
-                      <p className="text-gray-300 leading-relaxed">
-                        {notification.message}
-                      </p>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-700/50">
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Clock className="w-4 h-4" />
-                          <span>{formatTimestamp(notification.createdAt)}</span>
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className="flex-shrink-0 mt-1">
+                        <div className="w-12 h-12 rounded-full bg-gray-900/50 flex items-center justify-center border border-gray-700 group-hover:border-purple-500 transition-colors">
+                          {getNotificationIcon(notification.type)}
                         </div>
+                      </div>
 
-                        <div className="flex gap-2">
-                          {!notification.isRead && (
+                      {/* Content */}
+                      <div className="flex-grow space-y-2 min-w-0">
+                        <h3 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">
+                          {notification.title}
+                        </h3>
+
+                        <p className="text-gray-300 leading-relaxed">
+                          {notification.message}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-700/50">
+                          <div className="flex items-center gap-2 text-sm text-gray-400">
+                            <Clock className="w-4 h-4" />
+                            <span>
+                              {formatTimestamp(notification.createdAt)}
+                            </span>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {!notification.isRead && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notification.id);
+                                }}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg transition-all duration-200"
+                              >
+                                <Eye className="w-4 h-4" />
+                                Przeczytane
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleMarkAsRead(notification.id);
+                                handleDeleteNotification(notification.id);
                               }}
-                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg transition-all duration-200"
+                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200"
                             >
-                              <Eye className="w-4 h-4" />
-                              Przeczytane
+                              <Trash2 className="w-4 h-4" />
+                              Usuń
                             </button>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteNotification(notification.id);
-                            }}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Usuń
-                          </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-md ${
+                      currentPage === 1
+                        ? "bg-gray-700 text-gray-400"
+                        : "bg-purple-600 text-white hover:bg-purple-700"
+                    }`}
+                  >
+                    Poprzednia
+                  </button>
+
+                  {/* page numbers */}
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (p) => (
+                        <button
+                          key={p}
+                          onClick={() => goToPage(p)}
+                          className={`w-9 h-9 flex items-center justify-center rounded-md ${
+                            p === currentPage
+                              ? "bg-white text-purple-700 font-bold"
+                              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-md ${
+                      currentPage === totalPages
+                        ? "bg-gray-700 text-gray-400"
+                        : "bg-purple-600 text-white hover:bg-purple-700"
+                    }`}
+                  >
+                    Następna
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>

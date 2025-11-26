@@ -347,7 +347,15 @@ const SmartphoneDetails: React.FC = () => {
             condition: ad.condition || "nowy",
             images:
               ad.imageUrls && ad.imageUrls.length > 0
-                ? ad.imageUrls
+                ? ad.imageUrls.map((u: string) => {
+                    if (!u)
+                      return "https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia";
+                    // If the backend returned a relative path like "/uploads/images/.." or "/images/...",
+                    // request it from the backend server instead of the Vite dev server.
+                    if (u.startsWith("http")) return u;
+                    if (u.startsWith("/")) return `http://localhost:8080${u}`;
+                    return u;
+                  })
                 : ["https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia"],
             seller: ad.userName || "Użytkownik",
             sellerPhone: "Dostępny po zalogowaniu",

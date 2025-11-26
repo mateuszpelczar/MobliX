@@ -1,5 +1,6 @@
 package com.example.backend.repository;
 
+import com.example.backend.model.FavoriteAd;
 import com.example.backend.model.Notification;
 import com.example.backend.model.User;
 
@@ -24,8 +25,21 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     
     void deleteByUser(User user);
 
+    // Usuń powiadomienia powiązane z danym ogłoszeniem (jeśli Notification ma pole 'advertisement')
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Notification n WHERE n.advertisement.id = :adId")
+    void deleteByAdvertisementId(@Param("adId") Long advertisementId);
+
+    // Jeżeli istnieje metoda usuwająca powiadomienia użytkownika:
     @Modifying
     @Transactional
     @Query("DELETE FROM Notification n WHERE n.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    
 }
+
+
+
+

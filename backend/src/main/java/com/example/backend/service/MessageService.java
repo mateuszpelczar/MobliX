@@ -29,8 +29,6 @@ public class MessageService {
     @Autowired
     private ConversationRepository conversationRepository;
 
-    @Autowired
-    private AdvertisementRepository advertisementRepository;
 
     @Autowired
     private LogService logService;
@@ -53,8 +51,6 @@ public class MessageService {
         message.setReceiver(ad.getUser());
         message.setMessageContent(messageContent);
         message.setMessageType("REJECTION");
-        message.setAdvertisementId(ad.getId());
-        message.setAdvertisementTitle(ad.getTitle());
         message.setCanReply(false);
         message.setIsRead(false);
         message.setCreatedAt(LocalDateTime.now());
@@ -89,7 +85,6 @@ public class MessageService {
         return userRepository.save(systemUser);
     }
 
-    // ============ NOWE METODY DLA SYSTEMU WIADOMOŚCI ============
 
     /**
      * Pobierz wszystkie konwersacje użytkownika
@@ -109,28 +104,24 @@ public class MessageService {
     /**
      * Pobierz lub utwórz konwersację
      */
-    public ConversationDTO getOrCreateConversation(String userEmail, String otherUserEmail, Long advertisementId) {
+        public ConversationDTO getOrCreateConversation(String userEmail, String otherUserEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         User otherUser = userRepository.findByEmail(otherUserEmail)
                 .orElseThrow(() -> new RuntimeException("Other user not found"));
-        Advertisement advertisement = advertisementRepository.findById(advertisementId)
-                .orElseThrow(() -> new RuntimeException("Advertisement not found"));
-
-        // Sprawdź czy konwersacja już istnieje
+        // Najpierw spróbuj znaleźć istniejącą konwersację pomiędzy tymi użytkownikami
         Conversation conversation = conversationRepository
-                .findByAdvertisementAndUser1AndUser2(advertisement, user, otherUser)
-                .or(() -> conversationRepository.findByAdvertisementAndUser1AndUser2(advertisement, otherUser, user))
-                .orElseGet(() -> {
-                    // Utwórz nową konwersację
-                    Conversation newConv = new Conversation();
-                    newConv.setAdvertisement(advertisement);
-                    newConv.setUser1(user);
-                    newConv.setUser2(otherUser);
-                    newConv.setCreatedAt(LocalDateTime.now());
-                    newConv.setUpdatedAt(LocalDateTime.now());
-                    return conversationRepository.save(newConv);
-                });
+            .findByUsers(user, otherUser)
+            .orElseGet(() -> {
+                // Jeśli nie istnieje, utwórz nową konwersację niezwiązaną z ogłoszeniem
+                Conversation newConv = new Conversation();
+                newConv.setUser1(user);
+                newConv.setUser2(otherUser);
+                newConv.setCreatedAt(LocalDateTime.now());
+                newConv.setUpdatedAt(LocalDateTime.now());
+                // conversations are created detached from advertisements
+                return conversationRepository.save(newConv);
+            });
 
         return mapToConversationDTO(conversation, user);
     }
@@ -160,7 +151,7 @@ public class MessageService {
     /**
      * Wyślij wiadomość
      */
-    public MessageDTO sendMessage(String senderEmail, String receiverEmail, Long advertisementId, String content) {
+    public MessageDTO sendMessage(String senderEmail, String receiverEmail, String content) {
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
         User receiver = userRepository.findByEmail(receiverEmail)
@@ -171,22 +162,17 @@ public class MessageService {
             throw new RuntimeException("Nie możesz wysłać wiadomości do samego siebie");
         }
         
-        Advertisement advertisement = advertisementRepository.findById(advertisementId)
-                .orElseThrow(() -> new RuntimeException("Advertisement not found"));
-
-        // Pobierz lub utwórz konwersację
+        // Use a single conversation per user-pair. Find it first; create it if missing.
         Conversation conversation = conversationRepository
-                .findByAdvertisementAndUser1AndUser2(advertisement, sender, receiver)
-                .or(() -> conversationRepository.findByAdvertisementAndUser1AndUser2(advertisement, receiver, sender))
-                .orElseGet(() -> {
-                    Conversation newConv = new Conversation();
-                    newConv.setAdvertisement(advertisement);
-                    newConv.setUser1(sender);
-                    newConv.setUser2(receiver);
-                    newConv.setCreatedAt(LocalDateTime.now());
-                    newConv.setUpdatedAt(LocalDateTime.now());
-                    return conversationRepository.save(newConv);
-                });
+            .findByUsers(sender, receiver)
+            .orElseGet(() -> {
+                Conversation newConv = new Conversation();
+                newConv.setUser1(sender);
+                newConv.setUser2(receiver);
+                newConv.setCreatedAt(LocalDateTime.now());
+                newConv.setUpdatedAt(LocalDateTime.now());
+                return conversationRepository.save(newConv);
+            });
 
         // Utwórz wiadomość
         Message message = new Message();
@@ -202,12 +188,13 @@ public class MessageService {
         conversation.setUpdatedAt(LocalDateTime.now());
         conversationRepository.save(conversation);
 
-        // Loguj wysłanie wiadomości
+        // Log wysłania wiadomości.
+        String subject = "ogólna konwersacja";
         logService.saveLog(
             "INFO",
             "message",
             "Wysłano wiadomość",
-            "Od: " + senderEmail + " do: " + receiverEmail + " w sprawie: " + advertisement.getTitle(),
+            "Od: " + senderEmail + " do: " + receiverEmail + " w sprawie: " + subject,
             "MessageService",
             sender,
             null
@@ -237,15 +224,7 @@ public class MessageService {
     private ConversationDTO mapToConversationDTO(Conversation conversation, User currentUser) {
         ConversationDTO dto = new ConversationDTO();
         dto.setId(conversation.getId());
-        dto.setAdvertisementId(conversation.getAdvertisement().getId());
-        dto.setAdvertisementTitle(conversation.getAdvertisement().getTitle());
-
-        // Pobierz pierwsze zdjęcie ogłoszenia
-        if (conversation.getAdvertisement().getImages() != null && 
-            !conversation.getAdvertisement().getImages().isEmpty()) {
-            dto.setAdvertisementImageUrl(conversation.getAdvertisement().getImages().get(0).getUrl());
-        }
-
+        
         // Określ drugiego użytkownika
         User otherUser = conversation.getUser1().equals(currentUser) 
                 ? conversation.getUser2() 

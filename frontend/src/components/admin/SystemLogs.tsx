@@ -54,8 +54,8 @@ interface SystemLog {
   message: string;
   details: string | null;
   source: string;
-  userEmail: string | null; // ⚠️ ZMIANA: było "user", teraz "userEmail"
-  ipAddress: string | null; // ⚠️ ZMIANA: było "ip", teraz "ipAddress"
+  userEmail: string | null;
+  ipAddress: string | null;
 }
 
 // Interfejs odpowiedzi z paginacją (Page<LogDTO> z backendu)
@@ -246,7 +246,7 @@ const SystemLogs: React.FC = () => {
       case "admin":
         return { icon: Shield, color: "text-red-700", text: "Administracja" };
       default:
-        return { icon: FileText, color: "text-gray-600", text: "Inne" };
+        return { icon: FileText, color: "text-white-600", text: "Inne" };
     }
   };
 

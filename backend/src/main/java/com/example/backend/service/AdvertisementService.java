@@ -15,7 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 
-
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 @Transactional
@@ -42,6 +44,12 @@ public class AdvertisementService {
     private final LogService logService;
     private NotificationService notificationService;
     private final UserRepository userRepository;
+    private final FavoriteAdRepository favoriteAdRepository;
+    private final NotificationRepository notificationRepository;
+    private final AdvertisementReportRepository advertisementReportRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
     
 
     @Value("${file.upload-dir}")
@@ -54,7 +62,12 @@ public class AdvertisementService {
                                 ImageRepository imageRepository,
                                 MessageService messageService,
                                 LogService logService,
-                                UserRepository userRepository) {
+                                UserRepository userRepository,
+                                FavoriteAdRepository favoriteAdRepository,
+                                NotificationRepository notificationRepository,
+                                MessageRepository messageRepository,
+                                ConversationRepository conversationRepository,
+                                AdvertisementReportRepository advertisementReportRepository) {
         this.advertisementRepository = advertisementRepository;
         this.userService = userService;
         this.categoryRepository = categoryRepository;
@@ -63,9 +76,12 @@ public class AdvertisementService {
         this.messageService = messageService;
         this.logService = logService;
         this.userRepository = userRepository;
+        this.favoriteAdRepository = favoriteAdRepository;
+        this.notificationRepository = notificationRepository;
+        this.advertisementReportRepository = advertisementReportRepository;
     }
 
-    // Setter injection to avoid circular dependency
+    
     @org.springframework.beans.factory.annotation.Autowired
     public void setNotificationService(NotificationService notificationService) {
         this.notificationService = notificationService;
@@ -132,22 +148,14 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             try {
                 currentUser = userService.findByEmail(userEmail);
             } catch (Exception e) {
-                // jeśli użytkownik nie zostanie znaleziony, currentUser pozostanie null
+                
             }
         }
     } catch (Exception e) {
         // Użytkownik niezalogowany lub brak kontekstu uwierzytelnienia
     }
     
-    // logService.saveLog(
-    //     "INFO",
-    //     "advertisement",
-    //     "Wyświetlenie ogłoszenia: " + ad.getTitle(),
-    //     "ID: " + advertisementId + ", Liczba wyświetleń: " + ad.getViewCount(),
-    //     "AdvertisementService",
-    //     currentUser,
-    //     request != null ? request.getRemoteAddr() : null
-    // );
+   
 }
 
     public AdvertisementResponseDTO createAdvertisement(CreateAdvertisementDTO createDto, String userEmail) {
@@ -223,7 +231,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             }
             advertisement.setImages(images);
         }
-        // Logowanie utworzenia ogłoszenia do pliku userpanel
+      
          logService.logUserActivity(user, 
         "Utworzono ogłoszenie: " + advertisement.getTitle(), 
         "advertisementId:" + advertisement.getId());
@@ -281,7 +289,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         
         User user = userService.findByEmail(userEmail);
         
-        // Allow: owner, ADMIN, or STAFF to update status
+       
         if (!advertisement.getUser().getId().equals(user.getId()) && 
             user.getRole() != Role.ADMIN && 
             user.getRole() != Role.STAFF) {
@@ -289,8 +297,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
         
         advertisement.setStatus(AdvertisementStatus.valueOf(status));
-        
-        // Jeśli status to REJECTED, ustaw powód odrzucenia
+       
         if ("REJECTED".equals(status) && rejectReason != null && !rejectReason.trim().isEmpty()) {
             advertisement.setRejectReason(rejectReason);
 
@@ -303,7 +310,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
 
         } else if (!"REJECTED".equals(status)) {
-            // Jeśli status zmieniony na inny niż REJECTED, wyczyść powód odrzucenia
+            
             advertisement.setRejectReason(null);
         }
         
@@ -313,9 +320,9 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
     }
 
     public String saveImage(MultipartFile file) throws IOException {
-        // Pobierz oryginalne rozszerzenie pliku
+       
         String originalFilename = file.getOriginalFilename();
-        String extension = ".png"; // domyślnie png
+        String extension = ".png"; 
         
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
@@ -347,37 +354,137 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         return advertisementRepository.findByStatus(status);
     }
 
+    // Helper: delete a stored image file given its stored URL (e.g. "/uploads/images/uuid.jpg" or "uploads/images/uuid.jpg")
+    private void deleteImageFileByUrl(String url) {
+        if (url == null || url.trim().isEmpty()) return;
+        try {
+            String normalized = url;
+            if (normalized.startsWith("/")) normalized = normalized.substring(1);
+            // Expecting uploads/images/<filename>
+            if (normalized.startsWith("uploads/images/")) {
+                String filename = normalized.substring("uploads/images/".length());
+                Path filePath = Paths.get(uploadDir).resolve(filename);
+                try {
+                    Files.deleteIfExists(filePath);
+                } catch (Exception e) {
+                    // swallow: don't fail delete flow because file removal failed
+                    System.err.println("Failed to delete image file: " + filePath + "; " + e.getMessage());
+                }
+            } else {
+                // If url was stored differently, try to extract filename and delete
+                Path filePath = Paths.get(uploadDir).resolve(Paths.get(normalized).getFileName());
+                try {
+                    Files.deleteIfExists(filePath);
+                } catch (Exception e) {
+                    System.err.println("Failed to delete image file fallback: " + filePath + "; " + e.getMessage());
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    
+    private String normalizeString(String s) {
+        if (s == null) return "";
+        return s.replaceAll("\\s+", " ").trim();
+    }
+
+    private boolean listsEqualAsStrings(List<String> a, List<String> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            if (!String.valueOf(a.get(i)).equals(String.valueOf(b.get(i)))) return false;
+        }
+        return true;
+    }
+
     public AdvertisementResponseDTO updateAdvertisement(Long id, CreateAdvertisementDTO updateDto, String userEmail) {
         Advertisement advertisement = advertisementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Advertisement not found"));
         
         User user = userService.findByEmail(userEmail);
         
-        // Only owner, ADMIN, or STAFF can update
+      
         if (!advertisement.getUser().getId().equals(user.getId()) && 
             user.getRole() != Role.ADMIN && 
             user.getRole() != Role.STAFF) {
             throw new RuntimeException("Unauthorized to update this advertisement");
         }
         
-        // Track changes for notifications
+      
         boolean priceChanged = false;
         boolean imagesChanged = false;
         boolean descriptionChanged = false;
+        boolean titleChanged = false;
+        boolean specChanged = false;
         Double oldPrice = advertisement.getPrice();
         int oldImageCount = advertisement.getImages() != null ? advertisement.getImages().size() : 0;
         
-        // Check for price change
-        if (!advertisement.getPrice().equals(updateDto.getPrice())) {
+       
+        if (!normalizeString(advertisement.getTitle()).equals(normalizeString(updateDto.getTitle()))) {
+            titleChanged = true;
+        }
+      
+        Double newPrice = updateDto.getPrice() == null ? 0.0 : updateDto.getPrice();
+        Double oldPriceSafe = advertisement.getPrice() == null ? 0.0 : advertisement.getPrice();
+        if (!oldPriceSafe.equals(newPrice)) {
             priceChanged = true;
         }
-        
-        // Check for description change
-        if (!advertisement.getDescription().equals(updateDto.getDescription())) {
+      
+        if (!normalizeString(advertisement.getDescription()).equals(normalizeString(updateDto.getDescription()))) {
             descriptionChanged = true;
         }
         
-        // Update basic fields
+        boolean categoryChanged = false;
+        if (updateDto.getCategoryId() != null && advertisement.getCategory() != null) {
+            if (!updateDto.getCategoryId().equals(advertisement.getCategory().getId())) {
+                categoryChanged = true;
+            }
+        } else if ((updateDto.getCategoryId() == null && advertisement.getCategory() != null) ||
+                   (updateDto.getCategoryId() != null && advertisement.getCategory() == null)) {
+            categoryChanged = true;
+        }
+        
+      
+        boolean locationChanged = false;
+        if (updateDto.getLocationId() != null && advertisement.getLocation() != null) {
+            if (!updateDto.getLocationId().equals(advertisement.getLocation().getId())) {
+                locationChanged = true;
+            }
+        } else if ((updateDto.getLocationId() == null && advertisement.getLocation() != null) ||
+                   (updateDto.getLocationId() != null && advertisement.getLocation() == null)) {
+            locationChanged = true;
+        }
+        
+       
+        SmartphoneSpecification spec = advertisement.getSmartphoneSpecification();
+        if (spec != null) {
+            if (!normalizeString(spec.getBrand()).equals(normalizeString(updateDto.getBrand()))
+                || !normalizeString(spec.getModel()).equals(normalizeString(updateDto.getModel()))
+                || !normalizeString(spec.getColor()).equals(normalizeString(updateDto.getColor()))
+            ) {
+                specChanged = true;
+            }
+        } else {
+           
+            if (updateDto.getBrand() != null || updateDto.getModel() != null || updateDto.getColor() != null) {
+                specChanged = true;
+            }
+        }
+        
+       
+        List<String> incomingImageUrls = updateDto.getImageUrls();
+        List<String> currentImageUrls = advertisement.getImages() != null ? advertisement.getImages().stream().map(Image::getUrl).collect(Collectors.toList()) : null;
+        if (incomingImageUrls != null) {
+            if (!listsEqualAsStrings(currentImageUrls, incomingImageUrls)) {
+                imagesChanged = true;
+            }
+        }
+        
+    
+        boolean meaningfulChange = titleChanged || priceChanged || descriptionChanged || imagesChanged || categoryChanged || locationChanged || specChanged;
+        
+       
         advertisement.setTitle(updateDto.getTitle());
         advertisement.setDescription(updateDto.getDescription());
         advertisement.setPrice(updateDto.getPrice());
@@ -385,62 +492,66 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         advertisement.setIncludesCharger(updateDto.getIncludesCharger());
         advertisement.setWarranty(updateDto.getWarranty());
         
-        // Update category if changed
+        
         if (updateDto.getCategoryId() != null) {
             Category category = categoryRepository.findById(updateDto.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             advertisement.setCategory(category);
         }
         
-        // Update location if changed
+       
         if (updateDto.getLocationId() != null) {
             Location location = locationRepository.findById(updateDto.getLocationId())
                     .orElseThrow(() -> new RuntimeException("Location not found"));
             advertisement.setLocation(location);
         }
         
-        // Update smartphone specification
-        SmartphoneSpecification spec = advertisement.getSmartphoneSpecification();
-        if (spec == null) {
-            spec = new SmartphoneSpecification();
+     
+        if (advertisement.getSmartphoneSpecification() == null) {
+            advertisement.setSmartphoneSpecification(new SmartphoneSpecification());
         }
-        spec.setBrand(updateDto.getBrand());
-        spec.setModel(updateDto.getModel());
-        spec.setColor(updateDto.getColor());
-        spec.setOsType(updateDto.getOsType());
-        spec.setOsVersion(updateDto.getOsVersion());
-        spec.setStorage(updateDto.getStorage());
-        spec.setRam(updateDto.getRam());
-        spec.setRearCameras(updateDto.getRearCameras());
-        spec.setFrontCamera(updateDto.getFrontCamera());
-        spec.setBatteryCapacity(updateDto.getBatteryCapacity());
-        spec.setDisplaySize(updateDto.getDisplaySize());
-        spec.setDisplayTech(updateDto.getDisplayTech());
-        spec.setWifi(updateDto.getWifi());
-        spec.setBluetooth(updateDto.getBluetooth());
-        spec.setIpRating(updateDto.getIpRating());
-        spec.setFastCharging(updateDto.getFastCharging());
-        spec.setWirelessCharging(updateDto.getWirelessCharging());
-        spec.setProcessor(updateDto.getProcessor());
-        spec.setGpu(updateDto.getGpu());
-        spec.setScreenResolution(updateDto.getScreenResolution());
-        spec.setRefreshRate(updateDto.getRefreshRate());
-        spec.setAdvertisement(advertisement);
-        advertisement.setSmartphoneSpecification(spec);
+        SmartphoneSpecification specToSet = advertisement.getSmartphoneSpecification();
+        specToSet.setBrand(updateDto.getBrand());
+        specToSet.setModel(updateDto.getModel());
+        specToSet.setColor(updateDto.getColor());
+        specToSet.setOsType(updateDto.getOsType());
+        specToSet.setOsVersion(updateDto.getOsVersion());
+        specToSet.setStorage(updateDto.getStorage());
+        specToSet.setRam(updateDto.getRam());
+        specToSet.setRearCameras(updateDto.getRearCameras());
+        specToSet.setFrontCamera(updateDto.getFrontCamera());
+        specToSet.setBatteryCapacity(updateDto.getBatteryCapacity());
+        specToSet.setDisplaySize(updateDto.getDisplaySize());
+        specToSet.setDisplayTech(updateDto.getDisplayTech());
+        specToSet.setWifi(updateDto.getWifi());
+        specToSet.setBluetooth(updateDto.getBluetooth());
+        specToSet.setIpRating(updateDto.getIpRating());
+        specToSet.setFastCharging(updateDto.getFastCharging());
+        specToSet.setWirelessCharging(updateDto.getWirelessCharging());
+        specToSet.setProcessor(updateDto.getProcessor());
+        specToSet.setGpu(updateDto.getGpu());
+        specToSet.setScreenResolution(updateDto.getScreenResolution());
+        specToSet.setRefreshRate(updateDto.getRefreshRate());
+        specToSet.setAdvertisement(advertisement);
+        advertisement.setSmartphoneSpecification(specToSet);
         
-        // Update images if provided
+       
         if (updateDto.getImageUrls() != null && !updateDto.getImageUrls().isEmpty()) {
             int newImageCount = updateDto.getImageUrls().size();
             if (oldImageCount != newImageCount) {
                 imagesChanged = true;
             }
             
-            // Remove old images
-            if (advertisement.getImages() != null) {
+      
+            if (advertisement.getImages() != null && !advertisement.getImages().isEmpty()) {
+                for (com.example.backend.model.Image img : advertisement.getImages()) {
+                    try { deleteImageFileByUrl(img.getUrl()); } catch (Exception ignored) {}
+                }
                 imageRepository.deleteAll(advertisement.getImages());
+                advertisement.getImages().clear();
             }
             
-            // Add new images
+        
             List<Image> images = new ArrayList<>();
             for (String url : updateDto.getImageUrls()) {
                 Image image = new Image();
@@ -450,6 +561,13 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             }
             advertisement.setImages(images);
         }
+        
+      
+        if (meaningfulChange) {
+            if (advertisement.getStatus() != AdvertisementStatus.PENDING) {
+                advertisement.setStatus(AdvertisementStatus.PENDING);
+            }
+        } 
         
         advertisement = advertisementRepository.save(advertisement);
 
@@ -477,21 +595,93 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         
         User user = userService.findByEmail(userEmail);
         
-        // Only owner, ADMIN, or STAFF can delete
-        if (!advertisement.getUser().getId().equals(user.getId()) && 
-            user.getRole() != Role.ADMIN && 
-            user.getRole() != Role.STAFF) {
+    
+        boolean isOwner = advertisement.getUser().getId().equals(user.getId());
+        boolean isAdminOrStaff = user.getRole() == Role.ADMIN || user.getRole() == Role.STAFF;
+
+        if (!isOwner && !isAdminOrStaff) {
             throw new RuntimeException("Unauthorized to delete this advertisement");
         }
+
+        if (isOwner && !isAdminOrStaff) {
         
-        // Create notification before deleting
-        if (notificationService != null) {
-            notificationService.createAdDeletedNotification(advertisement);
+            if (!(advertisement.getStatus() == AdvertisementStatus.PENDING
+                    || advertisement.getStatus() == AdvertisementStatus.ACTIVE
+                    || advertisement.getStatus() == AdvertisementStatus.SOLD)) {
+                throw new RuntimeException("Użytkownik może usuwać jedynie ogłoszenia o statusie Oczekujące, Aktywne lub Sprzedane");
+            }
         }
         
-        advertisementRepository.delete(advertisement);
+     
+        final List<Long> favoriteUserIds = new java.util.ArrayList<>();
+        final String advertisementTitle = advertisement.getTitle();
+        if (favoriteAdRepository != null) {
+            try {
+                List<com.example.backend.model.FavoriteAd> favs = favoriteAdRepository.findByAdvertisement(advertisement);
+                for (com.example.backend.model.FavoriteAd f : favs) {
+                    if (f.getUser() != null && f.getUser().getId() != null) {
+                        favoriteUserIds.add(f.getUser().getId());
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
 
-        logService.logUserActivity(user, "Usunieto ogloszenie: " + advertisement.getTitle(), "advertisementId:" + id);
+        if (notificationService != null && !favoriteUserIds.isEmpty()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            notificationService.createAdDeletedNotificationForUserIds(favoriteUserIds, advertisementTitle);
+                        } catch (Exception e) {
+                            // swallow to avoid affecting commit flow; logging could be added
+                            System.err.println("Failed to create post-commit ad-deleted notifications: " + e.getMessage());
+                        }
+                    }
+                }
+            );
+        }
+        
+       try {
+            
+            // 3) Usuń powiadomienia, ulubione
+            if (notificationRepository != null) {
+                try { notificationRepository.deleteByAdvertisementId(id); } catch (Exception ignored) {}
+            }
+            if (favoriteAdRepository != null) {
+                try { favoriteAdRepository.deleteByAdvertisementId(id); } catch (Exception ignored) {}
+            }
+
+            // 3.1) Usuń zgloszenia powiazane z ogloszeniem (zgloszone_ogloszenia)
+            if (advertisementReportRepository != null) {
+                try { advertisementReportRepository.deleteByAdvertisementId(id); } catch (Exception ignored) {}
+            }
+            // 4) Usuń obrazy (jeśli nie są kaskadowo usuwane) — usuń najpierw pliki z dysku, potem rekordy w DB
+            if (advertisement.getImages() != null && !advertisement.getImages().isEmpty()) {
+                for (com.example.backend.model.Image img : advertisement.getImages()) {
+                    try { deleteImageFileByUrl(img.getUrl()); } catch (Exception ignored) {}
+                }
+                try { imageRepository.deleteAll(advertisement.getImages()); } catch (Exception ignored) {}
+            }
+
+            try {
+                if (entityManager != null) {
+                    entityManager.flush();
+                    entityManager.clear();
+                }
+            } catch (Exception ignored) {}
+
+            
+            Advertisement toDelete = advertisementRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Advertisement not found"));
+            advertisementRepository.delete(toDelete);
+
+            logService.logUserActivity(user, "Usunieto ogloszenie: " + advertisement.getTitle(), "advertisementId:" + id);
+        } catch (DataIntegrityViolationException dive) {
+            throw new RuntimeException("Nie można usunąć ogłoszenia z powodu powiązanych rekordów w bazie danych. Spróbuj usunąć powiązane dane lub skontaktuj się z administratorem.");
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     //metoda ktora sumuje wszystkie aktywne ogloszenia danego uzytkownika
@@ -581,7 +771,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             dto.setImageId(advertisement.getImages().get(0).getId());
         }
         
-        // Map additional info
+       
         dto.setIncludesCharger(advertisement.getIncludesCharger());
         dto.setWarranty(advertisement.getWarranty());
         

@@ -406,6 +406,7 @@ const SmartphoneCatalog: React.FC = () => {
   let isAdmin = false;
   let isStaff = false;
   let isUser = false;
+  let isAuthenticated = false;
 
   if (token) {
     try {
@@ -428,6 +429,14 @@ const SmartphoneCatalog: React.FC = () => {
   const handleGoToAdminPanel = () => {
     navigate("/admin");
     setIsDropdownOpen(false);
+  };
+
+  const handleAddAdClick = () => {
+    if (isAuthenticated) {
+      navigate("/user/addadvertisement");
+    } else {
+      navigate("/login");
+    }
   };
 
   // Filter smartphones based on search criteria
@@ -562,11 +571,11 @@ const SmartphoneCatalog: React.FC = () => {
 
             {/* Przycisk dodaj ogłoszenie */}
             <button
-              onClick={() => navigate("/user/addadvertisement")}
+              onClick={handleAddAdClick}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              <span className="hidden lg:inline">Dodaj ogłoszenie</span>
+              Dodaj ogłoszenie
             </button>
 
             {/* Dropdown Twoje konto */}
@@ -661,7 +670,7 @@ const SmartphoneCatalog: React.FC = () => {
                     </>
                   ) : (
                     <button
-                      className="w-full text-left px-4 py-2 bg-purple-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
+                      className="w-full text-left px-4 py-2 bg-black-600 hover:bg-black flex items-center gap-3 text-white rounded-lg"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         navigate("/login");

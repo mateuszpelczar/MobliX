@@ -39,7 +39,7 @@ public class MessageController {
         }
     }
 
-    // ============ NOWE ENDPOINTY DLA SYSTEMU WIADOMOŚCI ============
+   
 
     /**
      * Pobierz wszystkie konwersacje użytkownika
@@ -58,13 +58,12 @@ public class MessageController {
      */
     @GetMapping("/conversation")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ConversationDTO> getOrCreateConversation(
-            @RequestParam Long advertisementId,
+        public ResponseEntity<ConversationDTO> getOrCreateConversation(
             @RequestParam String otherUserEmail,
             Principal principal) {
         String userEmail = principal.getName();
         ConversationDTO conversation = messageService.getOrCreateConversation(
-                userEmail, otherUserEmail, advertisementId);
+                userEmail, otherUserEmail);
         return ResponseEntity.ok(conversation);
     }
 
@@ -91,10 +90,9 @@ public class MessageController {
             Principal principal) {
         String senderEmail = principal.getName();
         MessageDTO message = messageService.sendMessage(
-                senderEmail,
-                request.getReceiverEmail(),
-                request.getAdvertisementId(),
-                request.getContent()
+            senderEmail,
+            request.getReceiverEmail(),
+            request.getContent()
         );
         return ResponseEntity.ok(message);
     }

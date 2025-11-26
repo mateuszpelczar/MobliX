@@ -63,6 +63,11 @@ const YourAds: React.FC = () => {
     rejected: number;
   }>({ total: 0, active: 0, pending: 0, rejected: 0 });
 
+  // track deletes in progress to prevent parallel deletes and UI race conditions
+  const [deleteInProgressMap, setDeleteInProgressMap] = useState<
+    Record<number, boolean>
+  >({});
+
   const fetchFavoriteCount = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -103,13 +108,22 @@ const YourAds: React.FC = () => {
 
   // Funkcje do obsługi akcji na ogłoszeniach
   const handleDeleteAd = async (adId: number) => {
-    console.log("handleDeleteAd called with ID:", adId);
+    if (deleteInProgressMap[adId]) {
+      // already in progress
+      return;
+    }
 
     if (!confirm("Czy na pewno chcesz usunąć to ogłoszenie?")) return;
 
+    // set in progress
+    setDeleteInProgressMap((m) => ({ ...m, [adId]: true }));
+
     try {
       const token = localStorage.getItem("token");
-      console.log("Token:", token ? "exists" : "missing");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
       const response = await fetch(
         `http://localhost:8080/api/advertisements/${adId}`,
@@ -121,19 +135,25 @@ const YourAds: React.FC = () => {
         }
       );
 
-      console.log("Delete response status:", response.status);
-
       if (response.ok) {
-        setAds(ads.filter((ad) => ad.id !== adId));
+        setAds((prev) => prev.filter((ad) => ad.id !== adId));
         alert("Ogłoszenie zostało usunięte");
       } else {
         const errorText = await response.text();
         console.error("Delete error:", errorText);
-        alert("Błąd podczas usuwania ogłoszenia");
+        // Przydatne: pokaż bardziej szczegółową wiadomość, jeśli backend zwróci info
+        alert(
+          "Błąd podczas usuwania ogłoszenia. " +
+            (errorText ? `Serwer: ${errorText}` : "")
+        );
       }
     } catch (error) {
       console.error("Delete exception:", error);
       alert("Wystąpił błąd podczas usuwania");
+    } finally {
+      // release in-progress flag
+      setDeleteInProgressMap((m) => ({ ...m, [adId]: false }));
+      setAdDropdownOpen(null);
     }
   };
 
@@ -147,7 +167,10 @@ const YourAds: React.FC = () => {
 
     try {
       const token = localStorage.getItem("token");
-      console.log("Token:", token ? "exists" : "missing");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
       const response = await fetch(
         `http://localhost:8080/api/advertisements/${adId}/status`,
@@ -160,8 +183,6 @@ const YourAds: React.FC = () => {
           body: JSON.stringify({ status: newStatus }),
         }
       );
-
-      console.log("Status change response:", response.status);
 
       if (response.ok) {
         setAds(
@@ -192,6 +213,8 @@ const YourAds: React.FC = () => {
     } catch (error) {
       console.error("Status change exception:", error);
       alert("Wystąpił błąd podczas zmiany statusu");
+    } finally {
+      setAdDropdownOpen(null);
     }
   };
 
@@ -344,8 +367,9 @@ const YourAds: React.FC = () => {
     navigate("/user/watchedads");
   };
 
-  // Inicjuje edycję ogłoszenia: najpierw ustawiamy status na PENDING
-  // (trafia do moderacji), aktualizujemy lokalny stan i przechodzimy do formularza edycji.
+  // Inicjuj edycję bez ustawiania statusu na PENDING od razu.
+  // Status powinien być ustawiony na PENDING TYLKO gdy rzeczywiście
+  // wystąpią istotne zmiany (robimy to po stronie backendu przy PUT).
   const handleEditInitiate = async (adId: number) => {
     try {
       const token = localStorage.getItem("token");
@@ -354,38 +378,9 @@ const YourAds: React.FC = () => {
         return;
       }
 
-      console.log(`Initiating edit for ad ${adId}: setting status to PENDING`);
-
-      const resp = await fetch(
-        `http://localhost:8080/api/advertisements/${adId}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: "PENDING" }),
-        }
-      );
-
-      console.log("Patch status response:", resp.status);
-
-      if (resp.ok) {
-        // Aktualizuj lokalny stan - oznacz ogłoszenie jako oczekujące
-        setAds((prev) =>
-          prev.map((a) => (a.id === adId ? { ...a, status: "pending" } : a))
-        );
-
-        // Zamknij dropdown i przejdź do edycji
-        setAdDropdownOpen(null);
-        navigate(`/user/edit-ad/${adId}`);
-      } else {
-        const errText = await resp.text();
-        console.error("Nie udało się ustawić statusu na PENDING:", errText);
-        // Nawet jeśli status PATCH nie zadziała, przejdź do edycji (backend i tak ustawi PENDING przy PUT)
-        setAdDropdownOpen(null);
-        navigate(`/user/edit-ad/${adId}`);
-      }
+      // Nie PATCHujemy statusu tutaj — przechodzimy bezpośrednio do formularza edycji.
+      setAdDropdownOpen(null);
+      navigate(`/user/edit-ad/${adId}`);
     } catch (error) {
       console.error("Błąd podczas inicjacji edycji:", error);
       setAdDropdownOpen(null);
@@ -650,8 +645,7 @@ const YourAds: React.FC = () => {
               filtered.map((ad) => (
                 <div
                   key={ad.id}
-                  className="bg-gray-800 border border-purple-500 rounded-lg p-6 hover:border-purple-400 transition-all cursor-pointer"
-                  onClick={() => navigate(`/smartfon/${ad.id}`)}
+                  className="bg-gray-800 border border-purple-500 rounded-lg p-6 hover:border-purple-400 transition-all"
                 >
                   <div className="flex gap-4">
                     {/* Zdjęcie */}
@@ -659,14 +653,24 @@ const YourAds: React.FC = () => {
                       <img
                         src={ad.images[0]}
                         alt={ad.title}
-                        className="w-32 h-32 object-cover rounded-lg bg-gray-700"
+                        className="w-32 h-32 object-cover rounded-lg bg-gray-700 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/smartfon/${ad.id}`);
+                        }}
                       />
                     </div>
 
                     {/* Informacje o ogłoszeniu */}
                     <div className="flex-grow">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-bold text-white">
+                        <h3
+                          className="text-xl font-bold text-white cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/smartfon/${ad.id}`);
+                          }}
+                        >
                           {ad.title}
                         </h3>
                         <span
@@ -719,32 +723,38 @@ const YourAds: React.FC = () => {
 
                         {/* Dropdown Menu */}
                         <div className="relative" data-ad-dropdown>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setAdDropdownOpen(
-                                adDropdownOpen === ad.id ? null : ad.id
-                              );
-                            }}
-                            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                          >
-                            <MoreVertical className="w-5 h-5 text-gray-300" />
-                          </button>
+                          {/* Hide three-dots trigger for regular users when ad is sold; staff/admin still see it */}
+                          {!(ad.status === "sold" && isUser) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAdDropdownOpen(
+                                  adDropdownOpen === ad.id ? null : ad.id
+                                );
+                              }}
+                              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                              <MoreVertical className="w-5 h-5 text-gray-300" />
+                            </button>
+                          )}
 
                           {adDropdownOpen === ad.id && (
                             <div className="absolute right-0 top-full mt-1 w-48 bg-gray-700 border border-gray-600 rounded-lg shadow-lg z-50">
                               <div className="py-1">
-                                {/* Edytuj */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditInitiate(ad.id);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600 flex items-center gap-2"
-                                >
-                                  <Edit3 className="w-4 h-4 text-blue-400" />
-                                  Edytuj
-                                </button>
+                                {/* Edytuj - ukryj dla ogłoszeń 'rejected' i 'sold' */}
+                                {ad.status !== "rejected" &&
+                                  ad.status !== "sold" && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditInitiate(ad.id);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600 flex items-center gap-2"
+                                    >
+                                      <Edit3 className="w-4 h-4 text-blue-400" />
+                                      Edytuj
+                                    </button>
+                                  )}
 
                                 {/* Wstrzymaj/Aktywuj */}
                                 {ad.status === "active" ? (
@@ -805,22 +815,57 @@ const YourAds: React.FC = () => {
                                     </button>
                                   )}
 
-                                {/* Usuń */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteAd(ad.id);
-                                    setAdDropdownOpen(null);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-600 flex items-center gap-2"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-400" />
-                                  Usuń
-                                </button>
+                                {/* Usuń - widoczny tylko dla admin/staff lub gdy ogłoszenie jest PENDING/ACTIVE */}
+                                {(isAdmin ||
+                                  isStaff ||
+                                  ad.status === "pending" ||
+                                  ad.status === "active") && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // call deletion which handles locking via deleteInProgressMap
+                                      handleDeleteAd(ad.id);
+                                    }}
+                                    disabled={!!deleteInProgressMap[ad.id]}
+                                    className={`w-full text-left px-4 py-2 text-sm ${
+                                      deleteInProgressMap[ad.id]
+                                        ? "text-gray-400"
+                                        : "text-red-400 hover:bg-gray-600"
+                                    } flex items-center gap-2`}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                    {deleteInProgressMap[ad.id]
+                                      ? "Usuwanie..."
+                                      : "Usuń"}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           )}
                         </div>
+                        {/* Temporary: allow USER to delete sold ads from the 'Sprzedane' tab */}
+                        {ad.status === "sold" &&
+                          isUser &&
+                          activeTab === "sold" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAd(ad.id);
+                              }}
+                              disabled={!!deleteInProgressMap[ad.id]}
+                              className={`ml-3 px-3 py-1 text-sm rounded-lg flex items-center gap-2 ${
+                                {
+                                  true: "text-gray-400",
+                                }[String(!!deleteInProgressMap[ad.id])] ||
+                                "text-red-400 hover:bg-gray-600"
+                              }`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {deleteInProgressMap[ad.id]
+                                ? "Usuwanie..."
+                                : "Usuń"}
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>

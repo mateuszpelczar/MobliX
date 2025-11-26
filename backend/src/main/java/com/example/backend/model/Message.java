@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
-//klasa reprezentujaca wiadomosci miedzy uzytkownikami
+
 @Entity
 @Table(name="messages")
 public class Message {
@@ -25,18 +25,12 @@ public class Message {
   @ManyToOne
   private Conversation conversation;
 
-  // Nowe pola do systemu moderacji
   @Column(name = "message_content", columnDefinition = "TEXT")
   private String messageContent;
 
   @Column(name = "message_type")
-  private String messageType; // "REJECTION", "REGULAR"
-
-  @Column(name = "advertisement_id")
-  private Long advertisementId;
-
-  @Column(name = "advertisement_title")
-  private String advertisementTitle;
+  private String messageType; 
+  
 
   @Column(name = "is_read")
   private Boolean isRead = false;
@@ -57,12 +51,11 @@ public class Message {
     }
   }
 
-  // Konstruktory
   public Message() {}
 
-  public Message(Long id, String content, LocalDateTime timestamp, User sender, User receiver, 
-                 Conversation conversation, String messageContent, String messageType, Long advertisementId, 
-                 String advertisementTitle, Boolean isRead, Boolean canReply, LocalDateTime createdAt) {
+    public Message(Long id, String content, LocalDateTime timestamp, User sender, User receiver, 
+                 Conversation conversation, String messageContent, String messageType, 
+                 Boolean isRead, Boolean canReply, LocalDateTime createdAt) {
     this.id = id;
     this.content = content;
     this.timestamp = timestamp;
@@ -71,14 +64,11 @@ public class Message {
     this.conversation = conversation;
     this.messageContent = messageContent;
     this.messageType = messageType;
-    this.advertisementId = advertisementId;
-    this.advertisementTitle = advertisementTitle;
     this.isRead = isRead;
     this.canReply = canReply;
     this.createdAt = createdAt;
   }
 
-  // Gettery i Settery
   public Long getId() { return id; }
   public void setId(Long id) { this.id = id; }
 
@@ -102,12 +92,6 @@ public class Message {
 
   public String getMessageType() { return messageType; }
   public void setMessageType(String messageType) { this.messageType = messageType; }
-
-  public Long getAdvertisementId() { return advertisementId; }
-  public void setAdvertisementId(Long advertisementId) { this.advertisementId = advertisementId; }
-
-  public String getAdvertisementTitle() { return advertisementTitle; }
-  public void setAdvertisementTitle(String advertisementTitle) { this.advertisementTitle = advertisementTitle; }
 
   public Boolean getIsRead() { return isRead; }
   public void setIsRead(Boolean isRead) { this.isRead = isRead; }
