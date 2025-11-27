@@ -34,6 +34,7 @@ import {
   Heart,
   Plus,
 } from "lucide-react";
+import { voivodeships } from "../../data/locations";
 
 type JwtPayLoad = {
   sub: string;
@@ -47,72 +48,56 @@ interface Advertisement {
   description: string;
   price: number;
   condition: string;
-  status: "ACTIVE" | "PENDING" | "REJECTED";
+  status: "ACTIVE" | "PENDING" | "REJECTED" | "SOLD";
   createdAt: string;
   updatedAt: string;
   warranty?: string;
   includesCharger: boolean;
   userName: string;
   categoryName: string;
-  locationName: string;
+  locationName?: string;
+  region?: string;
+  voivodeship?: string;
+  city?: string;
   location: string;
-  voivodeship: string;
-  specification: {
-    brand: string;
-    model: string;
-    color: string;
-    osType: string;
-    osVersion: string;
-    storage: string;
-    ram: string;
-    rearCameras: string;
-    frontCamera: string;
-    batteryCapacity: string;
+  specification?: {
+    brand?: string;
+    model?: string;
+    color?: string;
+    osType?: string;
+    osVersion?: string;
+    storage?: string;
+    ram?: string;
+    rearCameras?: string;
+    frontCamera?: string;
+    batteryCapacity?: string;
+    displaySize?: string;
+    displayTech?: string;
+    wifi?: string;
+    bluetooth?: string;
+    ipRating?: string;
+    fastCharging?: string;
+    wirelessCharging?: string;
+    processor?: string;
+    gpu?: string;
+    screenResolution?: string;
+    refreshRate?: string;
   };
   imageUrls: string[];
 }
 
-// -------- Typy danych (proste interfejsy) --------
-type Specification = {
-  brand?: string;
-  model?: string;
-  color?: string;
-  osType?: string;
-  osVersion?: string;
-  storage?: string;
-  ram?: string;
-  rearCameras?: string;
-  frontCamera?: string;
-  batteryCapacity?: string;
-  displaySize?: string;
-  displayTech?: string;
-  wifi?: string;
-  bluetooth?: string;
-  ipRating?: string;
-  fastCharging?: string;
-  wirelessCharging?: string;
-  processor?: string;
-  gpu?: string;
-  screenResolution?: string;
-  refreshRate?: string;
-};
-
 // Helper function to normalize image URLs
 const normalizeImageUrl = (imageUrl: string): string => {
-  // If already a full URL, return as is
+  if (!imageUrl) return "";
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
-    // Fix old URLs with wrong path
     if (
       imageUrl.includes("/images/") &&
       !imageUrl.includes("/uploads/images/")
     ) {
-      // Convert http://localhost:8080/images/xyz.png -> http://localhost:8080/uploads/images/xyz.png
       return imageUrl.replace("/images/", "/uploads/images/");
     }
     return imageUrl;
   }
-
-  // If relative path, prepend base URL
   return `http://localhost:8080${imageUrl}`;
 };
 
@@ -140,13 +125,18 @@ const EditAd: React.FC = () => {
   // Edit modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
-  const [editForm, setEditForm] = useState({
+
+  // Unified edit form state (basic + location + images + specification + additional)
+  const [editForm, setEditForm] = useState<any>({
     title: "",
     description: "",
     price: 0,
     condition: "",
     warranty: "",
     includesCharger: false,
+    voivodeship: "",
+    city: "",
+    region: "",
     specification: {
       brand: "",
       model: "",
@@ -158,14 +148,30 @@ const EditAd: React.FC = () => {
       rearCameras: "",
       frontCamera: "",
       batteryCapacity: "",
+      // additional
+      displaySize: "",
+      displayTech: "",
+      wifi: "",
+      bluetooth: "",
+      ipRating: "",
+      fastCharging: "",
+      wirelessCharging: "",
+      processor: "",
+      gpu: "",
+      screenResolution: "",
+      refreshRate: "",
     },
   });
   const [editImages, setEditImages] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAdditionalSpecs, setShowAdditionalSpecs] = useState(false);
 
   // Authentication
   const token = localStorage.getItem("token");
   let isAdmin = false;
   let isStaff = false;
+  let isUser = false;
 
   if (token) {
     try {
@@ -177,7 +183,6 @@ const EditAd: React.FC = () => {
     }
   }
 
-  // Funkcje obsługi nawigacji
   const fetchFavoriteCount = async () => {
     try {
       if (token) {
@@ -192,17 +197,6 @@ const EditAd: React.FC = () => {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/main?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  const handleMessengerClick = () => navigate("/user/message");
-  const handleNotificationsClick = () => navigate("/user/notifications");
-  const handleWatchedAdsClick = () => navigate("/user/watchedads");
-
   useEffect(() => {
     fetchFavoriteCount();
   }, []);
@@ -211,16 +205,10 @@ const EditAd: React.FC = () => {
   useEffect(() => {
     const fetchAdvertisements = async () => {
       if (!token) {
-        console.error("Brak tokenu autoryzacji");
         setError("Brak tokenu autoryzacji");
         setLoading(false);
         return;
       }
-
-      console.log("Pobieranie ogłoszeń...");
-      console.log("Token:", token ? "Istnieje" : "Brak");
-      console.log("isAdmin:", isAdmin);
-      console.log("isStaff:", isStaff);
 
       try {
         const response = await axios.get<Advertisement[]>(
@@ -229,18 +217,7 @@ const EditAd: React.FC = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        console.log("Pobrano ogłoszenia:", response.data.length);
-        console.log("Szczegóły ogłoszeń (imageUrls):");
-        response.data.forEach((ad, index) => {
-          console.log(`[${index}] ID: ${ad.id}, Title: ${ad.title}`);
-          console.log(`    imageUrls:`, ad.imageUrls);
-          console.log(`    imageUrls length:`, ad.imageUrls?.length || 0);
-          if (ad.imageUrls && ad.imageUrls.length > 0) {
-            console.log(`    First image:`, ad.imageUrls[0]);
-          }
-        });
 
-        // Sort by updatedAt descending (recently updated first)
         const sortedAds = response.data.sort((a, b) => {
           const dateA = new Date(a.updatedAt || a.createdAt).getTime();
           const dateB = new Date(b.updatedAt || b.createdAt).getTime();
@@ -250,8 +227,6 @@ const EditAd: React.FC = () => {
         setLoading(false);
       } catch (err: any) {
         console.error("Błąd podczas pobierania ogłoszeń:", err);
-        console.error("Status:", err.response?.status);
-        console.error("Data:", err.response?.data);
         setError(
           err.response?.data?.message || "Nie udało się pobrać ogłoszeń"
         );
@@ -260,9 +235,9 @@ const EditAd: React.FC = () => {
     };
 
     fetchAdvertisements();
-  }, [token, isAdmin, isStaff]);
+  }, [token]);
 
-  // Filter ads
+  // Filter ads (show ACTIVE by default for staff list)
   const filteredAds = ads.filter((ad) => {
     const matchesStatus = ad.status === "ACTIVE";
     const matchesSearch =
@@ -286,12 +261,10 @@ const EditAd: React.FC = () => {
   const indexOfFirstAd = indexOfLastAd - adsPerPage;
   const currentAds = filteredAds.slice(indexOfFirstAd, indexOfLastAd);
 
-  // Reset to page 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Get status config
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "ACTIVE":
@@ -315,6 +288,13 @@ const EditAd: React.FC = () => {
           bg: "bg-red-100",
           text: "Odrzucone",
         };
+      case "SOLD":
+        return {
+          icon: Eye,
+          color: "text-gray-600",
+          bg: "bg-gray-100",
+          text: "Sprzedane",
+        };
       default:
         return {
           icon: AlertTriangle,
@@ -325,42 +305,83 @@ const EditAd: React.FC = () => {
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/main?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
     setIsDropdownOpen(false);
   };
 
+  const handleMessengerClick = () => navigate("/user/message");
+  const handleNotificationsClick = () => navigate("/user/notifications");
+  const handleWatchedAdsClick = () => navigate("/user/watchedads");
+
   const handleViewAd = (id: number) => {
     navigate(`/smartfon/${id}`);
   };
 
+  // Open edit modal and populate full form (basic + detailed) from selected ad
   const handleEditAd = (id: number) => {
     const ad = ads.find((a) => a.id === id);
     if (ad) {
       setEditingAd(ad);
       setEditForm({
-        title: ad.title,
-        description: ad.description,
-        price: ad.price,
-        condition: ad.condition,
-        warranty: ad.warranty || "",
-        includesCharger: ad.includesCharger,
+        title: ad.title ?? "",
+        description: ad.description ?? "",
+        price: ad.price ?? 0,
+        condition: ad.condition ?? "",
+        warranty: ad.warranty ?? "",
+        includesCharger: !!ad.includesCharger,
+        voivodeship: ad.voivodeship ?? ad.region ?? "",
+        city: ad.city ?? ad.locationName ?? "",
+        region: ad.region ?? ad.voivodeship ?? "",
         specification: {
-          brand: ad.specification?.brand || "",
-          model: ad.specification?.model || "",
-          color: ad.specification?.color || "",
-          osType: ad.specification?.osType || "",
-          osVersion: ad.specification?.osVersion || "",
-          storage: ad.specification?.storage || "",
-          ram: ad.specification?.ram || "",
-          rearCameras: ad.specification?.rearCameras || "",
-          frontCamera: ad.specification?.frontCamera || "",
-          batteryCapacity: ad.specification?.batteryCapacity || "",
+          brand: ad.specification?.brand ?? "",
+          model: ad.specification?.model ?? "",
+          color: ad.specification?.color ?? "",
+          osType: ad.specification?.osType ?? "",
+          osVersion: ad.specification?.osVersion ?? "",
+          storage: ad.specification?.storage ?? "",
+          ram: ad.specification?.ram ?? "",
+          rearCameras: ad.specification?.rearCameras ?? "",
+          frontCamera: ad.specification?.frontCamera ?? "",
+          batteryCapacity: ad.specification?.batteryCapacity ?? "",
+          displaySize: ad.specification?.displaySize ?? "",
+          displayTech: ad.specification?.displayTech ?? "",
+          wifi: ad.specification?.wifi ?? "",
+          bluetooth: ad.specification?.bluetooth ?? "",
+          ipRating: ad.specification?.ipRating ?? "",
+          fastCharging: ad.specification?.fastCharging ?? "",
+          wirelessCharging: ad.specification?.wirelessCharging ?? "",
+          processor: ad.specification?.processor ?? "",
+          gpu: ad.specification?.gpu ?? "",
+          screenResolution: ad.specification?.screenResolution ?? "",
+          refreshRate: ad.specification?.refreshRate ?? "",
         },
       });
       setEditImages(ad.imageUrls || []);
       setShowEditModal(true);
+      setShowAdditionalSpecs(
+        !!(
+          ad.specification?.displaySize ||
+          ad.specification?.displayTech ||
+          ad.specification?.wifi ||
+          ad.specification?.bluetooth ||
+          ad.specification?.ipRating ||
+          ad.specification?.fastCharging ||
+          ad.specification?.wirelessCharging ||
+          ad.specification?.processor ||
+          ad.specification?.gpu ||
+          ad.specification?.screenResolution ||
+          ad.specification?.refreshRate
+        )
+      );
     }
   };
 
@@ -368,16 +389,15 @@ const EditAd: React.FC = () => {
     if (!editingAd || !token) return;
 
     try {
-      const updateData = {
+      const payload = {
         title: editForm.title,
         description: editForm.description,
         price: editForm.price,
         condition: editForm.condition,
         warranty: editForm.warranty,
         includesCharger: editForm.includesCharger,
-        categoryId: 1, // Default smartphone category
-        imageUrls: editImages, // Send updated images
-        // Flatten specification fields
+        categoryId: 1,
+        imageUrls: editImages,
         brand: editForm.specification.brand,
         model: editForm.specification.model,
         color: editForm.specification.color,
@@ -388,11 +408,26 @@ const EditAd: React.FC = () => {
         rearCameras: editForm.specification.rearCameras,
         frontCamera: editForm.specification.frontCamera,
         batteryCapacity: editForm.specification.batteryCapacity,
+        // additional
+        displaySize: editForm.specification.displaySize,
+        displayTech: editForm.specification.displayTech,
+        wifi: editForm.specification.wifi,
+        bluetooth: editForm.specification.bluetooth,
+        ipRating: editForm.specification.ipRating,
+        fastCharging: editForm.specification.fastCharging,
+        wirelessCharging: editForm.specification.wirelessCharging,
+        processor: editForm.specification.processor,
+        gpu: editForm.specification.gpu,
+        screenResolution: editForm.specification.screenResolution,
+        refreshRate: editForm.specification.refreshRate,
+        region: editForm.region,
+        voivodeship: editForm.voivodeship,
+        city: editForm.city,
       };
 
       await axios.put(
         `http://localhost:8080/api/advertisements/${editingAd.id}`,
-        updateData,
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -406,7 +441,6 @@ const EditAd: React.FC = () => {
         }
       );
 
-      // Sort by updatedAt descending (recently updated first)
       const sortedAds = response.data.sort((a, b) => {
         const dateA = new Date(a.updatedAt || a.createdAt).getTime();
         const dateB = new Date(b.updatedAt || b.createdAt).getTime();
@@ -487,6 +521,34 @@ const EditAd: React.FC = () => {
     setEditImages(newImages);
   };
 
+  const addImageUrl = () => {
+    if (!newImageUrl.trim()) return;
+    const isValidImageUrl =
+      /\.(jpg|jpeg|png|gif|webp)$/i.test(newImageUrl) ||
+      newImageUrl.includes("imgur.com") ||
+      newImageUrl.includes("i.imgur.com");
+    if (!isValidImageUrl) {
+      alert("Podaj prawidłowy link do obrazu (jpg, png, gif, webp) lub Imgur");
+      return;
+    }
+    if (editImages.length >= 6) {
+      alert("Możesz dodać maksymalnie 6 zdjęć");
+      return;
+    }
+    let processedUrl = newImageUrl;
+    if (newImageUrl.includes("imgur.com/a/")) {
+      alert(
+        "Link do albumu Imgur nie jest obsługiwany. Użyj bezpośredniego linku do obrazu"
+      );
+      return;
+    } else if (newImageUrl.match(/imgur\.com\/[a-zA-Z0-9]+$/)) {
+      const imageId = newImageUrl.split("/").pop();
+      processedUrl = `https://i.imgur.com/${imageId}.jpg`;
+    }
+    setEditImages((prev) => [...prev, processedUrl]);
+    setNewImageUrl("");
+  };
+
   const handleDeleteClick = (id: number) => {
     setAdToDelete(id);
     setShowDeleteModal(true);
@@ -503,7 +565,6 @@ const EditAd: React.FC = () => {
         }
       );
 
-      // Remove from list
       setAds(ads.filter((ad) => ad.id !== adToDelete));
       setShowDeleteModal(false);
       setAdToDelete(null);
@@ -519,21 +580,61 @@ const EditAd: React.FC = () => {
     setAdToDelete(null);
   };
 
+  // Helper to render voivodeship -> cities dropdown
+  const renderCityDropdown = () => (
+    <>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Województwo *
+      </label>
+      <select
+        value={editForm.voivodeship}
+        onChange={(e) =>
+          setEditForm({ ...editForm, voivodeship: e.target.value, city: "" })
+        }
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+      >
+        <option value="">Wybierz województwo</option>
+        {voivodeships.map((v) => (
+          <option key={v.name} value={v.name}>
+            {v.name}
+          </option>
+        ))}
+      </select>
+
+      <label className="block text-sm font-medium text-gray-700 mb-1 mt-3">
+        Miejscowość *
+      </label>
+      <select
+        value={editForm.city}
+        onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+        disabled={!editForm.voivodeship}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+      >
+        <option value="">Wybierz miejscowość</option>
+        {editForm.voivodeship &&
+          voivodeships
+            .find((v) => v.name === editForm.voivodeship)
+            ?.cities.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+      </select>
+    </>
+  );
+
   return (
     <>
       <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
-        {/* Czarny pasek nawigacji */}
+        {/* NAV */}
         <nav className="bg-black text-white px-4 py-3 shadow-lg">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            {/* Logo */}
             <div
               className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
               onClick={() => navigate("/main")}
             >
               MobliX
             </div>
-
-            {/* Wyszukiwarka */}
             <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
               <div className="relative">
                 <input
@@ -546,8 +647,6 @@ const EditAd: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
             </form>
-
-            {/* Ikony i przyciski */}
             <div className="flex items-center gap-3">
               <button
                 onClick={handleMessengerClick}
@@ -582,14 +681,12 @@ const EditAd: React.FC = () => {
                 <Plus className="w-5 h-5" />
                 Dodaj ogłoszenie
               </button>
-
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
                 >
-                  <User className="w-5 h-5" />
-                  Twoje konto
+                  <User className="w-5 h-5" /> Twoje konto{" "}
                   <ChevronDown
                     className={`w-4 h-4 transition-transform ${
                       isDropdownOpen ? "rotate-180" : ""
@@ -653,7 +750,7 @@ const EditAd: React.FC = () => {
                           Panel pracownika
                         </button>
                       )}
-                      {(isAdmin || isStaff) && (
+                      {(isAdmin || isStaff || isUser) && (
                         <button
                           className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
                           onClick={() => {
@@ -681,10 +778,9 @@ const EditAd: React.FC = () => {
           </div>
         </nav>
 
-        {/* Content */}
+        {/* Content (ads list) */}
         <div className="flex-1 px-4 py-8">
           <div className="max-w-7xl mx-auto">
-            {/* Header z ikoną Edit3 */}
             <div className="bg-gray-800 rounded-lg p-6 mb-6">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-600 p-4 rounded-full">
@@ -699,29 +795,14 @@ const EditAd: React.FC = () => {
                   </p>
                 </div>
               </div>
-              {/* Wyszukiwarka */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Szukaj ogłoszeń..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
-                  />
-                </div>
-              </div>
 
-              {/* Loading state */}
+              {/* Loading / error / list */}
               {loading && (
                 <div className="text-center py-12">
                   <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
                   <p className="mt-4 text-gray-300">Ładowanie ogłoszeń...</p>
                 </div>
               )}
-
-              {/* Error state */}
               {error && (
                 <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 mb-6">
                   <div className="flex items-center gap-2 text-red-200">
@@ -732,7 +813,6 @@ const EditAd: React.FC = () => {
                 </div>
               )}
 
-              {/* Ads list */}
               {!loading && !error && (
                 <>
                   <div className="mb-4 text-sm text-gray-300">
@@ -742,19 +822,16 @@ const EditAd: React.FC = () => {
                     </span>{" "}
                     ogłoszeń (Strona {currentPage} z {totalPages})
                   </div>
-
                   <div className="space-y-4">
                     {currentAds.map((ad) => {
                       const statusConfig = getStatusConfig(ad.status);
                       const StatusIcon = statusConfig.icon;
-
                       return (
                         <div
                           key={ad.id}
                           className="bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all border border-gray-700"
                         >
                           <div className="flex flex-col md:flex-row gap-4">
-                            {/* Image */}
                             <div className="w-full md:w-32 h-32 flex-shrink-0">
                               {ad.imageUrls && ad.imageUrls.length > 0 ? (
                                 <img
@@ -762,16 +839,6 @@ const EditAd: React.FC = () => {
                                   alt={ad.title}
                                   className="w-full h-full object-cover rounded-lg"
                                   onError={(e) => {
-                                    console.error(
-                                      `Błąd ładowania obrazu dla ogłoszenia #${ad.id}:`,
-                                      {
-                                        title: ad.title,
-                                        imageUrl: ad.imageUrls[0],
-                                        normalizedUrl: normalizeImageUrl(
-                                          ad.imageUrls[0]
-                                        ),
-                                      }
-                                    );
                                     (e.target as HTMLImageElement).src =
                                       "https://via.placeholder.com/128x128?text=Brak+zdjęcia";
                                   }}
@@ -783,7 +850,6 @@ const EditAd: React.FC = () => {
                               )}
                             </div>
 
-                            {/* Details */}
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
                                 <div>
@@ -848,28 +914,27 @@ const EditAd: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Actions */}
                               <div className="flex gap-2 mt-3">
                                 <button
                                   onClick={() => handleViewAd(ad.id)}
                                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                                 >
                                   <Eye className="h-4 w-4" />
-                                  <span>Wyświetl</span>
+                                  Wyświetl
                                 </button>
                                 <button
                                   onClick={() => handleEditAd(ad.id)}
                                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                 >
                                   <Edit3 className="h-4 w-4" />
-                                  <span>Edytuj</span>
+                                  Edytuj
                                 </button>
                                 <button
                                   onClick={() => handleDeleteClick(ad.id)}
                                   className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                  <span>Usuń</span>
+                                  Usuń
                                 </button>
                               </div>
                             </div>
@@ -877,7 +942,6 @@ const EditAd: React.FC = () => {
                         </div>
                       );
                     })}
-
                     {filteredAds.length === 0 && (
                       <div className="text-center py-12">
                         <FileText className="h-16 w-16 text-gray-500 mx-auto mb-4" />
@@ -888,7 +952,6 @@ const EditAd: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Pagination controls */}
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-8">
                       <button
@@ -904,7 +967,6 @@ const EditAd: React.FC = () => {
                       >
                         Poprzednia
                       </button>
-
                       <div className="flex gap-2">
                         {Array.from(
                           { length: totalPages },
@@ -923,7 +985,6 @@ const EditAd: React.FC = () => {
                           </button>
                         ))}
                       </div>
-
                       <button
                         onClick={() =>
                           setCurrentPage((prev) =>
@@ -947,32 +1008,22 @@ const EditAd: React.FC = () => {
           </div>
         </div>
 
-        {/* Czarna stopka */}
         <footer className="bg-black text-white py-6 mt-auto">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
               <a
                 href="/zasady-bezpieczenstwa"
-                className="hover:text-purple-400 transition-colors"
+                className="hover:text-purple-400"
               >
                 Zasady bezpieczeństwa
               </a>
-              <a
-                href="/jak-dziala-moblix"
-                className="hover:text-purple-400 transition-colors"
-              >
+              <a href="/jak-dziala-moblix" className="hover:text-purple-400">
                 Jak działa MobliX
               </a>
-              <a
-                href="/regulamin"
-                className="hover:text-purple-400 transition-colors"
-              >
+              <a href="/regulamin" className="hover:text-purple-400">
                 Regulamin
               </a>
-              <a
-                href="/polityka-cookies"
-                className="hover:text-purple-400 transition-colors"
-              >
+              <a href="/polityka-cookies" className="hover:text-purple-400">
                 Polityka cookies
               </a>
             </div>
@@ -983,7 +1034,7 @@ const EditAd: React.FC = () => {
         </footer>
       </div>
 
-      {/* Edit modal */}
+      {/* Edit modal - full form with requested fields */}
       {showEditModal && editingAd && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full my-8 border border-gray-700">
@@ -1000,8 +1051,8 @@ const EditAd: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-              {/* Podstawowe informacje */}
+            <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-2">
+              {/* Basic info */}
               <div className="space-y-4">
                 <h4 className="text-lg font-semibold text-white flex items-center gap-2">
                   <FileText className="h-5 w-5 text-purple-400" />
@@ -1018,7 +1069,7 @@ const EditAd: React.FC = () => {
                     onChange={(e) =>
                       setEditForm({ ...editForm, title: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
                     placeholder="np. iPhone 13 128GB"
                   />
                 </div>
@@ -1033,7 +1084,7 @@ const EditAd: React.FC = () => {
                       setEditForm({ ...editForm, description: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
                     placeholder="Szczegółowy opis ogłoszenia..."
                   />
                 </div>
@@ -1049,11 +1100,10 @@ const EditAd: React.FC = () => {
                       onChange={(e) =>
                         setEditForm({
                           ...editForm,
-                          price: parseFloat(e.target.value),
+                          price: parseFloat(e.target.value || "0"),
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="2500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                     />
                   </div>
 
@@ -1066,21 +1116,21 @@ const EditAd: React.FC = () => {
                       onChange={(e) =>
                         setEditForm({ ...editForm, condition: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                     >
-                      <option value="Nowy">Nowy</option>
-                      <option value="Używany - bardzo dobry">
-                        Używany - bardzo dobry
-                      </option>
-                      <option value="Używany - dobry">Używany - dobry</option>
-                      <option value="Używany - zadowalający">
-                        Używany - zadowalający
-                      </option>
+                      <option value="">Wybierz stan</option>
+                      <option value="NEW">Nowy</option>
+                      <option value="LIKE_NEW">Jak nowy</option>
+                      <option value="VERY_GOOD">Bardzo dobry</option>
+                      <option value="GOOD">Dobry</option>
+                      <option value="ACCEPTABLE">Zadowalający</option>
                     </select>
                   </div>
                 </div>
 
+                {/* Location */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>{renderCityDropdown()}</div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Gwarancja
@@ -1091,13 +1141,10 @@ const EditAd: React.FC = () => {
                       onChange={(e) =>
                         setEditForm({ ...editForm, warranty: e.target.value })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                       placeholder="np. 12 miesięcy"
                     />
-                  </div>
-
-                  <div className="flex items-center h-full pt-7">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-3 mt-4">
                       <input
                         type="checkbox"
                         checked={editForm.includesCharger}
@@ -1107,24 +1154,23 @@ const EditAd: React.FC = () => {
                             includesCharger: e.target.checked,
                           })
                         }
-                        className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-600"
+                        className="w-4 h-4 text-purple-600 bg-gray-900 border-gray-600 rounded"
                       />
-                      <span className="text-sm font-medium text-gray-700">
-                        Dołączona ładowarka
+                      <span className="text-gray-300">
+                        Ładowarka z kablem w zestawie
                       </span>
                     </label>
                   </div>
                 </div>
               </div>
 
-              {/* Zdjęcia */}
+              {/* Images */}
               <div className="space-y-4 border-t pt-6">
                 <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <ImageIcon className="h-5 w-5 text-purple-600" />
                   Zdjęcia ogłoszenia
                 </h4>
 
-                {/* Existing images */}
                 {editImages.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {editImages.map((imageUrl, index) => (
@@ -1190,14 +1236,17 @@ const EditAd: React.FC = () => {
                   </div>
                 )}
 
-                {/* Upload new images */}
                 <div>
                   <label className="block w-full">
-                    <div className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors cursor-pointer">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors cursor-pointer"
+                    >
                       <Upload className="h-5 w-5" />
-                      <span>Dodaj nowe zdjęcia</span>
+                      Dodaj nowe zdjęcia
                     </div>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       multiple
                       accept="image/*"
@@ -1205,18 +1254,29 @@ const EditAd: React.FC = () => {
                       className="hidden"
                     />
                   </label>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Pierwsze zdjęcie będzie wyświetlane jako główne. Możesz
-                    zmienić kolejność używając strzałek.
-                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="https://i.imgur.com/abc123.jpg"
+                      className="flex-1 px-4 py-2 rounded-lg border border-gray-600 bg-gray-900 text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={addImageUrl}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg"
+                    >
+                      Dodaj link
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Specyfikacja techniczna */}
+              {/* Specification */}
               <div className="space-y-4 border-t pt-6">
                 <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Smartphone className="h-5 w-5 text-purple-600" />
-                  Specyfikacja techniczna
+                  Specyfikacja smartfona
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1236,11 +1296,9 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="Apple"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Model *
@@ -1257,11 +1315,9 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="iPhone 13"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Kolor *
@@ -1278,13 +1334,12 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="Midnight"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       System operacyjny *
@@ -1301,14 +1356,12 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="iOS / Android"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Wersja systemu *
+                      Wersja systemu
                     </label>
                     <input
                       type="text"
@@ -1322,13 +1375,12 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="17.0"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Pamięć wewnętrzna *
@@ -1345,11 +1397,9 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="128GB"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Pamięć RAM *
@@ -1366,16 +1416,15 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="6GB"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Aparat tylny *
+                      Aparat główny *
                     </label>
                     <input
                       type="text"
@@ -1389,11 +1438,9 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="12MP + 12MP"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Aparat przedni *
@@ -1410,14 +1457,12 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="12MP"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bateria *
+                      Pojemność baterii *
                     </label>
                     <input
                       type="text"
@@ -1431,35 +1476,233 @@ const EditAd: React.FC = () => {
                           },
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                      placeholder="3240mAh"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-3 justify-end mt-6 pt-6 border-t border-gray-700">
-              <button
-                onClick={cancelEdit}
-                className="px-6 py-2 rounded-lg border border-gray-600 text-white hover:bg-gray-700 transition-colors"
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-              >
-                <Save className="h-5 w-5" />
-                Zapisz zmiany
-              </button>
+              {/* Additional optional specs */}
+              <div className="border-t pt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAdditionalSpecs((prev) => !prev)}
+                  className="w-full text-left px-4 py-3 bg-gray-800 rounded-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-purple-400" />
+                      <span className="font-semibold">
+                        Dodatkowe specyfikacje (opcjonalne)
+                      </span>
+                    </div>
+                    <ChevronDownIcon
+                      className={`h-5 w-5 ${
+                        showAdditionalSpecs ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+
+                {showAdditionalSpecs && (
+                  <div className="mt-4 space-y-4 p-4 bg-gray-900 rounded-lg border border-gray-600">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        value={editForm.specification.displaySize}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              displaySize: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Przekątna"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        value={editForm.specification.displayTech}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              displayTech: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Technologia"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        value={editForm.specification.wifi}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              wifi: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Wi-Fi"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        value={editForm.specification.bluetooth}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              bluetooth: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Bluetooth"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        value={editForm.specification.ipRating}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              ipRating: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Odporność (IP)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        value={editForm.specification.fastCharging}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              fastCharging: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Ładowanie przewodowe"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        value={editForm.specification.wirelessCharging}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              wirelessCharging: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Ładowanie bezprzewodowe"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        value={editForm.specification.processor}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              processor: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Procesor"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        value={editForm.specification.gpu}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              gpu: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Karta graficzna"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        value={editForm.specification.screenResolution}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              screenResolution: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Rozdzielczość"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        value={editForm.specification.refreshRate}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            specification: {
+                              ...editForm.specification,
+                              refreshRate: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Częstotliwość odświeżania (Hz)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 justify-end mt-6 pt-6 border-t border-gray-700">
+                <button
+                  onClick={cancelEdit}
+                  className="px-6 py-2 rounded-lg border border-gray-600 text-white hover:bg-gray-700 transition-colors"
+                >
+                  Anuluj
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                  <Save className="h-5 w-5" />
+                  Zapisz zmiany
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete confirmation modal */}
+      {/* Delete modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
