@@ -71,4 +71,12 @@ public class SearchStatsController {
         Map<String, Object> result = searchLogService.getTopBrandsByTimePeriod(period);
         return ResponseEntity.ok(result);
     }
+
+    // Endpoint: navbar-only counts (today or per-day for a period)
+    @GetMapping("/navbar-count")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> getNavbarCount(@RequestParam(defaultValue = "today") String period) {
+        Map<String, Object> result = searchLogService.getNavbarCounts(period);
+        return ResponseEntity.ok(result);
+    }
 }

@@ -110,12 +110,6 @@ const Statystyki: React.FC = () => {
         { headers: getAuthHeaders() }
       );
       setStats(response.data);
-      // compute navbar count from recentSearchActivity as a fallback (keeps UI accurate if navbar-count endpoint fails)
-      try {
-        computeNavbarCountFromStats(response.data);
-      } catch (e) {
-        // ignore
-      }
     } catch (err) {
       console.error("Error fetching search stats:", err);
     } finally {
@@ -137,51 +131,33 @@ const Statystyki: React.FC = () => {
         "Failed to fetch navbar-only count, falling back to derive or 0",
         err
       );
-      // Fallback: compute from already-fetched stats if available, otherwise fetch stats and compute
-      if (stats && stats.recentSearchActivity) {
-        computeNavbarCountFromStats(stats);
-      } else {
-        try {
-          const resp = await axios.get<SearchStats>(
-            "http://localhost:8080/api/search-stats",
-            { headers: getAuthHeaders() }
-          );
-          setStats(resp.data);
-          computeNavbarCountFromStats(resp.data);
-        } catch (e) {
-          console.error("Fallback also failed:", e);
+      // Fallback: derive from recentSearchActivity if available
+      try {
+        const resp = await axios.get<SearchStats>(
+          "http://localhost:8080/api/search-stats",
+          { headers: getAuthHeaders() }
+        );
+        if (resp.data?.recentSearchActivity) {
+          const today = new Date().toISOString().slice(0, 10);
+          const count = resp.data.recentSearchActivity.filter((r) => {
+            const createdDate = r.createdAt ? r.createdAt.slice(0, 10) : "";
+            const srcRaw =
+              (r as any).searchSource ??
+              (r as any).search_source ??
+              (r as any).source ??
+              "";
+            const src = srcRaw?.toString?.().toLowerCase?.().trim?.() ?? "";
+            return createdDate === today && src === "navbar";
+          }).length;
+          setNavbarSearchesToday(count);
+        } else {
           setNavbarSearchesToday(0);
         }
-      }
-    }
-  };
-
-  // Helper: compare local dates (year/month/day)
-  const isSameLocalDate = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
-  // Helper: compute navbar searches count from recentSearchActivity
-  const computeNavbarCountFromStats = (s?: SearchStats | null) => {
-    if (!s || !s.recentSearchActivity) {
-      setNavbarSearchesToday(0);
-      return 0;
-    }
-    const today = new Date();
-    const count = s.recentSearchActivity.reduce((acc, r) => {
-      try {
-        if (!r || !r.createdAt) return acc;
-        const created = new Date(r.createdAt);
-        const src = (r.searchSource || "").toString().toLowerCase().trim();
-        if (isSameLocalDate(created, today) && src === "navbar") return acc + 1;
       } catch (e) {
-        // ignore malformed entry
+        console.error("Fallback also failed:", e);
+        setNavbarSearchesToday(0);
       }
-      return acc;
-    }, 0);
-    setNavbarSearchesToday(count);
-    return count;
+    }
   };
 
   const fetchBrandsByPeriod = async (period: "today" | "week" | "month") => {

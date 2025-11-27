@@ -100,6 +100,8 @@ public class SearchLogService {
                     item.put("maxPrice", log.getMaxPrice());
                     item.put("createdAt", log.getCreatedAt().toString());
                     item.put("resultsCount", log.getResultsCount());
+                    // Include the original search source so frontend can distinguish navbar/catalog/filter
+                    item.put("searchSource", log.getSearchSource());
                     return item;
                 })
                 .collect(Collectors.toList());
@@ -178,6 +180,38 @@ public class SearchLogService {
 
         return result;
     }
+
+        // Navbar-only counts helper (today total or per-day breakdown)
+        public Map<String, Object> getNavbarCounts(String period) {
+            Map<String, Object> result = new HashMap<>();
+            if (period == null || period.equalsIgnoreCase("today")) {
+                Long count = searchLogRepository.countNavbarToday();
+                result.put("count", count != null ? count : 0);
+                return result;
+            }
+
+            java.time.LocalDateTime startDate;
+            switch (period.toLowerCase()) {
+                case "week":
+                    startDate = java.time.LocalDateTime.now().minusDays(7);
+                    break;
+                case "month":
+                    startDate = java.time.LocalDateTime.now().minusDays(30);
+                    break;
+                default:
+                    startDate = java.time.LocalDateTime.now().minusDays(7);
+            }
+
+            List<Object[]> rows = searchLogRepository.findNavbarCountsByDate(startDate);
+            List<Map<String, Object>> byDate = rows.stream().map(r -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("date", r[0].toString());
+                m.put("count", ((Number) r[1]).longValue());
+                return m;
+            }).collect(Collectors.toList());
+            result.put("byDate", byDate);
+            return result;
+        }
 
     // Najczęściej wyszukiwane marki z podziałem na okresy
     public Map<String, Object> getTopBrandsByTimePeriod(String period) {

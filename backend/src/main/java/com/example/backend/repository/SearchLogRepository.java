@@ -17,6 +17,10 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
     @Query("SELECT COUNT(s) FROM SearchLog s WHERE CAST(s.createdAt AS date) = CURRENT_DATE AND s.searchSource IN ('navbar', 'catalog_search', 'catalog_filter')")
     Long countTodaySearches();
 
+    // Count only navbar searches for today
+    @Query("SELECT COUNT(s) FROM SearchLog s WHERE CAST(s.createdAt AS date) = CURRENT_DATE AND s.searchSource = 'navbar'")
+    Long countNavbarToday();
+
     // Najczęściej wyszukiwane marki (top 10)
     @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findTopSearchedBrands();
@@ -43,6 +47,10 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
 
     // Wyszukiwania w danym przedziale czasowym
     List<SearchLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    // Navbar counts grouped by day since startDate
+    @Query("SELECT CAST(s.createdAt AS date) as date, COUNT(s) as count FROM SearchLog s WHERE s.createdAt >= :startDate AND s.searchSource = 'navbar' GROUP BY CAST(s.createdAt AS date) ORDER BY CAST(s.createdAt AS date) ASC")
+    List<Object[]> findNavbarCountsByDate(@Param("startDate") LocalDateTime startDate);
 
     // Najpopularniejsze modele
     @Query("SELECT s.model, COUNT(s) as count FROM SearchLog s WHERE s.model IS NOT NULL GROUP BY s.model ORDER BY count DESC")
