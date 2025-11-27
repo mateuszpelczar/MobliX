@@ -124,7 +124,59 @@ public class SearchLogService {
                 .collect(Collectors.toList());
         stats.put("topSearchedModels", modelStats);
 
+        // 10. Najczęściej wystawiane marki wg przedziałów cenowych (0-1500,1500-5000,5000+)
+        stats.put("priceRangesByBrand", getTopListedBrandsByPriceBuckets());
+
         return stats;
+    }
+
+    // Aggregation: top listed/searching brands per price bucket based on search_logs
+    public List<Map<String, Object>> getTopListedBrandsByPriceBuckets() {
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+
+        // low bucket
+        List<Object[]> low = searchLogRepository.findTopBrandsBySearchPriceRangeLow();
+        if (low != null && !low.isEmpty()) {
+            Object[] row = low.get(0);
+            Map<String, Object> item = new HashMap<>();
+            item.put("brand", row[0]);
+            item.put("minPrice", 0);
+            item.put("maxPrice", 1500);
+            item.put("count", ((Number) row[1]).longValue());
+            result.add(item);
+        } else {
+            result.add(Map.of("brand", null, "minPrice", 0, "maxPrice", 1500, "count", 0));
+        }
+
+        // mid bucket
+        List<Object[]> mid = searchLogRepository.findTopBrandsBySearchPriceRangeMid();
+        if (mid != null && !mid.isEmpty()) {
+            Object[] row = mid.get(0);
+            Map<String, Object> item = new HashMap<>();
+            item.put("brand", row[0]);
+            item.put("minPrice", 1500);
+            item.put("maxPrice", 5000);
+            item.put("count", ((Number) row[1]).longValue());
+            result.add(item);
+        } else {
+            result.add(Map.of("brand", null, "minPrice", 1500, "maxPrice", 5000, "count", 0));
+        }
+
+        // high bucket
+        List<Object[]> high = searchLogRepository.findTopBrandsBySearchPriceRangeHigh();
+        if (high != null && !high.isEmpty()) {
+            Object[] row = high.get(0);
+            Map<String, Object> item = new HashMap<>();
+            item.put("brand", row[0]);
+            item.put("minPrice", 5000);
+            item.put("maxPrice", null);
+            item.put("count", ((Number) row[1]).longValue());
+            result.add(item);
+        } else {
+            result.add(Map.of("brand", null, "minPrice", 5000, "maxPrice", null, "count", 0));
+        }
+
+        return result;
     }
 
     // Najczęściej wyszukiwane marki z podziałem na okresy

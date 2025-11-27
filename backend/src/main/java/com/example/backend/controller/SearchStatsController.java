@@ -27,42 +27,42 @@ public class SearchStatsController {
     }
 
     // Endpoint dla statystyk wyszukiwań (Staff Panel - Statystyki.tsx)
-@GetMapping
-@PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-public ResponseEntity<Map<String, Object>> getSearchStatistics() {
-    Map<String, Object> stats = searchLogService.getSearchStatistics();
-    
-    // Dodaj najczęściej wystawiane marki (aktywne ogłoszenia, limit 5)
-    List<Object[]> topListedBrands = advertisementRepository.findTopListedBrands();
-    List<Map<String, Object>> listedBrandStats = topListedBrands.stream()
-            .map(row -> {
-                Map<String, Object> item = new HashMap<>();
-                item.put("brand", row[0]);
-                item.put("count", row[1]);
-                return item;
-            })
-            .collect(Collectors.toList());
-    stats.put("topListedBrands", listedBrandStats);
-    
-    // Dodaj przedziały cenowe według marek - wywołaj metodę z tego kontrolera
-    stats.put("priceRangesByBrand", getPriceRangesByBrand());
-    
-    return ResponseEntity.ok(stats);
-}
+    @GetMapping
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<Map<String, Object>> getSearchStatistics() {
+        Map<String, Object> stats = searchLogService.getSearchStatistics();
 
-// Metodo do sekcji Analiza cen według marek w pliku statystyki
-public List<Map<String, Object>> getPriceRangesByBrand(){
-    List<Object[]> results = searchLogRepository.findMostCommonPriceRangesByBrand();
+        // Dodaj najczęściej wystawiane marki (aktywne ogłoszenia, limit 5)
+        List<Object[]> topListedBrands = advertisementRepository.findTopListedBrands();
+        List<Map<String, Object>> listedBrandStats = topListedBrands.stream()
+                .map(row -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("brand", row[0]);
+                    item.put("count", row[1]);
+                    return item;
+                })
+                .collect(Collectors.toList());
+        stats.put("topListedBrands", listedBrandStats);
 
-    return results.stream().map(row -> {
-        Map<String, Object> item = new HashMap<>();
-        item.put("brand", row[0]);
-        item.put("count", row[1]);
-        item.put("minPrice", null);  
-        item.put("maxPrice", null);  
-        return item;
-    }).collect(Collectors.toList());
-}
+        // Dodaj przedziały cenowe według marek - teraz z agregacji search_logs
+        stats.put("priceRangesByBrand", searchLogService.getTopListedBrandsByPriceBuckets());
+
+        return ResponseEntity.ok(stats);
+    }
+
+    // Metodo do sekcji Analiza cen według marek w pliku statystyki
+    public List<Map<String, Object>> getPriceRangesByBrand(){
+        List<Object[]> results = searchLogRepository.findMostCommonPriceRangesByBrand();
+
+        return results.stream().map(row -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("brand", row[0]);
+            item.put("count", row[1]);
+            item.put("minPrice", null);  
+            item.put("maxPrice", null);  
+            return item;
+        }).collect(Collectors.toList());
+    }
 
     // Nowy endpoint dla najczęściej wyszukiwanych marek z podziałem na okresy
     @GetMapping("/top-brands-by-period")

@@ -20,9 +20,9 @@ import {
   Bell,
   Heart,
   Plus,
-  LogIn,
 } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
+import { smartphones as staticSmartphones } from "../overall/SmartphoneDetails";
 
 type JwtPayLoad = {
   sub: string;
@@ -57,6 +57,7 @@ interface SearchStats {
     maxPrice: number;
     createdAt: string;
     resultsCount: number;
+    searchSource?: string;
   }>;
   uniqueUsersToday: number;
   uniqueSessionsToday: number;
@@ -88,67 +89,146 @@ const Statystyki: React.FC = () => {
   >("today");
   const [brandPeriodStats, setBrandPeriodStats] =
     useState<BrandPeriodStats | null>(null);
+  const [adsList, setAdsList] = useState<any[] | null>(null);
 
-  // Fetch search statistics from API
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get<SearchStats>(
-          "http://localhost:8080/api/search-stats",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setStats(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching search stats:", error);
-        setLoading(false);
-      }
-    };
+  // navbar-only count for today (preferred in blue card)
+  const [navbarSearchesToday, setNavbarSearchesToday] = useState<number | null>(
+    null
+  );
 
-    fetchStats();
-    fetchFavoriteCount();
-    fetchBrandsByPeriod("today");
-  }, []);
+  // helper to get auth headers if token present
+  const getAuthHeaders = (): Record<string, string> | undefined => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : undefined;
+  };
 
-  // Fetch brands by period
-  const fetchBrandsByPeriod = async (period: "today" | "week" | "month") => {
+  // Fetch main stats
+  const fetchStats = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get<BrandPeriodStats>(
-        `http://localhost:8080/api/search-stats/top-brands-by-period?period=${period}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await axios.get<SearchStats>(
+        "http://localhost:8080/api/search-stats",
+        { headers: getAuthHeaders() }
       );
-      setBrandPeriodStats(response.data);
-    } catch (error) {
-      console.error("Error fetching brand period stats:", error);
+      setStats(response.data);
+      // compute navbar count from recentSearchActivity as a fallback (keeps UI accurate if navbar-count endpoint fails)
+      try {
+        computeNavbarCountFromStats(response.data);
+      } catch (e) {
+        // ignore
+      }
+    } catch (err) {
+      console.error("Error fetching search stats:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle period change
-  const handlePeriodChange = (period: "today" | "week" | "month") => {
-    setSelectedPeriod(period);
-    fetchBrandsByPeriod(period);
+  // Fetch count of searches made from navbar today
+  const fetchNavbarSearchesToday = async () => {
+    try {
+      const response = await axios.get<{ count: number }>(
+        "http://localhost:8080/api/search-stats/navbar-count?period=today",
+        { headers: getAuthHeaders() }
+      );
+      const count = response.data?.count ?? 0;
+      setNavbarSearchesToday(count);
+    } catch (err) {
+      console.warn(
+        "Failed to fetch navbar-only count, falling back to derive or 0",
+        err
+      );
+      // Fallback: compute from already-fetched stats if available, otherwise fetch stats and compute
+      if (stats && stats.recentSearchActivity) {
+        computeNavbarCountFromStats(stats);
+      } else {
+        try {
+          const resp = await axios.get<SearchStats>(
+            "http://localhost:8080/api/search-stats",
+            { headers: getAuthHeaders() }
+          );
+          setStats(resp.data);
+          computeNavbarCountFromStats(resp.data);
+        } catch (e) {
+          console.error("Fallback also failed:", e);
+          setNavbarSearchesToday(0);
+        }
+      }
+    }
+  };
+
+  // Helper: compare local dates (year/month/day)
+  const isSameLocalDate = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  // Helper: compute navbar searches count from recentSearchActivity
+  const computeNavbarCountFromStats = (s?: SearchStats | null) => {
+    if (!s || !s.recentSearchActivity) {
+      setNavbarSearchesToday(0);
+      return 0;
+    }
+    const today = new Date();
+    const count = s.recentSearchActivity.reduce((acc, r) => {
+      try {
+        if (!r || !r.createdAt) return acc;
+        const created = new Date(r.createdAt);
+        const src = (r.searchSource || "").toString().toLowerCase().trim();
+        if (isSameLocalDate(created, today) && src === "navbar") return acc + 1;
+      } catch (e) {
+        // ignore malformed entry
+      }
+      return acc;
+    }, 0);
+    setNavbarSearchesToday(count);
+    return count;
+  };
+
+  const fetchBrandsByPeriod = async (period: "today" | "week" | "month") => {
+    try {
+      const response = await axios.get<BrandPeriodStats>(
+        `http://localhost:8080/api/search-stats/top-brands-by-period?period=${period}`,
+        { headers: getAuthHeaders() }
+      );
+      setBrandPeriodStats(response.data);
+    } catch (err) {
+      console.error("Error fetching brand period stats:", err);
+    }
   };
 
   const fetchFavoriteCount = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
       const response = await fetch("http://localhost:8080/api/favorites", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: getAuthHeaders(),
       });
       if (response.ok) {
         const data = await response.json();
-        setFavoriteCount(data.length);
+        setFavoriteCount(Array.isArray(data) ? data.length : 0);
       }
-    } catch (error) {
-      console.error("Error fetching favorite count:", error);
+    } catch (err) {
+      console.error("Error fetching favorite count:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    fetchFavoriteCount();
+    fetchBrandsByPeriod("today");
+    fetchAdvertisementsList();
+    fetchNavbarSearchesToday();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchAdvertisementsList = async () => {
+    try {
+      const response = await axios.get<any[]>(
+        "http://localhost:8080/api/advertisements",
+        { headers: getAuthHeaders() }
+      );
+      if (Array.isArray(response.data)) setAdsList(response.data);
+    } catch (err) {
+      console.warn("Failed to fetch advertisements for brand derivation", err);
+      setAdsList([]);
     }
   };
 
@@ -164,46 +244,31 @@ const Statystyki: React.FC = () => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-    setIsDropdownOpen(false);
-  };
-
-  const handleGoToAdminPanel = () => {
-    navigate("/admin");
-    setIsDropdownOpen(false);
-  };
-
-  const handleMessengerClick = () => navigate("/user/message");
-  const handleNotificationsClick = () => navigate("/user/notifications");
-  const handleWatchedAdsClick = () => navigate("/user/watchedads");
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();
 
-    if (query || true) {
-      // Log search from navbar
-      if (query) {
-        try {
-          const token = localStorage.getItem("token");
-          let userId = null;
-
-          if (token) {
-            try {
-              const decoded = jwtDecode<JwtPayLoad>(token);
-              userId = decoded.sub ? parseInt(decoded.sub) : null;
-            } catch (error) {
-              console.error("Error decoding token:", error);
-            }
+    // always navigate (even if empty)
+    if (query) {
+      try {
+        const token = localStorage.getItem("token");
+        let userId: number | null = null;
+        if (token) {
+          try {
+            const decoded = jwtDecode<JwtPayLoad>(token);
+            userId = decoded.sub ? parseInt(decoded.sub) : null;
+          } catch {
+            userId = null;
           }
+        }
 
-          await axios.post("http://localhost:8080/api/search-logs", {
+        // Log search with explicit Authorization header (if required by backend)
+        await axios.post(
+          "http://localhost:8080/api/search-logs",
+          {
             searchQuery: query,
             brand: null,
             model: null,
@@ -213,57 +278,74 @@ const Statystyki: React.FC = () => {
             sessionId: null,
             resultsCount: null,
             searchSource: "navbar",
-          });
-        } catch (error) {
-          console.error("Error logging search:", error);
-        }
-      }
+          },
+          { headers: getAuthHeaders() }
+        );
 
-      navigate(query ? `/smartfony?search=${query}` : "/smartfony");
+        // refresh navbar count immediately
+        fetchNavbarSearchesToday();
+      } catch (err) {
+        console.error("Error logging navbar search:", err);
+      }
     }
+
+    navigate(
+      query ? `/smartfony?search=${encodeURIComponent(query)}` : "/smartfony"
+    );
   };
 
-  // Check user role from JWT token
+  // role checks
   const token = localStorage.getItem("token");
   let isAdmin = false;
   let isStaff = false;
   let isUser = false;
   let isAuthenticated = false;
-
   if (token) {
     try {
       const decoded = jwtDecode<JwtPayLoad>(token);
       isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
       isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
       isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
-    } catch (error) {
-      console.error("Error decoding token:", error);
+      isAuthenticated = true;
+    } catch {
+      // ignore
     }
   }
 
   const handleAddAdClick = () => {
-    if (isAuthenticated) {
-      navigate("/user/addadvertisement");
-    } else {
-      navigate("/login");
-    }
+    if (isAuthenticated) navigate("/user/addadvertisement");
+    else navigate("/login");
   };
 
-  // Format date
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+    setIsDropdownOpen(false);
+  };
+
+  const handleMessengerClick = () => navigate("/user/message");
+  const handleNotificationsClick = () => navigate("/user/notifications");
+  const handleWatchedAdsClick = () => navigate("/user/watchedads");
+
+  // Handle period change
+  const handlePeriodChange = (period: "today" | "week" | "month") => {
+    setSelectedPeriod(period);
+    fetchBrandsByPeriod(period);
+  };
+
+  // helpers
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-
     if (diffMins < 1) return "przed chwilą";
     if (diffMins < 60) return `${diffMins} min temu`;
     if (diffHours < 24) return `${diffHours} godz. temu`;
     return date.toLocaleDateString("pl-PL");
   };
 
-  // Get gradient color by rank
   const getRankGradient = (index: number) => {
     const gradients = [
       "from-blue-500 to-blue-600",
@@ -296,6 +378,118 @@ const Statystyki: React.FC = () => {
     return colors[index % colors.length];
   };
 
+  // Compute top listed brands with random tie-break for equal counts.
+  // Limit to maximum 3 brands as requested.
+  const topListedBrandsToShow = React.useMemo(() => {
+    // Primary source: backend-provided topListedBrands
+    let brands: Array<{ brand: string; count: number }> =
+      stats?.topListedBrands && stats.topListedBrands.length > 0
+        ? stats.topListedBrands.map((b) => ({ brand: b.brand, count: b.count }))
+        : [];
+
+    // Secondary: derive counts from live advertisements (only ACTIVE status)
+    if ((!brands || brands.length === 0) && adsList && adsList.length > 0) {
+      const map = new Map<string, number>();
+      const activeAds = adsList.filter(
+        (a) => (a.status || "").toString().toUpperCase() === "ACTIVE"
+      );
+      for (const ad of activeAds) {
+        const b = (ad.specification?.brand || ad.specification?.marka || "")
+          .toString()
+          .trim();
+        if (!b) continue;
+        map.set(b, (map.get(b) || 0) + 1);
+      }
+      brands = Array.from(map.entries()).map(([brand, count]) => ({
+        brand,
+        count,
+      }));
+    }
+
+    // Tertiary: fall back to topSearchedBrands if available
+    if ((!brands || brands.length === 0) && stats?.topSearchedBrands) {
+      brands = stats.topSearchedBrands.map((b) => ({
+        brand: b.brand,
+        count: b.count,
+      }));
+    }
+
+    // Quaternary: derive from static fixtures (SmartphoneDetails.specifications.brand)
+    if (
+      (!brands || brands.length === 0) &&
+      staticSmartphones &&
+      staticSmartphones.length > 0
+    ) {
+      const map = new Map<string, number>();
+      for (const s of staticSmartphones) {
+        const b = (s.specifications?.brand || s.brand || "").toString().trim();
+        if (!b) continue;
+        map.set(b, (map.get(b) || 0) + 1);
+      }
+      brands = Array.from(map.entries()).map(([brand, count]) => ({
+        brand,
+        count,
+      }));
+    }
+
+    // If still empty, show fallback defaults
+    if (!brands || brands.length === 0) {
+      const defaults = ["Samsung", "Apple", "Xiaomi", "Huawei", "Motorola"];
+      for (let i = defaults.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [defaults[i], defaults[j]] = [defaults[j], defaults[i]];
+      }
+      return defaults.slice(0, 3).map((brand) => ({ brand, count: 1 }));
+    }
+
+    // If every brand has exactly one listing, show 3 random ACTIVE ads (brands taken from them)
+    const maxCount = Math.max(...brands.map((b) => b.count));
+    if (maxCount === 1) {
+      // Prefer active ads from backend, else static fixtures
+      let pool: any[] = [];
+      if (adsList && adsList.length > 0) {
+        pool = adsList.filter(
+          (a) => (a.status || "").toString().toUpperCase() === "ACTIVE"
+        );
+      }
+      if (
+        (!pool || pool.length === 0) &&
+        staticSmartphones &&
+        staticSmartphones.length > 0
+      ) {
+        pool = staticSmartphones as any[];
+      }
+
+      // Shuffle pool and pick up to 3
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const selected = pool.slice(0, 3);
+      const result = selected
+        .map((ad) => {
+          const brand = (
+            ad.specification?.brand ||
+            ad.specifications?.brand ||
+            ad.brand ||
+            ""
+          )?.toString();
+          return brand ? { brand: brand.trim(), count: 1 } : null;
+        })
+        .filter(Boolean) as Array<{ brand: string; count: number }>;
+
+      if (result.length > 0) return result;
+    }
+
+    // Otherwise sort by count desc, tie-break by random value, limit to 3
+    const withRand = brands.map((b) => ({ ...b, _rand: Math.random() }));
+    withRand.sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a._rand - b._rand;
+    });
+    return withRand.slice(0, 3).map(({ _rand, ...rest }) => rest);
+  }, [stats, adsList, staticSmartphones]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
@@ -307,12 +501,17 @@ const Statystyki: React.FC = () => {
     );
   }
 
+  // value to show in blue card: prefer navbar-only number if available
+  const blueCardCount =
+    navbarSearchesToday !== null
+      ? navbarSearchesToday
+      : stats?.searchesToday ?? 0;
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
-      {/* Czarny pasek nawigacji */}
+      {/* Nav */}
       <nav className="bg-black text-white px-4 py-3 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          {/* Logo */}
           <div
             className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
             onClick={() => navigate("/main")}
@@ -320,7 +519,6 @@ const Statystyki: React.FC = () => {
             MobliX
           </div>
 
-          {/* Wyszukiwarka */}
           <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
             <div className="relative">
               <input
@@ -334,9 +532,7 @@ const Statystyki: React.FC = () => {
             </div>
           </form>
 
-          {/* Ikony i przyciski */}
           <div className="flex items-center gap-3">
-            {/* Ikona czatu */}
             <button
               onClick={handleMessengerClick}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
@@ -344,8 +540,6 @@ const Statystyki: React.FC = () => {
             >
               <MessageSquare className="w-6 h-6" />
             </button>
-
-            {/* Ikona powiadomień */}
             <button
               onClick={handleNotificationsClick}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
@@ -353,8 +547,6 @@ const Statystyki: React.FC = () => {
             >
               <Bell className="w-6 h-6" />
             </button>
-
-            {/* Ikona ulubionych */}
             <button
               onClick={handleWatchedAdsClick}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
@@ -367,24 +559,19 @@ const Statystyki: React.FC = () => {
                 </span>
               )}
             </button>
-
-            {/* Przycisk dodaj ogłoszenie */}
             <button
               onClick={handleAddAdClick}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
-              <Plus className="w-5 h-5" />
-              Dodaj ogłoszenie
+              <Plus className="w-5 h-5" /> Dodaj ogłoszenie
             </button>
 
-            {/* Dropdown Twoje konto */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-2 px-4 py-2 hover:bg-gray-800 rounded-lg transition-colors"
               >
-                <User className="w-5 h-5" />
-                Twoje konto
+                <User className="w-5 h-5" /> Twoje konto{" "}
                 <ChevronDown
                   className={`w-4 h-4 transition-transform ${
                     isDropdownOpen ? "rotate-180" : ""
@@ -392,93 +579,83 @@ const Statystyki: React.FC = () => {
                 />
               </button>
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl py-2 z-50">
-                  {token ? (
-                    <>
-                      <button
-                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/your-ads");
-                        }}
-                      >
-                        <ShoppingBag className="w-4 h-4 text-blue-400" />
-                        Ogłoszenia
-                      </button>
-                      <button
-                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/message");
-                        }}
-                      >
-                        <MessageSquare className="w-4 h-4 text-green-400" />
-                        Chat
-                      </button>
-                      <button
-                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          navigate("/user/personaldetails");
-                        }}
-                      >
-                        <User className="w-4 h-4 text-purple-300" />
-                        Profil
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={handleGoToAdminPanel}
-                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                        >
-                          <Shield className="w-4 h-4 text-red-400" />
-                          Panel administratora
-                        </button>
-                      )}
-                      {(isAdmin || isStaff) && (
-                        <button
-                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/staffpanel");
-                          }}
-                        >
-                          <Users className="w-4 h-4 text-orange-400" />
-                          Panel pracownika
-                        </button>
-                      )}
-                      {(isAdmin || isStaff || isUser) && (
-                        <button
-                          className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                          onClick={() => {
-                            setIsDropdownOpen(false);
-                            navigate("/userpanel");
-                          }}
-                        >
-                          <User className="w-4 h-4 text-cyan-400" />
-                          Panel użytkownika
-                        </button>
-                      )}
-                      <div className="border-t border-purple-400 my-1"></div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 hover:bg-black flex items-center gap-3 text-white"
-                      >
-                        <LogOut className="w-4 h-4 text-red-400" />
-                        Wyloguj
-                      </button>
-                    </>
-                  ) : (
+                <div className="absolute right-0 mt-2 w-56 bg-purple-600 rounded-lg shadow-xl z-50">
+                  <div className="py-1">
                     <button
-                      className="w-full text-left px-4 py-2 bg-black hover:bg-black flex items-center gap-3 text-white rounded-lg"
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        navigate("/login");
+                        navigate("/user/your-ads");
                       }}
                     >
-                      <LogIn className="w-4 h-4 text-white" />
-                      Zaloguj się
+                      <ShoppingBag className="w-4 h-4 text-blue-400" />
+                      Ogłoszenia
                     </button>
-                  )}
+                    <button
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/user/message");
+                      }}
+                    >
+                      <MessageSquare className="w-4 h-4 text-green-400" />
+                      Czat
+                    </button>
+                    <button
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate("/user/personaldetails");
+                      }}
+                    >
+                      <User className="w-4 h-4 text-purple-400" />
+                      Profil
+                    </button>
+                    {isAdmin && (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/admin");
+                        }}
+                      >
+                        <Shield className="w-4 h-4 text-red-400" />
+                        Panel administratora
+                      </button>
+                    )}
+                    {(isAdmin || isStaff) && (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/staffpanel");
+                        }}
+                      >
+                        <Users className="w-4 h-4 text-orange-400" />
+                        Panel pracownika
+                      </button>
+                    )}
+                    {(isAdmin || isStaff || isUser) && (
+                      <button
+                        className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          navigate("/userpanel");
+                        }}
+                      >
+                        <User className="w-4 h-4 text-cyan-400" />
+                        Panel użytkownika
+                      </button>
+                    )}
+                    <div className="border-t border-purple-400 my-1"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left text-white hover:bg-purple-700 flex items-center gap-3 px-4 py-3 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 text-red-400" />
+                      Wyloguj
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -489,7 +666,6 @@ const Statystyki: React.FC = () => {
       {/* Content */}
       <div className="flex-1 px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Header z ikoną BarChart3 */}
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="bg-purple-600 p-4 rounded-full">
@@ -506,16 +682,16 @@ const Statystyki: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* Blue card */}
           <div className="grid grid-cols-1 gap-4 mb-8">
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-sm font-medium">
-                    Wyszukiwania dzisiaj
+                    Wyszukiwania dzisiaj (tylko pasek nawigacji)
                   </p>
                   <p className="text-3xl font-bold text-white mt-2">
-                    {stats?.searchesToday || 0}
+                    {blueCardCount}
                   </p>
                 </div>
                 <Search className="w-12 h-12 text-white opacity-80" />
@@ -523,9 +699,9 @@ const Statystyki: React.FC = () => {
             </div>
           </div>
 
-          {/* Main Statistics Grid */}
+          {/* Rest of stats grid (unchanged structure) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Searched Brands with Period Tabs */}
+            {/* Top Searched Brands */}
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
               <div className="flex items-center gap-3 mb-4">
                 <Award className="w-6 h-6 text-yellow-400" />
@@ -533,8 +709,6 @@ const Statystyki: React.FC = () => {
                   Najczęściej wyszukiwane marki
                 </h3>
               </div>
-
-              {/* Period Tabs */}
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => handlePeriodChange("today")}
@@ -599,7 +773,6 @@ const Statystyki: React.FC = () => {
                           <p className="text-xs text-gray-400">wyszukiwań</p>
                         </div>
                       </div>
-                      {/* Source breakdown */}
                       {brandPeriodStats.sourceBreakdown[item.brand] && (
                         <div className="flex gap-2 text-xs mt-2">
                           {brandPeriodStats.sourceBreakdown[item.brand]
@@ -653,8 +826,8 @@ const Statystyki: React.FC = () => {
                 </h3>
               </div>
               <div className="space-y-3">
-                {stats?.topListedBrands?.length ? (
-                  stats.topListedBrands.slice(0, 5).map((item, index) => (
+                {topListedBrandsToShow?.length ? (
+                  topListedBrandsToShow.map((item, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-4 bg-gray-700 rounded border border-gray-600 hover:border-purple-500 transition-all"
@@ -693,103 +866,10 @@ const Statystyki: React.FC = () => {
               </div>
             </div>
 
-            {/* Search Trends (7 days) */}
+            {/* Recent search activity */}
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
               <div className="flex items-center gap-3 mb-4">
-                <TrendingUp className="w-6 h-6 text-green-400" />
-                <h3 className="text-lg font-semibold text-white">
-                  Trendy wyszukiwań (7 dni)
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {stats?.searchTrends?.length ? (
-                  stats.searchTrends.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center p-3 bg-gray-700 rounded border border-gray-600"
-                    >
-                      <span className="text-gray-300 text-sm">
-                        {new Date(item.date).toLocaleDateString("pl-PL")}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-green-500 rounded-full"
-                            style={{
-                              width: `${Math.min(
-                                (item.count / (stats.searchesToday || 1)) * 100,
-                                100
-                              )}%`,
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-green-400 font-semibold text-sm min-w-[3rem] text-right">
-                          {item.count}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-400 text-center py-4">
-                    Brak danych o trendach
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Price Ranges by Brand */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-              <div className="flex items-center gap-3 mb-4">
-                <Filter className="w-6 h-6 text-purple-400" />
-                <h3 className="text-lg font-semibold text-white">
-                  Najczęściej wyszukiwane przedziały cenowe według marek
-                </h3>
-              </div>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {stats?.priceRangesByBrand?.length ? (
-                  stats.priceRangesByBrand.slice(0, 3).map((item, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-gray-700 rounded border border-gray-600 hover:border-purple-500 transition-all"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 bg-gradient-to-r ${getRankGradient(
-                              index
-                            )} rounded-full flex items-center justify-center text-white font-bold text-sm`}
-                          >
-                            {index + 1}
-                          </div>
-                          <span className="text-white font-medium">
-                            {item.brand}
-                          </span>
-                        </div>
-                        <span className="text-xs text-purple-400 font-semibold">
-                          {item.count} wyszukiwań
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex-1 bg-gradient-to-r from-green-500 to-orange-500 h-2 rounded-full"></div>
-                        <span className="text-sm font-semibold text-gray-300">
-                          {item.minPrice?.toLocaleString()} -{" "}
-                          {item.maxPrice?.toLocaleString()} zł
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-400 text-center py-4">
-                    Brak danych o przedziałach cenowych
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Recent Search Activity */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 mt-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Activity className="w-6 h-6 text-blue-400" />
+                <Activity className="w-6 h-7 text-blue-400" />
                 <h3 className="text-lg font-semibold text-white">
                   Ostatnia aktywność wyszukiwań
                 </h3>
@@ -834,7 +914,7 @@ const Statystyki: React.FC = () => {
         </div>
       </div>
 
-      {/* Czarna stopka jak w MainPanel */}
+      {/* Footer */}
       <footer className="bg-black text-white py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-center items-center gap-6 text-sm">

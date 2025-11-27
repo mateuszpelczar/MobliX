@@ -354,21 +354,6 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
 
         }
 
-        // //pobierz statystyki dla admin panel
-        // @GetMapping("/stats/dashboard")
-        // @PreAuthorize("hasRole('ADMIN')")
-        // public ResponseEntity<Map<String,Long>> getAdminDashboardStats(){
-        //     Map<String, Long> stats = new HashMap<>();
-
-        //     //pobranie wszystkich uzytkownikow w systemie(wlacznie z zablokowanymi)
-        //     stats.put("totalUsers",(long) userService.getAllUsers().size());
-
-        //     //pobranie wszystkich aktywnych ogloszen w systemie
-        //     stats.put("activeAdvertisements", advertisementRepository.countByStatus(AdvertisementStatus.ACTIVE));
-
-        //     return ResponseEntity.ok(stats);
-        // }
-
         
         
     }

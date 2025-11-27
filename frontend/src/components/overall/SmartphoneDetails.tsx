@@ -95,7 +95,7 @@ interface SmartphoneData {
 }
 
 // Rozszerzone dane smartfonów
-const smartphones: SmartphoneData[] = [
+export const smartphones: SmartphoneData[] = [
   {
     id: 1,
     title: "iPhone 15 Pro Max 256GB Titan Natural",

@@ -46,12 +46,12 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     List<Advertisement> findTop4ByOrderBySmartphoneSpecificationDateAddedDesc();
 
     // Najczęściej wystawiane marki (dla statystyk) - tylko aktywne ogłoszenia, limit 5
-    @Query(value = "SELECT s.brand, COUNT(a.id) as count FROM advertisements a " +
-           "INNER JOIN smartphone_specifications s ON a.specification_id = s.id " +
-           "WHERE a.status = 'ACTIVE' AND s.brand IS NOT NULL " +
-           "GROUP BY s.brand " +
-           "ORDER BY count DESC " +
-           "LIMIT 5", nativeQuery = true)
+        @Query(value = "SELECT s.brand, COUNT(a.id) as count FROM ogloszenia a " +
+            "INNER JOIN smartphone_specifications s ON s.advertisement_id = a.id " +
+            "WHERE a.status = 'ACTIVE' AND s.brand IS NOT NULL " +
+            "GROUP BY s.brand " +
+            "ORDER BY count DESC " +
+            "LIMIT 5", nativeQuery = true)
     List<Object[]> findTopListedBrands();
 
     //metody do panelu admina
