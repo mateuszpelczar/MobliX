@@ -88,7 +88,12 @@ public class SearchLogService {
 
         // 6. Ostatnia aktywność wyszukiwań (ostatnie 20)
         List<SearchLog> recentSearches = searchLogRepository.findRecentSearches();
+        // Only include navbar searches and catalog_filter entries (brand filters)
         List<Map<String, Object>> recentActivity = recentSearches.stream()
+                .filter(log -> {
+                    String src = log.getSearchSource();
+                    return src != null && (src.equalsIgnoreCase("navbar") || src.equalsIgnoreCase("catalog_filter"));
+                })
                 .limit(20)
                 .map(log -> {
                     Map<String, Object> item = new HashMap<>();
@@ -147,7 +152,12 @@ public class SearchLogService {
             item.put("count", ((Number) row[1]).longValue());
             result.add(item);
         } else {
-            result.add(Map.of("brand", null, "minPrice", 0, "maxPrice", 1500, "count", 0));
+            Map<String, Object> emptyLow = new HashMap<>();
+            emptyLow.put("brand", null);
+            emptyLow.put("minPrice", 0);
+            emptyLow.put("maxPrice", 1500);
+            emptyLow.put("count", 0);
+            result.add(emptyLow);
         }
 
         // mid bucket
@@ -161,7 +171,12 @@ public class SearchLogService {
             item.put("count", ((Number) row[1]).longValue());
             result.add(item);
         } else {
-            result.add(Map.of("brand", null, "minPrice", 1500, "maxPrice", 5000, "count", 0));
+            Map<String, Object> emptyMid = new HashMap<>();
+            emptyMid.put("brand", null);
+            emptyMid.put("minPrice", 1500);
+            emptyMid.put("maxPrice", 5000);
+            emptyMid.put("count", 0);
+            result.add(emptyMid);
         }
 
         // high bucket
@@ -175,7 +190,12 @@ public class SearchLogService {
             item.put("count", ((Number) row[1]).longValue());
             result.add(item);
         } else {
-            result.add(Map.of("brand", null, "minPrice", 5000, "maxPrice", null, "count", 0));
+            Map<String, Object> emptyHigh = new HashMap<>();
+            emptyHigh.put("brand", null);
+            emptyHigh.put("minPrice", 5000);
+            emptyHigh.put("maxPrice", null);
+            emptyHigh.put("count", 0);
+            result.add(emptyHigh);
         }
 
         return result;

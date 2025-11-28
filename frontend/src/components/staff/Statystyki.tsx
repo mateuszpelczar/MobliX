@@ -852,33 +852,65 @@ const Statystyki: React.FC = () => {
               </div>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {stats?.recentSearchActivity?.length ? (
-                  stats.recentSearchActivity.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-4 p-3 bg-gray-700 rounded border border-gray-600 hover:border-purple-500 transition-all"
-                    >
-                      <Search className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium truncate">
-                          {item.searchQuery || `${item.brand} ${item.model}`}
-                        </p>
-                        <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatDate(item.createdAt)}
-                          </span>
-                          {item.resultsCount !== null && (
-                            <span>· {item.resultsCount} wyników</span>
-                          )}
-                          {item.minPrice && item.maxPrice && (
-                            <span>
-                              · {item.minPrice}-{item.maxPrice} zł
+                  stats.recentSearchActivity.map((item) => {
+                    const srcRaw =
+                      (item as any).searchSource ??
+                      (item as any).search_source ??
+                      (item as any).source ??
+                      "";
+                    const src =
+                      srcRaw?.toString?.().toLowerCase?.().trim?.() ?? "";
+                    const sourceLabel =
+                      src === "navbar"
+                        ? "Pasek"
+                        : src === "catalog_filter"
+                        ? "Filtry"
+                        : src;
+                    const title =
+                      item.searchQuery && item.searchQuery.trim() !== ""
+                        ? item.searchQuery
+                        : item.brand
+                        ? `${item.brand}${item.model ? " " + item.model : ""}`
+                        : "";
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-4 p-3 bg-gray-700 rounded border border-gray-600 hover:border-purple-500 transition-all"
+                      >
+                        <Search className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-white font-medium truncate">
+                              {title}
+                            </p>
+                            <span className="text-xs bg-gray-600 text-gray-100 px-2 py-0.5 rounded">
+                              {sourceLabel}
                             </span>
-                          )}
+                            {item.brand && src === "catalog_filter" && (
+                              <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded">
+                                Marka: {item.brand}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDate(item.createdAt)}
+                            </span>
+                            {item.resultsCount !== null && (
+                              <span>· {item.resultsCount} wyników</span>
+                            )}
+                            {item.minPrice != null && item.maxPrice != null && (
+                              <span>
+                                · {item.minPrice}-{item.maxPrice} zł
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-gray-400 text-center py-4">
                     Brak ostatniej aktywności
