@@ -1053,9 +1053,9 @@ const SmartphoneDetails: React.FC = () => {
           )}
 
           {!loading && !error && phoneData && (
-            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 md:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,2fr)_minmax(360px,1fr)] gap-4 md:gap-6">
               {/* Lewa kolumna - Zdjęcia */}
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 {/* Główne zdjęcie */}
                 <div className="relative bg-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700">
                   <img
@@ -1410,7 +1410,7 @@ const SmartphoneDetails: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 {/* Tytuł, cena, status */}
                 <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
                   <h1 className="text-xl md:text-2xl font-bold text-white mb-4">
