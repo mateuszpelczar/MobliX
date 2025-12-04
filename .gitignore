@@ -35,8 +35,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # File uploads and generated files
-# uploads/
-# uploads/images/
+uploads/
+uploads/images/
 
 # OS
 .DS_Store
