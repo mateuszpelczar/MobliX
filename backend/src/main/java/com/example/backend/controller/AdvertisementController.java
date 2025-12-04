@@ -131,7 +131,7 @@ public ResponseEntity<Void> incrementViewCount(
 
     @GetMapping("/latest")
     public ResponseEntity<List<AdvertisementResponseDTO>> getLatestAdvertisements() {
-        List<AdvertisementResponseDTO> latest = advertisementService.getLatestAdvertisements(4);
+        List<AdvertisementResponseDTO> latest = advertisementService.getLatestAdvertisements(20);
         return ResponseEntity.ok(latest);
     }
 
