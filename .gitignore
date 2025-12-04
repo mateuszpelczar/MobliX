@@ -10,9 +10,16 @@ target/
 *.iml
 out/
 
-# Spring / app config (sekrety)
-C:\MobliX\backend\src\main\resources\application.properties
+# Visual Studio Code
+.vscode/
+*.code-workspace
 
+# Spring / app config (sekrety)
+**/application.properties
+backend/src/main/resources/application.properties
+application-*.properties
+
+# Environment variables
 .env
 *.env
 .env.*
