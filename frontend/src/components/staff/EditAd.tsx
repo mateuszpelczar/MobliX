@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import "../../styles/MobileResponsive.css";
+import SearchBar from "../SearchBar";
 import {
   MessageSquare,
   ShoppingBag,
@@ -635,18 +636,7 @@ const EditAd: React.FC = () => {
             >
               MobliX
             </div>
-            <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Szukaj smartfonów..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </form>
+            <SearchBar />
             <div className="flex items-center gap-3">
               <button
                 onClick={handleMessengerClick}

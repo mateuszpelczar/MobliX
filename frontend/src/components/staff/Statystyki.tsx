@@ -1,15 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import SearchBar from "../SearchBar";
 import {
   User,
   ChevronDown,
   ShoppingBag,
   BarChart3,
-  TrendingUp,
   Search,
   Smartphone,
-  Filter,
   Award,
   Activity,
   Clock,
@@ -22,7 +22,7 @@ import {
   Plus,
 } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
-import { smartphones as staticSmartphones } from "../overall/SmartphoneDetails";
+import { smartphones as staticSmartphones } from "../data/smartphoneData";
 
 type JwtPayLoad = {
   sub: string;
@@ -82,7 +82,6 @@ const Statystyki: React.FC = () => {
   const [stats, setStats] = useState<SearchStats | null>(null);
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<
     "today" | "week" | "month"
@@ -222,53 +221,6 @@ const Statystyki: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-
-    // always navigate (even if empty)
-    if (query) {
-      try {
-        const token = localStorage.getItem("token");
-        let userId: number | null = null;
-        if (token) {
-          try {
-            const decoded = jwtDecode<JwtPayLoad>(token);
-            userId = decoded.sub ? parseInt(decoded.sub) : null;
-          } catch {
-            userId = null;
-          }
-        }
-
-        // Log search with explicit Authorization header (if required by backend)
-        await axios.post(
-          "http://localhost:8080/api/search-logs",
-          {
-            searchQuery: query,
-            brand: null,
-            model: null,
-            minPrice: null,
-            maxPrice: null,
-            userId: userId,
-            sessionId: null,
-            resultsCount: null,
-            searchSource: "navbar",
-          },
-          { headers: getAuthHeaders() }
-        );
-
-        // refresh navbar count immediately
-        fetchNavbarSearchesToday();
-      } catch (err) {
-        console.error("Error logging navbar search:", err);
-      }
-    }
-
-    navigate(
-      query ? `/smartfony?search=${encodeURIComponent(query)}` : "/smartfony"
-    );
-  };
 
   // role checks
   const token = localStorage.getItem("token");
@@ -463,8 +415,9 @@ const Statystyki: React.FC = () => {
       if (b.count !== a.count) return b.count - a.count;
       return a._rand - b._rand;
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return withRand.slice(0, 3).map(({ _rand, ...rest }) => rest);
-  }, [stats, adsList, staticSmartphones]);
+  }, [stats, adsList]);
 
   if (loading) {
     return (
@@ -495,18 +448,7 @@ const Statystyki: React.FC = () => {
             MobliX
           </div>
 
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Szukaj smartfonów..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            </div>
-          </form>
+          <SearchBar />
 
           <div className="flex items-center gap-3">
             <button

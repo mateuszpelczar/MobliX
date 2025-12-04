@@ -47,6 +47,7 @@ public class AdvertisementService {
     private final FavoriteAdRepository favoriteAdRepository;
     private final NotificationRepository notificationRepository;
     private final AdvertisementReportRepository advertisementReportRepository;
+    private final OpenSearchService openSearchService;
     
     @PersistenceContext
     private EntityManager entityManager;
@@ -67,7 +68,8 @@ public class AdvertisementService {
                                 NotificationRepository notificationRepository,
                                 MessageRepository messageRepository,
                                 ConversationRepository conversationRepository,
-                                AdvertisementReportRepository advertisementReportRepository) {
+                                AdvertisementReportRepository advertisementReportRepository,
+                                OpenSearchService openSearchService) {
         this.advertisementRepository = advertisementRepository;
         this.userService = userService;
         this.categoryRepository = categoryRepository;
@@ -79,6 +81,7 @@ public class AdvertisementService {
         this.favoriteAdRepository = favoriteAdRepository;
         this.notificationRepository = notificationRepository;
         this.advertisementReportRepository = advertisementReportRepository;
+        this.openSearchService = openSearchService;
     }
 
     
@@ -235,6 +238,24 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
          logService.logUserActivity(user, 
         "Utworzono ogłoszenie: " + advertisement.getTitle(), 
         "advertisementId:" + advertisement.getId());
+
+        // Indeksuj ogłoszenie w OpenSearch dla sugestii wyszukiwania
+        try {
+            SmartphoneSpecification spec = advertisement.getSmartphoneSpecification();
+            String brand = spec != null ? spec.getBrand() : "";
+            String model = spec != null ? spec.getModel() : "";
+            openSearchService.indexAdvertisement(
+                advertisement.getId(),
+                advertisement.getTitle(),
+                brand,
+                model,
+                advertisement.getDescription()
+            );
+        } catch (Exception e) {
+            logService.logUserActivity(user, 
+                "Błąd indeksowania OpenSearch: " + e.getMessage(), 
+                "advertisementId:" + advertisement.getId());
+        }
 
         return convertToResponseDTO(advertisement);
     }

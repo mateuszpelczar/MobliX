@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import SearchBar from "../SearchBar";
 import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,
@@ -14,7 +15,6 @@ import {
   Bell,
   Heart,
   Plus,
-  Search,
 } from "lucide-react";
 
 const JakDzialaMoblix: React.FC = () => {
@@ -23,7 +23,6 @@ const JakDzialaMoblix: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [pageContent, setPageContent] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
   const token = localStorage.getItem("token");
 
@@ -45,38 +44,6 @@ const JakDzialaMoblix: React.FC = () => {
     };
     fetchFavoriteCount();
   }, [token]);
-  // Obsługa wyszukiwania z paska
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-    if (query) {
-      try {
-        let userId = null;
-        if (token) {
-          try {
-            const dec = jwtDecode(token);
-            userId = dec.sub ? parseInt(dec.sub) : null;
-          } catch {}
-        }
-        await axios.post("/api/search-logs", {
-          searchQuery: query,
-          brand: null,
-          model: null,
-          minPrice: null,
-          maxPrice: null,
-          userId,
-          sessionId: null,
-          resultsCount: null,
-          searchSource: "navbar",
-        });
-      } catch (e) {
-        console.error("Search log error", e);
-      }
-      navigate(`/smartfony?search=${encodeURIComponent(query)}`);
-    } else {
-      navigate("/smartfony");
-    }
-  };
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
@@ -133,18 +100,10 @@ const JakDzialaMoblix: React.FC = () => {
             MobliX
           </div>
 
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Szukaj smartfonów..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            </div>
-          </form>
+          {/* Wyszukiwarka z AI */}
+          <div className="flex-1 max-w-2xl">
+            <SearchBar />
+          </div>
 
           <div className="flex items-center gap-3">
             <button

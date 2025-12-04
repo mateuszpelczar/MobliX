@@ -1,4 +1,5 @@
 C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
+C:\MobliX\backend\src\main\java\com\example\backend\config\OpenSearchConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\WebConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
@@ -13,6 +14,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\controller\MessageController
 C:\MobliX\backend\src\main\java\com\example\backend\controller\NotificationController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\SearchLogController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\SearchStatsController.java
+C:\MobliX\backend\src\main\java\com\example\backend\controller\SearchSuggestionsController.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementReportDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
@@ -85,5 +87,6 @@ C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\LogService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\MessageService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\NotificationService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\OpenSearchService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\SearchLogService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java

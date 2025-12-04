@@ -9,6 +9,7 @@ com\example\backend\model\Message.class
 com\example\backend\repository\LogRepository.class
 com\example\backend\service\JwtService.class
 com\example\backend\service\UserService.class
+com\example\backend\controller\SearchSuggestionsController.class
 com\example\backend\model\Notification.class
 com\example\backend\others\AdvertisementStatus.class
 com\example\backend\model\ContentPage.class
@@ -32,6 +33,7 @@ com\example\backend\others\LoginRequest.class
 com\example\backend\model\Location.class
 com\example\backend\others\NotificationType.class
 com\example\backend\repository\SearchLogRepository.class
+com\example\backend\config\OpenSearchConfig.class
 com\example\backend\model\Advertisement.class
 com\example\backend\others\RegisterRequest.class
 com\example\backend\service\AdminStatsService.class
@@ -47,6 +49,7 @@ com\example\backend\model\SearchLog.class
 com\example\backend\controller\SearchStatsController.class
 com\example\backend\model\Regulation.class
 com\example\backend\model\ReportSummary.class
+com\example\backend\service\OpenSearchService.class
 com\example\backend\service\AdvertisementService.class
 com\example\backend\dto\UserDto.class
 com\example\backend\security\CustomUserDetails.class
@@ -62,6 +65,7 @@ com\example\backend\controller\NotificationController.class
 com\example\backend\dto\NotificationDTO.class
 com\example\backend\repository\FavoriteAdRepository.class
 com\example\backend\repository\AdvertisementRepository.class
+com\example\backend\service\AdvertisementService$1.class
 com\example\backend\others\CreateReportRequest.class
 com\example\backend\model\Report.class
 com\example\backend\repository\NotificationRepository.class

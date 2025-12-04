@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import "../../styles/MobileResponsive.css";
 import { voivodeships } from "../../data/locations";
+import SearchBar from "../SearchBar";
 
 interface SmartphoneData {
   id: number;
@@ -516,24 +517,10 @@ const SmartphoneCatalog: React.FC = () => {
             MobliX
           </div>
 
-          {/* Wyszukiwarka */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault(); /* Logika wyszukiwania już obsługiwana przez filtry */
-            }}
-            className="flex-1 max-w-2xl"
-          >
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Szukaj smartfonów..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            </div>
-          </form>
+          {/* Wyszukiwarka z AI sugestiami */}
+          <div className="flex-1 max-w-2xl">
+            <SearchBar />
+          </div>
 
           {/* Ikony i przyciski */}
           <div className="flex items-center gap-3">

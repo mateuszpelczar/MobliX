@@ -1,6 +1,5 @@
 package com.example.backend.repository;
 
-import com.example.backend.model.FavoriteAd;
 import com.example.backend.model.Notification;
 import com.example.backend.model.User;
 

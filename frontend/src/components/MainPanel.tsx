@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 import {
   MessageSquare,
   ShoppingBag,
@@ -15,6 +16,7 @@ import {
   Search,
   Plus,
 } from "lucide-react";
+import SearchBar from "./SearchBar";
 import "../styles/MobileResponsive.css";
 
 interface SmartphoneData {
@@ -50,7 +52,6 @@ type JwtPayLoad = {
 
 const MainPanel: React.FC = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [featuredSmartphones, setFeaturedSmartphones] = useState<
     SmartphoneData[]
@@ -201,46 +202,6 @@ const MainPanel: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-
-    if (query) {
-      // Log search from navbar
-      try {
-        const token = localStorage.getItem("token");
-        let userId = null;
-
-        if (token) {
-          try {
-            const decoded = jwtDecode<JwtPayLoad>(token);
-            userId = decoded.sub ? parseInt(decoded.sub) : null;
-          } catch (error) {
-            console.error("Error decoding token:", error);
-          }
-        }
-
-        await axios.post("http://localhost:8080/api/search-logs", {
-          searchQuery: query,
-          brand: null,
-          model: null,
-          minPrice: null,
-          maxPrice: null,
-          userId: userId,
-          sessionId: null,
-          resultsCount: null,
-          searchSource: "navbar",
-        });
-      } catch (error) {
-        console.error("Error logging search:", error);
-      }
-
-      navigate(`/smartfony?search=${query}`);
-    } else {
-      navigate("/smartfony");
-    }
-  };
-
   const handleMessengerClick = () => {
     if (isAuthenticated) {
       navigate("/user/message");
@@ -297,8 +258,8 @@ const MainPanel: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
       {/* Czarny pasek nawigacji */}
-      <nav className="bg-black text-white px-4 py-3 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <nav className="bg-black text-white px-4 py-2 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Logo */}
           <div
             className="text-2xl font-bold cursor-pointer hover:text-purple-400 transition-colors"
@@ -308,18 +269,48 @@ const MainPanel: React.FC = () => {
           </div>
 
           {/* Wyszukiwarka */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Szukaj smartfonów..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 pl-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            </div>
-          </form>
+          <SearchBar
+            onSearch={(query) => {
+              if (query) {
+                // Log search from navbar
+                try {
+                  const token = localStorage.getItem("token");
+                  let userId = null;
+
+                  if (token) {
+                    try {
+                      const decoded = jwtDecode<JwtPayLoad>(token);
+                      userId = decoded.sub ? parseInt(decoded.sub) : null;
+                    } catch (error) {
+                      console.error("Error decoding token:", error);
+                    }
+                  }
+
+                  axios
+                    .post("http://localhost:8080/api/search-logs", {
+                      searchQuery: query,
+                      brand: null,
+                      model: null,
+                      minPrice: null,
+                      maxPrice: null,
+                      userId: userId,
+                      sessionId: null,
+                      resultsCount: null,
+                      searchSource: "navbar",
+                    })
+                    .catch((error) => {
+                      console.error("Error logging search:", error);
+                    });
+                } catch (error) {
+                  console.error("Error logging search:", error);
+                }
+
+                navigate(`/smartfony?search=${query}`);
+              } else {
+                navigate("/smartfony");
+              }
+            }}
+          />
 
           {/* Ikony i przyciski */}
           <div className="flex items-center gap-3">
