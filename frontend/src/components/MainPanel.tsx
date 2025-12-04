@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import axios from "axios";
 import {
   MessageSquare,
   ShoppingBag,
@@ -13,7 +12,6 @@ import {
   LogIn,
   Bell,
   Heart,
-  Search,
   Plus,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
@@ -77,37 +75,61 @@ const MainPanel: React.FC = () => {
           console.log("Pobrane ogłoszenia:", data); // Debug log
 
           // Mapowanie danych z backendu na format frontend
-          const mappedData: SmartphoneData[] = data.map((ad: any) => {
-            console.log(`Ogłoszenie ${ad.id} - viewCount:`, ad.viewCount); // Debug log
-            return {
-              id: ad.id,
-              title: ad.title,
-              brand: ad.specification?.brand || "",
-              model: ad.specification?.model || "",
-              price: ad.price,
-              location: ad.location || "Brak lokalizacji",
-              condition: ad.condition || "nowy",
-              images:
-                ad.imageUrls && ad.imageUrls.length > 0
-                  ? ad.imageUrls
-                  : [
-                      "https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia",
-                    ],
-              seller: ad.userName || "Użytkownik",
-              dateAdded: ad.createdAt || ad.dateAdded,
-              views: ad.viewCount || 0,
-              likes: 0,
-              description: ad.description,
-              specifications: {
-                storage: ad.specification?.storage || "",
-                ram: ad.specification?.ram || "",
-                color: ad.specification?.color || "",
-                batteryCapacity: ad.specification?.batteryCapacity || "",
-                screenSize: ad.specification?.displaySize || "",
-                cameraMP: ad.specification?.rearCameras || "",
-              },
-            };
-          });
+          const mappedData: SmartphoneData[] = data.map(
+            (ad: {
+              id: number;
+              title: string;
+              price: number;
+              location: string;
+              condition: string;
+              imageUrls: string[];
+              userName: string;
+              createdAt: string;
+              dateAdded: string;
+              viewCount: number;
+              description: string;
+              specification: {
+                brand: string;
+                model: string;
+                storage: string;
+                ram: string;
+                color: string;
+                batteryCapacity: string;
+                displaySize: string;
+                rearCameras: string;
+              };
+            }) => {
+              console.log(`Ogłoszenie ${ad.id} - viewCount:`, ad.viewCount); // Debug log
+              return {
+                id: ad.id,
+                title: ad.title,
+                brand: ad.specification?.brand || "",
+                model: ad.specification?.model || "",
+                price: ad.price,
+                location: ad.location || "Brak lokalizacji",
+                condition: ad.condition || "nowy",
+                images:
+                  ad.imageUrls && ad.imageUrls.length > 0
+                    ? ad.imageUrls
+                    : [
+                        "https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia",
+                      ],
+                seller: ad.userName || "Użytkownik",
+                dateAdded: ad.createdAt || ad.dateAdded,
+                views: ad.viewCount || 0,
+                likes: 0,
+                description: ad.description,
+                specifications: {
+                  storage: ad.specification?.storage || "",
+                  ram: ad.specification?.ram || "",
+                  color: ad.specification?.color || "",
+                  batteryCapacity: ad.specification?.batteryCapacity || "",
+                  screenSize: ad.specification?.displaySize || "",
+                  cameraMP: ad.specification?.rearCameras || "",
+                },
+              };
+            }
+          );
 
           console.log(
             "Zmapowane dane:",
@@ -269,48 +291,9 @@ const MainPanel: React.FC = () => {
           </div>
 
           {/* Wyszukiwarka */}
-          <SearchBar
-            onSearch={(query) => {
-              if (query) {
-                // Log search from navbar
-                try {
-                  const token = localStorage.getItem("token");
-                  let userId = null;
-
-                  if (token) {
-                    try {
-                      const decoded = jwtDecode<JwtPayLoad>(token);
-                      userId = decoded.sub ? parseInt(decoded.sub) : null;
-                    } catch (error) {
-                      console.error("Error decoding token:", error);
-                    }
-                  }
-
-                  axios
-                    .post("http://localhost:8080/api/search-logs", {
-                      searchQuery: query,
-                      brand: null,
-                      model: null,
-                      minPrice: null,
-                      maxPrice: null,
-                      userId: userId,
-                      sessionId: null,
-                      resultsCount: null,
-                      searchSource: "navbar",
-                    })
-                    .catch((error) => {
-                      console.error("Error logging search:", error);
-                    });
-                } catch (error) {
-                  console.error("Error logging search:", error);
-                }
-
-                navigate(`/smartfony?search=${query}`);
-              } else {
-                navigate("/smartfony");
-              }
-            }}
-          />
+          <div className="flex-1 max-w-2xl">
+            <SearchBar />
+          </div>
 
           {/* Ikony i przyciski */}
           <div className="flex items-center gap-3">
