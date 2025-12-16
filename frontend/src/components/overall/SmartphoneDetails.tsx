@@ -840,7 +840,8 @@ const SmartphoneDetails: React.FC = () => {
           )}
 
           {!loading && !error && phoneData && (
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,2fr)_minmax(360px,1fr)] gap-4 md:gap-6">
+            <>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(420px,2fr)_minmax(360px,1fr)] gap-4 md:gap-6 items-start">
               {/* Lewa kolumna - Zdjęcia */}
               <div className="space-y-4 min-w-0">
                 {/* Główne zdjęcie */}
@@ -873,8 +874,9 @@ const SmartphoneDetails: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Opis */}
-                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+
+                {/* Opis - pełna szerokość */}
+                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700 max-h-[320px] overflow-y-auto mt-4">
                   <h3 className="text-xl font-bold text-white mb-4">Opis</h3>
                   <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">
                     {phoneData.description}
@@ -883,11 +885,11 @@ const SmartphoneDetails: React.FC = () => {
 
                 {/* Specyfikacja podstawowa */}
                 <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
-                  <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                    <Smartphone className="w-5 h-5 text-purple-300" />
-                    Specyfikacja
-                  </h3>
-                  <div className="space-y-2 text-sm">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-purple-300" />
+                Specyfikacja
+              </h3>
+              <div className="space-y-2 text-sm">
                     <div className="flex justify-between py-2 border-b border-gray-700">
                       <span className="text-gray-400">Marka</span>
                       <span className="text-white font-semibold">
@@ -1196,20 +1198,20 @@ const SmartphoneDetails: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="space-y-4 min-w-0">
-                {/* Tytuł, cena, status */}
-                <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
-                  <h1 className="text-xl md:text-2xl font-bold text-white mb-4">
+              {/* Prawa kolumna */}
+              <div className="space-y-4 min-w-0 self-start">
+                {/* Tytuł, cena, status - kompaktowa wersja */}
+                <div className="bg-gray-800 rounded-lg p-4 shadow-xl border border-gray-700">
+                  <h1 className="text-lg md:text-xl font-bold text-white mb-2">
                     {phoneData?.title}
                   </h1>
-                  <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-4">
+                  <div className="text-2xl md:text-3xl font-bold text-purple-600 mb-3">
                     {phoneData?.price.toLocaleString()} zł
                   </div>
-                  <div className="flex items-center gap-2 md:gap-4 text-gray-400 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4" />
-                      <span className="text-sm">
+                  <div className="flex items-center gap-2 md:gap-3 text-gray-400 flex-wrap text-xs">
+                    <div className="flex items-center gap-1">
+                      <Package className="w-3.5 h-3.5" />
+                      <span>
                         <>
                           {phoneData?.condition === "NEW" && "Nowy"}
                           {phoneData?.condition === "LIKE_NEW" && "Jak nowy"}
@@ -1221,48 +1223,44 @@ const SmartphoneDetails: React.FC = () => {
                         </>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span className="text-sm">{phoneData?.location}</span>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{phoneData?.location}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4" />
-                      <span className="text-sm">
-                        {phoneData?.views} wyświetleń
-                      </span>
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{phoneData?.views} wyśw.</span>
                     </div>
                   </div>
 
                   {/* Przyciski ulubione i udostępnij */}
-                  <div className="flex gap-3 mt-4">
+                  <div className="flex gap-2 mt-3">
                     <button
                       onClick={handleToggleFavorite}
                       className={`flex-1 ${
                         isFavorite
                           ? "bg-red-600 hover:bg-red-700"
                           : "bg-gray-700 hover:bg-gray-600"
-                      } text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2`}
+                      } text-white py-2 px-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 text-sm`}
                     >
                       <Heart
-                        className={`w-5 h-5 ${isFavorite ? "fill-white" : ""}`}
+                        className={`w-4 h-4 ${isFavorite ? "fill-white" : ""}`}
                       />
-                      <span className="text-sm">
-                        {isFavorite ? "Ulubione" : "Dodaj"}
-                      </span>
+                      <span>{isFavorite ? "Ulubione" : "Dodaj"}</span>
                     </button>
                     <button
                       onClick={handleShare}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-1.5 text-sm"
                     >
-                      <Share2 className="w-5 h-5" />
-                      <span className="text-sm">Udostępnij</span>
+                      <Share2 className="w-4 h-4" />
+                      <span>Udostępnij</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Informacje o sprzedawcy */}
                 {sellerInfo && (
-                  <div className="bg-gray-800 rounded-lg p-4 md:p-6 shadow-xl border border-gray-700">
+                  <div className="bg-gray-800 rounded-lg p-4 shadow-xl border border-gray-700">
                     <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                       {sellerInfo.sellerType === "BUSINESS" ? (
                         <Building2 className="w-5 h-5 text-blue-400" />
@@ -1408,33 +1406,33 @@ const SmartphoneDetails: React.FC = () => {
                 )}
 
                 {/* Inne przykładowe ogłoszenia */}
-                <div className="bg-gray-800 rounded-lg p-6 md:p-8 shadow-xl border border-gray-700 mt-40 relative top-32 min-h-[600px] max-w-4xl mx-auto">
-                  <h3 className="font-bold text-white mb-6 flex items-center gap-2 text-xl">
-                    <ShoppingBag className="w-6 h-6 text-purple-300" />
-                    Inne przykładowe ogłoszenia na tej stronie
+                <div className="bg-gray-800 rounded-lg p-4 md:p-6 pb-12 shadow-xl border border-gray-700 !mt-[160px]">
+                  <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                    <ShoppingBag className="w-5 h-5 text-purple-300" />
+                    Inne przykładowe ogłoszenia
                   </h3>
                   {sellerAds.length > 0 ? (
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                       {sellerAds.map((ad) => (
                         <div
                           key={ad.id}
                           onClick={() => navigate(`/smartfon/${ad.id}`)}
-                          className="flex gap-6 p-6 bg-gray-700/50 hover:bg-gray-700 rounded-xl cursor-pointer transition-colors border-2 border-gray-600 hover:border-purple-500"
+                          className="flex gap-4 p-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg cursor-pointer transition-colors border border-gray-600 hover:border-purple-500"
                         >
                           <img
                             src={ad.images[0]}
                             alt={ad.title}
-                            className="w-40 h-40 object-cover rounded-lg"
+                            className="w-20 h-20 object-cover rounded-lg"
                           />
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-white font-medium text-xl truncate mb-3">
+                            <h4 className="text-white font-medium text-sm truncate mb-1">
                               {ad.title}
                             </h4>
-                            <p className="text-purple-400 font-bold text-2xl mb-3">
+                            <p className="text-purple-400 font-bold text-lg">
                               {ad.price.toLocaleString()} zł
                             </p>
-                            <div className="flex items-center gap-2 text-gray-400 text-base">
-                              <MapPin className="w-5 h-5" />
+                            <div className="flex items-center gap-1 text-gray-400 text-xs">
+                              <MapPin className="w-3 h-3" />
                               <span>{ad.location}</span>
                             </div>
                           </div>
@@ -1449,6 +1447,7 @@ const SmartphoneDetails: React.FC = () => {
                 </div>
               </div>
             </div>
+            </>
           )}
         </div>
       </div>
@@ -1488,7 +1487,9 @@ const SmartphoneDetails: React.FC = () => {
         </div>
       </footer>
     </div>
+    
   );
 };
+
 
 export default SmartphoneDetails;
