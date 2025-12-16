@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import com.example.backend.dto.ModerationResultDTO;
+
 @Service
 @Transactional
 public class AdvertisementService {
@@ -47,7 +49,10 @@ public class AdvertisementService {
     private final FavoriteAdRepository favoriteAdRepository;
     private final NotificationRepository notificationRepository;
     private final AdvertisementReportRepository advertisementReportRepository;
-    private final OpenSearchService openSearchService;
+    private AdvertisementModerationService advertisementModerationService;
+    
+    @Value("${aws.moderation.enabled:false}")
+    private boolean moderationEnabled;
     
     @PersistenceContext
     private EntityManager entityManager;
@@ -68,8 +73,7 @@ public class AdvertisementService {
                                 NotificationRepository notificationRepository,
                                 MessageRepository messageRepository,
                                 ConversationRepository conversationRepository,
-                                AdvertisementReportRepository advertisementReportRepository,
-                                OpenSearchService openSearchService) {
+                                AdvertisementReportRepository advertisementReportRepository) {
         this.advertisementRepository = advertisementRepository;
         this.userService = userService;
         this.categoryRepository = categoryRepository;
@@ -81,13 +85,17 @@ public class AdvertisementService {
         this.favoriteAdRepository = favoriteAdRepository;
         this.notificationRepository = notificationRepository;
         this.advertisementReportRepository = advertisementReportRepository;
-        this.openSearchService = openSearchService;
     }
 
     
     @org.springframework.beans.factory.annotation.Autowired
     public void setNotificationService(NotificationService notificationService) {
         this.notificationService = notificationService;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setAdvertisementModerationService(AdvertisementModerationService advertisementModerationService) {
+        this.advertisementModerationService = advertisementModerationService;
     }
 
     public SellerInfoDTO getSellerInfo(Long advertisementId, boolean isAuthenticated) {
@@ -234,28 +242,58 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             }
             advertisement.setImages(images);
         }
+
+        // Automatyczna moderacja AWS (Rekognition + Comprehend)
+        if (moderationEnabled && advertisementModerationService != null) {
+            try {
+                List<String> imageUrls = createDto.getImageUrls() != null ? createDto.getImageUrls() : new ArrayList<>();
+                ModerationResultDTO moderationResult = advertisementModerationService.moderateAdvertisement(
+                    createDto.getTitle(),
+                    createDto.getDescription(),
+                    imageUrls
+                );
+                
+                if (moderationResult.isApproved()) {
+                    // Automatyczne zatwierdzenie - ogłoszenie przeszło moderację
+                    advertisement.setStatus(AdvertisementStatus.ACTIVE);
+                    advertisement.setRejectReason(null);
+                    logService.logUserActivity(user, 
+                        "Ogłoszenie automatycznie zatwierdzone przez moderację AI: " + advertisement.getTitle(), 
+                        "advertisementId:" + advertisement.getId());
+                } else {
+                    // Automatyczne odrzucenie - wykryto problemy
+                    advertisement.setStatus(AdvertisementStatus.REJECTED);
+                    advertisement.setRejectReason(moderationResult.getRejectionReason());
+                    
+                    // Powiadomienie użytkownika o odrzuceniu
+                    if (notificationService != null) {
+                        notificationService.createAdvertisementRejectedNotification(
+                            user,
+                            advertisement.getTitle(),
+                            moderationResult.getRejectionReason()
+                        );
+                    }
+                    
+                    logService.logUserActivity(user, 
+                        "Ogłoszenie automatycznie odrzucone przez moderację AI: " + advertisement.getTitle() + 
+                        ", Powód: " + moderationResult.getRejectionReason(), 
+                        "advertisementId:" + advertisement.getId());
+                }
+                advertisement = advertisementRepository.save(advertisement);
+            } catch (Exception e) {
+                // W przypadku błędu moderacji - ogłoszenie pozostaje PENDING (ręczna weryfikacja)
+                logService.logUserActivity(user, 
+                    "Błąd automatycznej moderacji, ogłoszenie wymaga ręcznej weryfikacji: " + e.getMessage(), 
+                    "advertisementId:" + advertisement.getId());
+                System.err.println("[Moderation] Błąd moderacji ogłoszenia ID " + advertisement.getId() + ": " + e.getMessage());
+            }
+        }
       
          logService.logUserActivity(user, 
         "Utworzono ogłoszenie: " + advertisement.getTitle(), 
         "advertisementId:" + advertisement.getId());
 
-        // Indeksuj ogłoszenie w OpenSearch dla sugestii wyszukiwania
-        try {
-            SmartphoneSpecification spec = advertisement.getSmartphoneSpecification();
-            String brand = spec != null ? spec.getBrand() : "";
-            String model = spec != null ? spec.getModel() : "";
-            openSearchService.indexAdvertisement(
-                advertisement.getId(),
-                advertisement.getTitle(),
-                brand,
-                model,
-                advertisement.getDescription()
-            );
-        } catch (Exception e) {
-            logService.logUserActivity(user, 
-                "Błąd indeksowania OpenSearch: " + e.getMessage(), 
-                "advertisementId:" + advertisement.getId());
-        }
+        // PostgreSQL search - sugestie pobierane bezpośrednio z bazy (nie wymaga indeksacji)
 
         return convertToResponseDTO(advertisement);
     }
@@ -585,8 +623,54 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         
       
         if (meaningfulChange) {
-            if (advertisement.getStatus() != AdvertisementStatus.PENDING) {
-                advertisement.setStatus(AdvertisementStatus.PENDING);
+            // Automatyczna moderacja AWS przy zmianie (Rekognition + Comprehend)
+            if (moderationEnabled && advertisementModerationService != null) {
+                try {
+                    List<String> imageUrls = updateDto.getImageUrls() != null ? updateDto.getImageUrls() : new ArrayList<>();
+                    ModerationResultDTO moderationResult = advertisementModerationService.moderateAdvertisement(
+                        updateDto.getTitle(),
+                        updateDto.getDescription(),
+                        imageUrls
+                    );
+                    
+                    if (moderationResult.isApproved()) {
+                        // Automatyczne zatwierdzenie po aktualizacji
+                        advertisement.setStatus(AdvertisementStatus.ACTIVE);
+                        advertisement.setRejectReason(null);
+                        logService.logUserActivity(user, 
+                            "Zaktualizowane ogłoszenie automatycznie zatwierdzone przez moderację AI: " + advertisement.getTitle(), 
+                            "advertisementId:" + advertisement.getId());
+                    } else {
+                        // Automatyczne odrzucenie - wykryto problemy
+                        advertisement.setStatus(AdvertisementStatus.REJECTED);
+                        advertisement.setRejectReason(moderationResult.getRejectionReason());
+                        
+                        // Powiadomienie użytkownika o odrzuceniu
+                        if (notificationService != null) {
+                            notificationService.createAdvertisementRejectedNotification(
+                                user,
+                                advertisement.getTitle(),
+                                moderationResult.getRejectionReason()
+                            );
+                        }
+                        
+                        logService.logUserActivity(user, 
+                            "Zaktualizowane ogłoszenie automatycznie odrzucone przez moderację AI: " + advertisement.getTitle() + 
+                            ", Powód: " + moderationResult.getRejectionReason(), 
+                            "advertisementId:" + advertisement.getId());
+                    }
+                } catch (Exception e) {
+                    // W przypadku błędu moderacji - ogłoszenie pozostaje PENDING
+                    advertisement.setStatus(AdvertisementStatus.PENDING);
+                    logService.logUserActivity(user, 
+                        "Błąd moderacji aktualizacji, ogłoszenie wymaga ręcznej weryfikacji: " + e.getMessage(), 
+                        "advertisementId:" + advertisement.getId());
+                }
+            } else {
+                // Brak moderacji - status PENDING jak wcześniej
+                if (advertisement.getStatus() != AdvertisementStatus.PENDING) {
+                    advertisement.setStatus(AdvertisementStatus.PENDING);
+                }
             }
         } 
         

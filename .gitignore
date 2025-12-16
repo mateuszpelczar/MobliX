@@ -9,22 +9,26 @@ target/
 .idea/
 *.iml
 out/
+*.orig
 
 # Visual Studio Code
 .vscode/
 *.code-workspace
 
-# Spring / app config (sekrety)
-**/application.properties
-backend/src/main/resources/application.properties
-application-*.properties
+# Spring Boot Configuration (sensitive data)
+# Keep example file for documentation
+**/application-*.properties
+!**/application-example.properties
+!**/application-local.properties.example
 
-# Environment variables
+# Environment variables (.env files)
 .env
-*.env
-.env.*
-*.key
-*.pem
+.env.local
+.env.*.local
+.env.production.local
+backend/.env
+frontend/.env
+.DS_Store
 
 # Node / React / npm / yarn
 node_modules/
@@ -33,14 +37,38 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.next/
+out/
 
 # File uploads and generated files
 uploads/
 uploads/images/
+temp/
 
 # OS
-.DS_Store
 Thumbs.db
+.AppleDouble
+.LSOverride
 
 # TypeScript
 *.tsbuildinfo
+
+# IDE specific
+.project
+.classpath
+*.swp
+*.swo
+*~
+
+# Backup files
+*.backup
+*.bak
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Gradle
+.gradle/
+build/

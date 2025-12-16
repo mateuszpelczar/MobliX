@@ -1,0 +1,397 @@
+# 2. Analiza i projekt systemu MobliX
+
+## 2.1. Analiza tematu i konkurencji
+
+Rynek używanych smartfonów w Polsce rośnie z roku na rok. Coraz więcej osób szuka tańszych alternatyw dla nowych urządzeń, a jednocześnie sprzedawcy chcą szybko i bezpiecznie pozbyć się swoich starych telefonów. Problem polega na tym, że istniejące platformy ogłoszeniowe są zbyt ogólne – oferują wszystko, od samochodów po meble, przez co wyszukiwanie konkretnego modelu telefonu przypomina szukanie igły w stogu siana. Użytkownik musi przeszukiwać setki ogłoszeń, żeby znaleźć ten jeden telefon, który go interesuje.
+
+### Istniejące rozwiązania na rynku
+
+Na polskim rynku dominują dwa główne rozwiązania:
+
+**OLX** – największa platforma ogłoszeniowa w Polsce. Oferuje ogromną bazę ogłoszeń, ale jest zbyt uniwersalna. Kategoria "Telefony komórkowe" miesza smartfony z akcesoriami, etui i ładowarkami. Brakuje filtrów technicznych (ile RAM, jaki procesor, jakie aparaty), a moderacja treści opiera się głównie na zgłoszeniach użytkowników, co oznacza, że nieodpowiednie zdjęcia czy wulgarne opisy mogą wiszieć godzinami, zanim ktoś je usunie.
+
+**Allegro Lokalnie** – próba stworzenia konkurencji dla OLX. Ma podobne problemy – zbyt ogólne podejście, słabe filtrowanie i brak automatycznej moderacji. Wyszukiwanie konkretnego modelu smartfona wymusza ręczne przeglądanie dziesiątek stron.
+
+### Czym MobliX się wyróżnia
+
+MobliX to platforma stworzona specjalnie dla smartfonów. Nie ma tu mebli, samochodów ani ubrań – tylko telefony. Dzięki temu:
+
+1. **Precyzyjne wyszukiwanie** – użytkownik może filtrować po konkretnych parametrach technicznych: marka, model, pojemność pamięci, ilość RAM, rozmiar ekranu, czy telefon ma szybkie ładowanie. W MobliX wpisując "iPhone 128GB" dostajesz dokładnie to, czego szukasz.
+
+2. **Sztuczna inteligencja w moderacji** – zamiast czekać, aż użytkownik zgłosi nieodpowiedni content, system sam analizuje zdjęcia i opisy. Jeśli ktoś wrzuci zdjęcie zawierające nagość albo napisze obraźliwy opis, ogłoszenie zostanie automatycznie zablokowane, zanim w ogóle się opublikuje. To robi AWS Rekognition dla obrazów i AWS Comprehend dla tekstów.
+
+3. **Inteligentne podpowiedzi** – gdy użytkownik zaczyna wpisywać "Sam", system od razu podpowiada "Samsung Galaxy S24", "Samsung Galaxy A54" i inne modele. To działa dzięki integracji z AWS OpenSearch, który indeksuje wszystkie ogłoszenia i błyskawicznie zwraca trafne podpowiedzi.
+
+4. **Darmowość** – w przeciwieństwie do Allegro, które pobiera prowizje, MobliX jest całkowicie darmowy zarówno dla kupujących, jak i sprzedających.
+
+---
+
+## 2.2. Założenia projektowe (Wymagania)
+
+### 2.2.1. Wymagania funkcjonalne
+
+Poniżej znajduje się lista konkretnych funkcji, które użytkownik może wykonać w systemie MobliX:
+
+**Moduł autoryzacji:**
+- Rejestracja nowego konta (osobistego lub firmowego)
+- Logowanie do systemu przy użyciu e-maila i hasła
+- Resetowanie zapomnianego hasła (link wysyłany przez Google SMTP)
+- Wylogowanie z systemu
+
+**Moduł ogłoszeń:**
+- Dodawanie nowego ogłoszenia z pełną specyfikacją smartfona
+- Edycja istniejącego ogłoszenia
+- Usuwanie własnego ogłoszenia
+- Przeglądanie katalogu wszystkich smartfonów
+- Wyszukiwanie ogłoszeń po parametrach (marka, model, cena, stan)
+- Wyświetlanie szczegółów konkretnego ogłoszenia
+- Dodawanie zdjęć do ogłoszenia (do 5 sztuk)
+- Automatyczna moderacja treści i zdjęć przy dodawaniu
+
+**Moduł użytkownika:**
+- Edycja danych osobowych
+- Podgląd własnych ogłoszeń
+- Obserwowanie ulubionych ogłoszeń
+- System powiadomień o nowych wiadomościach i zmianach statusu
+- Komunikacja między użytkownikami (wiadomości prywatne)
+
+**Moduł administracyjny:**
+- Zarządzanie użytkownikami (blokowanie, zmiana ról)
+- Przeglądanie logów systemowych
+- Raporty i statystyki (ilość ogłoszeń, aktywność użytkowników)
+- Zarządzanie treściami statycznymi (regulamin, polityka prywatności)
+
+**Moduł moderacji (dla pracowników):**
+- Moderacja nowych ogłoszeń
+- Moderacja zgłoszeń od użytkowników
+- Edycja/usuwanie nieodpowiednich ogłoszeń
+- Podgląd statystyk systemu
+
+### 2.2.2. Wymagania niefunkcjonalne
+
+Poniżej znajdują się cechy jakościowe, które system musi spełniać:
+
+**Bezpieczeństwo:**
+- Hasła użytkowników przechowywane w formie zaszyfrowanej (BCrypt)
+- Autoryzacja oparta na tokenach JWT
+- Walidacja danych wejściowych na frontendzie i backendzie
+- Automatyczne blokowanie nieodpowiednich treści jeszcze przed publikacją
+- Ochrona przed atakami CSRF i XSS
+
+**Wydajność:**
+- Czas odpowiedzi serwera poniżej 500ms dla typowych operacji
+- Wyszukiwanie z podpowiedziami działa w czasie rzeczywistym (poniżej 200ms)
+- System powinien obsługiwać jednocześnie minimum 100 aktywnych użytkowników
+
+**Responsywność:**
+- Aplikacja działa poprawnie na urządzeniach mobilnych (telefony, tablety)
+- Interfejs dostosowuje się do rozmiaru ekranu
+- Stosowanie nowoczesnych praktyk CSS (Flexbox, Grid)
+
+**Dostępność:**
+- System dostępny 24/7 (wdrożenie na serwerze z automatycznym restartem)
+- Obsługa powiadomień w czasie rzeczywistym o zmianach statusu ogłoszeń
+
+**Użyteczność:**
+- Intuicyjny interfejs niewymagający instrukcji
+- Czytelne komunikaty błędów w języku polskim
+- Podpowiedzi wyszukiwania ułatwiające znalezienie telefonu
+
+---
+
+## 2.3. Charakterystyka technologii
+
+### 2.3.1. Frontend: React + TypeScript
+
+Do budowy interfejsu użytkownika wykorzystano bibliotekę **React** w połączeniu z **TypeScript**. Wybór ten podyktowany był kilkoma czynnikami praktycznymi.
+
+React pozwala budować interfejs z małych, niezależnych komponentów. W MobliX mamy osobne komponenty dla panelu administracyjnego (`AdminPanel.tsx`), panelu użytkownika (`UserPanel.tsx`), paska wyszukiwania (`SearchBar.tsx`) czy formularza dodawania ogłoszenia (`AddAdvertisement.tsx`). Dzięki temu każdy element można rozwijać i testować oddzielnie.
+
+TypeScript dodaje statyczne typowanie do JavaScriptu. W praktyce oznacza to, że gdy programista zrobi literówkę w nazwie pola albo przekaże niewłaściwy typ danych, edytor od razu podkreśli błąd – jeszcze przed uruchomieniem aplikacji. Przy projekcie tej skali (ponad 50 komponentów) byłoby trudno utrzymać jakość kodu bez takiego wsparcia.
+
+Dodatkowo React ma ogromną społeczność i mnóstwo gotowych rozwiązań. Do routingu wykorzystano `react-router-dom`, który obsługuje nawigację między podstronami bez przeładowania całej strony.
+
+### 2.3.2. Backend: Java + Spring Boot
+
+Serwerową część aplikacji napisano w **Javie** z wykorzystaniem frameworka **Spring Boot**. To połączenie wybrano z kilku powodów.
+
+Spring Boot drastycznie przyspiesza tworzenie aplikacji webowych. Zamiast ręcznie konfigurować serwer, bazę danych i dziesiątki bibliotek, wystarczy dodać odpowiednie zależności, a Spring automatycznie wszystko zestawia. W MobliX pozwoliło to szybko wystartować z projektem i skupić się na logice biznesowej.
+
+Java jako język jest wyjątkowo stabilna i przewidywalna. System typów wyłapuje błędy już na etapie kompilacji, a bogaty ekosystem bibliotek (np. AWS SDK) umożliwił prostą integrację z usługami chmurowymi.
+
+Spring Security odpowiada za całą warstwę bezpieczeństwa – od szyfrowania haseł po weryfikację tokenów JWT. Bez tego frameworka implementacja takich mechanizmów od zera zajęłaby tygodnie.
+
+### 2.3.3. Baza danych: PostgreSQL
+
+Jako silnik bazy danych wybrano **PostgreSQL**. Decyzję tę podjęto analizując strukturę danych w MobliX.
+
+W aplikacji istnieją jasno zdefiniowane encje: użytkownicy, ogłoszenia, specyfikacje smartfonów, wiadomości, kategorie, lokalizacje. Między tymi encjami występują ścisłe powiązania – każde ogłoszenie należy do jednego użytkownika, ma jedną kategorię i jedną lokalizację, ale może mieć wiele zdjęć. Takie relacje typu "jeden do wielu" i "jeden do jednego" idealnie pasują do modelu relacyjnego.
+
+PostgreSQL został wybrany zamiast np. MySQL ze względu na lepszą obsługę złożonych zapytań i transakcji. Dodatkowo dobrze współpracuje z Javą i Spring Data JPA, które automatycznie mapują klasy Javy na tabele w bazie.
+
+### 2.3.4. Usługi chmurowe AWS
+
+MobliX wykorzystuje trzy usługi Amazon Web Services do rozszerzenia funkcjonalności:
+
+**AWS Rekognition** – usługa analizy obrazów. Gdy użytkownik dodaje zdjęcia do ogłoszenia, system wysyła je do Rekognition, który sprawdza czy zawierają nieodpowiednie treści (nagość, przemoc, symbole nienawiści, narkotyki). Jeśli cokolwiek takiego zostanie wykryte z pewnością powyżej 75%, ogłoszenie zostaje automatycznie odrzucone z podaniem powodu po polsku (np. "wykryto nagość").
+
+**AWS Comprehend** – usługa analizy tekstu. Sprawdza sentyment opisów i tytułów ogłoszeń. Dodatkowo w kodzie MobliX zaimplementowano własną listę ponad 100 zabronionych słów w języku polskim, angielskim i niemieckim, ponieważ Comprehend nie obsługuje bezpośrednio polskiego w kontekście toksyczności.
+
+**AWS OpenSearch** – usługa wyszukiwania i indeksowania. Wszystkie ogłoszenia są indeksowane w OpenSearch, dzięki czemu podpowiedzi wyszukiwania działają błyskawicznie. Gdy użytkownik wpisuje "real", system w milisekundach zwraca sugestie typu "Realme GT 2 Pro", "Realme 8", itd.
+
+---
+
+## 2.4. Architektura systemu
+
+### 2.4.1. Struktura aplikacji
+
+System MobliX działa w klasycznej architekturze trójwarstwowej rozszerzonej o usługi zewnętrzne:
+
+**Warstwa prezentacji (Frontend)**
+Aplikacja React działająca w przeglądarce użytkownika. Składa się z kilkudziesięciu komponentów podzielonych na moduły:
+- `auth/` – logowanie, rejestracja, resetowanie hasła
+- `components/admin/` – panel administracyjny
+- `components/staff/` – panel moderatora
+- `components/user/` – funkcje dla zalogowanych użytkowników
+- `components/overall/` – strony ogólnodostępne (katalog, szczegóły smartfona)
+
+Frontend komunikuje się z backendem wyłącznie przez REST API, wysyłając żądania HTTP i odbierając dane w formacie JSON.
+
+**Warstwa logiki biznesowej (Backend)**
+Aplikacja Spring Boot obsługująca wszystkie operacje. Podzielona na:
+- `controller/` – 14 kontrolerów REST (AuthController, AdvertisementController, MessageController, itp.)
+- `service/` – 19 serwisów z logiką biznesową (AdvertisementService, ContentModerationService, ImageModerationService, OpenSearchService, EmailService, itp.)
+- `repository/` – interfejsy dostępu do bazy danych
+- `model/` – 20 klas encji (User, Advertisement, SmartphoneSpecification, Message, itp.)
+- `security/` – konfiguracja Spring Security i JWT
+
+**Warstwa danych (Baza PostgreSQL)**
+Relacyjna baza danych przechowująca wszystkie trwałe dane systemu: użytkownicy, ogłoszenia, wiadomości, logi, specyfikacje techniczne smartfonów.
+
+**Usługi zewnętrzne**
+- AWS Rekognition – moderacja obrazów
+- AWS Comprehend – moderacja tekstów
+- AWS OpenSearch – wyszukiwanie i podpowiedzi
+- Google SMTP – wysyłanie e-maili (resetowanie hasła)
+
+### 2.4.2. Diagram architektury
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           UŻYTKOWNIK                                     │
+│                    (Przeglądarka / Telefon)                             │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP (REST API)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         FRONTEND (React + TypeScript)                    │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐   │
+│  │  MainPanel  │  │  UserPanel  │  │ StaffPanel   │  │ AdminPanel  │   │
+│  └─────────────┘  └─────────────┘  └──────────────┘  └─────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ SearchBar │ SmartphoneCatalog │ AddAdvertisement │ Login/Register│   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP (REST API)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      BACKEND (Java + Spring Boot)                        │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                         KONTROLERY                               │   │
+│  │ AuthController │ AdvertisementController │ MessageController    │   │
+│  │ AdminController │ FavoriteAdController │ NotificationController │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                          SERWISY                                 │   │
+│  │ UserService │ AdvertisementService │ OpenSearchService          │   │
+│  │ ImageModerationService │ ContentModerationService │ EmailService│   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                       BEZPIECZEŃSTWO                             │   │
+│  │      Spring Security │ JWT Authentication │ BCrypt Password      │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+        │                    │                    │                    │
+        │                    │                    │                    │
+        ▼                    ▼                    ▼                    ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  PostgreSQL  │    │     AWS      │    │     AWS      │    │   Google     │
+│    (Baza     │    │ Rekognition  │    │  Comprehend  │    │    SMTP      │
+│    Danych)   │    │ (Obrazy)     │    │   (Tekst)    │    │  (E-mail)    │
+└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
+                           │                    │
+                           └────────┬───────────┘
+                                    │
+                                    ▼
+                           ┌──────────────┐
+                           │     AWS      │
+                           │  OpenSearch  │
+                           │ (Wyszukiwanie)│
+                           └──────────────┘
+```
+
+### 2.4.3. Przepływ danych – przykład dodawania ogłoszenia
+
+1. Użytkownik wypełnia formularz w komponencie `AddAdvertisement.tsx`
+2. Frontend wysyła żądanie POST do `/api/advertisements` z danymi JSON
+3. `AdvertisementController` odbiera żądanie i przekazuje do `AdvertisementService`
+4. `AdvertisementService` wykonuje moderację:
+   - Wywołuje `ImageModerationService` → wysyła zdjęcia do AWS Rekognition
+   - Wywołuje `ContentModerationService` → analizuje tekst przez AWS Comprehend + własną listę słów
+5. Jeśli moderacja przejdzie pomyślnie:
+   - Ogłoszenie zapisywane jest w PostgreSQL
+   - Dane indeksowane są w AWS OpenSearch
+   - Powiadomienie wysyłane jest do użytkownika
+6. Frontend otrzymuje odpowiedź i przekierowuje na stronę ogłoszenia
+
+---
+
+## 2.5. Projekt bazy danych
+
+### 2.5.1. Model danych
+
+Baza danych MobliX składa się z następujących głównych encji:
+
+**User (Użytkownik)**
+Przechowuje dane wszystkich użytkowników systemu. Zawiera podstawowe informacje (username, email, zaszyfrowane hasło, rola) oraz dodatkowe pola dla kont firmowych (NIP, REGON, nazwa firmy). Obsługuje blokowanie kont z podaniem powodu i czasu trwania.
+
+**Advertisement (Ogłoszenie)**
+Centralna encja systemu. Zawiera tytuł, opis, cenę, status (oczekujące/aktywne/odrzucone/sprzedane), powód odrzucenia oraz znaczniki czasowe. Powiązane z użytkownikiem, kategorią i lokalizacją.
+
+**SmartphoneSpecification (Specyfikacja smartfona)**
+Szczegółowe dane techniczne telefonu w ogłoszeniu: marka, model, kolor, system operacyjny, pamięć, RAM, aparaty, bateria, parametry wyświetlacza, łączność, ładowanie. Relacja jeden-do-jeden z ogłoszeniem.
+
+**Image (Zdjęcie)**
+Zdjęcia dodane do ogłoszenia. Przechowuje URL do pliku na serwerze. Relacja wiele-do-jednego z ogłoszeniem.
+
+**Message (Wiadomość)**
+Wiadomości prywatne między użytkownikami. Zawiera nadawcę, odbiorcę, treść, status przeczytania i powiązanie z ogłoszeniem, którego dotyczy konwersacja.
+
+**Conversation (Konwersacja)**
+Grupuje wiadomości między dwoma użytkownikami w ramach jednego ogłoszenia.
+
+**FavoriteAd (Obserwowane ogłoszenie)**
+Tabela łącząca użytkownika z ogłoszeniami, które obserwuje.
+
+**Notification (Powiadomienie)**
+Powiadomienia systemowe dla użytkowników (nowa wiadomość, zmiana statusu ogłoszenia).
+
+**Category (Kategoria)**
+Kategorie ogłoszeń (w obecnej wersji: smartphone).
+
+**Location (Lokalizacja)**
+Lokalizacja ogłoszenia (miasto, region).
+
+**Log (Log systemowy)**
+Logi akcji w systemie do celów audytu i debugowania.
+
+**PasswordResetToken (Token resetowania hasła)**
+Tymczasowe tokeny do resetowania hasła, ważne 1 godzinę.
+
+**Report / AdvertisementReport (Zgłoszenie)**
+Zgłoszenia nieodpowiednich ogłoszeń przez użytkowników.
+
+### 2.5.2. Diagram ERD (Entity-Relationship Diagram)
+
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│        User         │         │      Category       │
+├─────────────────────┤         ├─────────────────────┤
+│ PK id               │         │ PK id               │
+│    username         │         │    name             │
+│    email            │         └─────────────────────┘
+│    password         │                   │
+│    role             │                   │ 1:N
+│    accountType      │                   │
+│    firstName        │                   ▼
+│    lastName         │         ┌─────────────────────┐
+│    phone            │         │   Advertisement     │
+│    companyName      │ 1:N     ├─────────────────────┤
+│    nip              │────────►│ PK id               │
+│    regon            │         │ FK user_id          │◄────┐
+│    isBlocked        │         │ FK category_id      │     │
+│    blockedUntil     │         │ FK location_id      │     │
+│    createdAt        │         │    title            │     │
+└─────────────────────┘         │    description      │     │
+         │                      │    price            │     │
+         │ 1:N                  │    status           │     │
+         ▼                      │    viewCount        │     │
+┌─────────────────────┐         │    createdAt        │     │
+│ PasswordResetToken  │         └─────────────────────┘     │
+├─────────────────────┤                   │                  │
+│ PK id               │                   │ 1:1              │
+│ FK user_id          │                   ▼                  │
+│    token            │         ┌─────────────────────────┐  │
+│    expiryDate       │         │ SmartphoneSpecification │  │
+│    used             │         ├─────────────────────────┤  │
+└─────────────────────┘         │ PK id                   │  │
+                                │ FK advertisement_id     │  │
+┌─────────────────────┐         │    brand                │  │
+│      Location       │         │    model                │  │
+├─────────────────────┤         │    color                │  │
+│ PK id               │ 1:N     │    osType               │  │
+│    city             │────────►│    storage              │  │
+│    region           │         │    ram                  │  │
+└─────────────────────┘         │    rearCameras          │  │
+                                │    batteryCapacity      │  │
+                                │    ... (więcej pól)     │  │
+                                └─────────────────────────┘  │
+                                                             │
+┌─────────────────────┐         ┌─────────────────────┐     │
+│       Image         │         │     FavoriteAd      │     │
+├─────────────────────┤         ├─────────────────────┤     │
+│ PK id               │         │ PK id               │     │
+│ FK advertisement_id │◄────────│ FK user_id          │     │
+│    url              │   N:1   │ FK advertisement_id │─────┘
+└─────────────────────┘         └─────────────────────┘
+
+┌─────────────────────┐         ┌─────────────────────┐
+│     Conversation    │         │      Message        │
+├─────────────────────┤         ├─────────────────────┤
+│ PK id               │ 1:N     │ PK id               │
+│ FK participant1_id  │────────►│ FK conversation_id  │
+│ FK participant2_id  │         │ FK sender_id        │
+│ FK advertisement_id │         │ FK receiver_id      │
+│    lastMessageAt    │         │    content          │
+└─────────────────────┘         │    isRead           │
+                                │    createdAt        │
+                                └─────────────────────┘
+
+┌─────────────────────┐         ┌─────────────────────┐
+│    Notification     │         │        Log          │
+├─────────────────────┤         ├─────────────────────┤
+│ PK id               │         │ PK id               │
+│ FK user_id          │         │ FK user_id          │
+│    type             │         │    action           │
+│    message          │         │    details          │
+│    isRead           │         │    ipAddress        │
+│    createdAt        │         │    createdAt        │
+└─────────────────────┘         └─────────────────────┘
+
+┌──────────────────────────┐
+│   AdvertisementReport    │
+├──────────────────────────┤
+│ PK id                    │
+│ FK advertisement_id      │
+│ FK reporter_id           │
+│    reason                │
+│    description           │
+│    status                │
+│    createdAt             │
+└──────────────────────────┘
+```
+
+### Kluczowe relacje
+
+- **User → Advertisement** (1:N): Jeden użytkownik może mieć wiele ogłoszeń
+- **Advertisement → SmartphoneSpecification** (1:1): Każde ogłoszenie ma dokładnie jedną specyfikację
+- **Advertisement → Image** (1:N): Jedno ogłoszenie może mieć wiele zdjęć
+- **User → FavoriteAd → Advertisement** (N:N przez tabelę łączącą): Użytkownicy mogą obserwować wiele ogłoszeń
+- **User → Message** (1:N): Użytkownik może wysyłać i odbierać wiele wiadomości
+- **Conversation → Message** (1:N): Jedna konwersacja zawiera wiele wiadomości
+
+---
+
+*Dokument przygotowany na podstawie analizy kodu źródłowego aplikacji MobliX*

@@ -17,15 +17,24 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Convert to absolute path with proper Windows file URL format
-        Path absolutePath = Paths.get(uploadDir).toAbsolutePath();
+        Path absolutePath = Paths.get(uploadDir).toAbsolutePath().normalize();
         String fileUrl = "file:///" + absolutePath.toString().replace("\\", "/") + "/";
+        
+        System.out.println("Serving static images from: " + fileUrl);
         
         // Map /uploads/images/** to the upload directory (nowe ogłoszenia)
         registry.addResourceHandler("/uploads/images/**")
-                .addResourceLocations(fileUrl);
+                .addResourceLocations(fileUrl)
+                .setCachePeriod(3600);
+        
+        // Map /uploads/** as fallback
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(fileUrl)
+                .setCachePeriod(3600);
         
         // Map /images/** to the upload directory (stare ogłoszenia - backward compatibility)
         registry.addResourceHandler("/images/**")
-                .addResourceLocations(fileUrl);
+                .addResourceLocations(fileUrl)
+                .setCachePeriod(3600);
     }
 }

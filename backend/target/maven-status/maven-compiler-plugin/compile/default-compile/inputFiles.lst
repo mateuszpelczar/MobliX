@@ -1,5 +1,5 @@
 C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
-C:\MobliX\backend\src\main\java\com\example\backend\config\OpenSearchConfig.java
+C:\MobliX\backend\src\main\java\com\example\backend\config\AwsModerationConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\WebConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
@@ -20,9 +20,12 @@ C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementReportDTO.j
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\ConversationDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\ForgotPasswordRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\LogDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\MessageDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\ModerationResultDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\NotificationDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\ResetPasswordRequest.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\SellerInfoDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserModerationDTO.java
@@ -38,6 +41,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\model\Log.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Message.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Moderation.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Notification.java
+C:\MobliX\backend\src\main\java\com\example\backend\model\PasswordResetToken.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Regulation.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\Report.java
 C:\MobliX\backend\src\main\java\com\example\backend\model\ReportSummary.java
@@ -68,6 +72,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\repository\LogRepository.jav
 C:\MobliX\backend\src\main\java\com\example\backend\repository\MessageRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ModerationRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\NotificationRepository.java
+C:\MobliX\backend\src\main\java\com\example\backend\repository\PasswordResetTokenRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\RegulationRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ReportSummaryRepository.java
@@ -78,15 +83,20 @@ C:\MobliX\backend\src\main\java\com\example\backend\security\CustomUserDetails.j
 C:\MobliX\backend\src\main\java\com\example\backend\security\JwtAuthenticationFilter.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdminService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdminStatsService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementModerationService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementReportService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\AdvertisementService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\ContentModerationService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\ContentPageService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\CustomUserDetailsService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\EmailService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\FavoriteAdService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\ImageModerationService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\JwtService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\LogService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\MessageService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\NotificationService.java
-C:\MobliX\backend\src\main\java\com\example\backend\service\OpenSearchService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\PasswordResetService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\SearchLogService.java
+C:\MobliX\backend\src\main\java\com\example\backend\service\SearchSuggestionService.java
 C:\MobliX\backend\src\main\java\com\example\backend\service\UserService.java

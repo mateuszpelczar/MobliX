@@ -46,7 +46,6 @@ const ChangeRole: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -54,6 +53,7 @@ const ChangeRole: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     fetchFavoriteCount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchFavoriteCount = async () => {
@@ -76,14 +76,6 @@ const ChangeRole: React.FC = () => {
   const handleMessengerClick = () => navigate("/user/message");
   const handleNotificationsClick = () => navigate("/user/notifications");
   const handleWatchedAdsClick = () => navigate("/user/watchedads");
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(
-      searchQuery.trim()
-        ? `/smartfony?search=${searchQuery.trim()}`
-        : "/smartfony"
-    );
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -161,7 +153,11 @@ const ChangeRole: React.FC = () => {
         setUsers(response.data);
       } catch (err) {
         console.error("Błąd podczas pobierania użytkowników:", err);
-        const e = err as any;
+        const e = err as {
+          response?: { status?: number; data?: { message?: string } };
+          message?: string;
+          code?: string;
+        };
         const statusCode = e?.response?.status as number | undefined;
         const errorMessage = e?.response?.data?.message || e?.message || "";
 
@@ -223,6 +219,7 @@ const ChangeRole: React.FC = () => {
 
       setSuccessMessage(`Pomyślnie zmieniono rolę użytkownika ID: ${userId}`);
     } catch (err) {
+      console.error("Błąd podczas zmiany roli:", err);
       setError("Nie udało się zmienić roli użytkownika. Spróbuj ponownie.");
     }
   };
@@ -243,6 +240,7 @@ const ChangeRole: React.FC = () => {
       // Odśwież listę użytkowników po usunięciu
       fetchUsers();
     } catch (error) {
+      console.error("Błąd podczas usuwania użytkownika:", error);
       setError("Błąd podczas usuwania użytkownika");
     }
   };
@@ -251,10 +249,6 @@ const ChangeRole: React.FC = () => {
     localStorage.removeItem("token");
     navigate("/");
     setIsDropdownOpen(false);
-  };
-
-  const goBack = () => {
-    navigate("/admin");
   };
 
   // Filter users based on search term and role filter

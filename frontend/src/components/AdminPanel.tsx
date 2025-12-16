@@ -16,7 +16,6 @@ import {
   Crown,
   Bell,
   Heart,
-  Search,
   Plus,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
@@ -25,7 +24,6 @@ const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
 
   //statystyki w panelu
@@ -114,14 +112,6 @@ const AdminPanel: React.FC = () => {
   const handleMessengerClick = () => navigate("/user/message");
   const handleNotificationsClick = () => navigate("/user/notifications");
   const handleWatchedAdsClick = () => navigate("/user/watchedads");
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(
-      searchQuery.trim()
-        ? `/smartfony?search=${searchQuery.trim()}`
-        : "/smartfony"
-    );
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">

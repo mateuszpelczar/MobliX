@@ -17,7 +17,6 @@ import {
   Users,
   LogOut,
   ChevronDown,
-  Search,
 } from "lucide-react";
 import "../styles/MobileResponsive.css";
 import "../styles/UserPanel.css";
@@ -46,16 +45,16 @@ const UserPanel: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = React.useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
 
   const getUserRole = () => {
     const token = localStorage.getItem("token");
     if (!token) return null;
     try {
-      const decoded: any = jwtDecode(token);
+      const decoded: JwtPayLoad = jwtDecode(token);
       return decoded.role;
     } catch (error) {
+      console.error("Error decoding token:", error);
       return null;
     }
   };
@@ -87,44 +86,6 @@ const UserPanel: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching favorite count:", error);
-    }
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-
-    if (query) {
-      // Log search from navbar
-      try {
-        const token = localStorage.getItem("token");
-        let userId = null;
-
-        if (token) {
-          try {
-            const decoded = jwtDecode<JwtPayLoad>(token);
-            userId = decoded.sub ? parseInt(decoded.sub) : null;
-          } catch (error) {
-            console.error("Error decoding token:", error);
-          }
-        }
-
-        await axios.post("http://localhost:8080/api/search-logs", {
-          searchQuery: query,
-          brand: null,
-          model: null,
-          minPrice: null,
-          maxPrice: null,
-          userId: userId,
-          sessionId: null,
-          resultsCount: null,
-          searchSource: "navbar",
-        });
-      } catch (error) {
-        console.error("Error logging search:", error);
-      }
-
-      navigate(`/main?search=${encodeURIComponent(query)}`);
     }
   };
 

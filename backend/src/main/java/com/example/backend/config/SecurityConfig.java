@@ -39,17 +39,20 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                // Statyczne zasoby - muszą być na początku!
+                .requestMatchers("/uploads/**", "/uploads/images/**", "/images/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/images/**").permitAll() // Zezwól na dostęp do obrazków
-                .requestMatchers("/uploads/**").permitAll() // Zezwól na dostęp do uploadów
-                .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-images").authenticated() // Upload zdjęć
-                .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-image").authenticated() // Upload zdjęcia
+                    .requestMatchers("/api/auth/forgot-password").permitAll()
+                    .requestMatchers("/api/auth/reset-password").permitAll()
+                    .requestMatchers("/api/auth/validate-reset-token").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-images").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/advertisements/upload-image").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/ogloszenia/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/advertisements/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/advertisements/*/view").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/advertisements").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/advertisements/*").authenticated() // Update ogłoszenia
-                .requestMatchers(HttpMethod.DELETE, "/api/advertisements/*").authenticated() // Delete ogłoszenia
+                .requestMatchers(HttpMethod.PUT, "/api/advertisements/*").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/advertisements/*").authenticated()
                 .requestMatchers("/api/advertisements/user").authenticated()
                 .requestMatchers("/api/advertisements/all").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/advertisements/pending").hasAnyRole("STAFF", "ADMIN")
@@ -65,17 +68,17 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/users/*/unblock").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/admin/users/*/activity-logs").hasAnyRole("STAFF", "ADMIN")       
                 .requestMatchers(HttpMethod.PUT, "/api/admin/users/*").hasAnyRole("STAFF", "ADMIN")
-                .requestMatchers("/api/admin/stats/staff").hasAnyRole("STAFF", "ADMIN") // Statystyki dla staff/admin
-                .requestMatchers("/api/search-stats/**").hasAnyRole("STAFF", "ADMIN") // Statystyki wyszukiwań
+                .requestMatchers("/api/admin/stats/staff").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/api/search-stats/**").hasAnyRole("STAFF", "ADMIN")
                 .requestMatchers("/api/search-logs/**").permitAll() // Zapisywanie wyszukiwań - publiczne
                 .requestMatchers(HttpMethod.POST, "/api/search/reindex-all").hasAnyRole("STAFF", "ADMIN") // Reindeksowanie tylko admin/staff
                 .requestMatchers("/api/search/**").permitAll() // OpenSearch sugestie - publiczne
                 .requestMatchers(HttpMethod.GET, "/api/content-pages/slug/*").permitAll() // Publiczne wyświetlanie stron
-                .requestMatchers("/api/content-pages/**").hasRole("ADMIN") // Edycja content-pages tylko ADMIN
+                .requestMatchers("/api/content-pages/**").hasRole("ADMIN")
                 .requestMatchers("/api/logs/activities").authenticated()
-                .requestMatchers("/api/logs/**").hasRole("ADMIN") // Logi systemowe tylko dla ADMIN
+                .requestMatchers("/api/logs/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/stats/dashboard").hasRole("ADMIN")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN") // Catch-all dla pozostałych admin endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

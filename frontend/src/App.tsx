@@ -28,6 +28,8 @@ import ModeracjaOgloszen from "./components/staff/ModeracjaOgloszen";
 import Statystyki from "./components/staff/Statystyki";
 import ModeracjaUzytkownikow from "./components/staff/ModeracjaUzytkownikow";
 import ModeracjaZgloszen from "./components/staff/ModeracjaZgloszen";
+import ForgotPassword from "./auth/ForgotPassword";
+import ResetPassword from "./auth/ResetPassword";
 
 const App: React.FC = () => {
   return (
@@ -54,6 +56,9 @@ const App: React.FC = () => {
             </>
           }
         />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route path="/main" element={<MainPanel />} />
 

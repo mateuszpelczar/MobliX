@@ -19,7 +19,6 @@ import {
   Bell,
   Heart,
   Plus,
-  Search,
 } from "lucide-react";
 import SearchBar from "./SearchBar";
 
@@ -34,7 +33,6 @@ const StaffPanel: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
 
   const [stats, setStats] = useState<StaffStats>({
@@ -71,14 +69,6 @@ const StaffPanel: React.FC = () => {
   const handleMessengerClick = () => navigate("/user/message");
   const handleNotificationsClick = () => navigate("/user/notifications");
   const handleWatchedAdsClick = () => navigate("/user/watchedads");
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(
-      searchQuery.trim()
-        ? `/smartfony?search=${searchQuery.trim()}`
-        : "/smartfony"
-    );
-  };
 
   const fetchStats = async () => {
     try {

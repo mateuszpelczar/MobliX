@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import SearchBar from "../SearchBar";
@@ -21,7 +21,6 @@ import {
   Bell,
   Heart,
   Plus,
-  Search,
 } from "lucide-react";
 
 type JwtPayLoad = {
@@ -43,7 +42,6 @@ const ManageContent: React.FC = () => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [favoriteCount, setFavoriteCount] = useState(0);
 
   const [pages, setPages] = useState<ContentPage[]>([]);
@@ -129,14 +127,14 @@ const ManageContent: React.FC = () => {
   const handleMessengerClick = () => navigate("/user/message");
   const handleNotificationsClick = () => navigate("/user/notifications");
   const handleWatchedAdsClick = () => navigate("/user/watchedads");
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(
-      searchQuery.trim()
-        ? `/smartfony?search=${searchQuery.trim()}`
-        : "/smartfony"
-    );
-  };
+  // const handleSearch = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   navigate(
+  //     searchQuery.trim()
+  //       ? `/smartfony?search=${searchQuery.trim()}`
+  //       : "/smartfony"
+  //   );
+  // };
 
   // Rozpocznij edycję
   const startEditing = (page: ContentPage) => {
@@ -572,30 +570,30 @@ const ManageContent: React.FC = () => {
       <footer className="bg-black text-white py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
-            <a
-              href="/zasady-bezpieczenstwa"
+            <Link
+              to="/zasady-bezpieczenstwa"
               className="hover:text-purple-400 transition-colors"
             >
               Zasady bezpieczeństwa
-            </a>
-            <a
-              href="/jak-dziala-moblix"
+            </Link>
+            <Link
+              to="/jak-dziala-moblix"
               className="hover:text-purple-400 transition-colors"
             >
               Jak działa MobliX
-            </a>
-            <a
-              href="/regulamin"
+            </Link>
+            <Link
+              to="/regulamin"
               className="hover:text-purple-400 transition-colors"
             >
               Regulamin
-            </a>
-            <a
-              href="/polityka-cookies"
+            </Link>
+            <Link
+              to="/polityka-cookies"
               className="hover:text-purple-400 transition-colors"
             >
               Polityka cookies
-            </a>
+            </Link>
           </div>
           <div className="text-center text-gray-400 text-sm mt-4">
             © 2024 MobliX. Wszelkie prawa zastrzeżone.

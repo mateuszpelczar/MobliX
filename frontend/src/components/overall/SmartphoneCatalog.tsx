@@ -243,6 +243,14 @@ const SmartphoneCatalog: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState(
     searchParams.get("search") || ""
   );
+
+  // Sync searchTerm with URL when search params change (e.g., from SearchBar suggestions)
+  useEffect(() => {
+    const urlSearchTerm = searchParams.get("search") || "";
+    if (urlSearchTerm !== searchTerm) {
+      setSearchTerm(urlSearchTerm);
+    }
+  }, [searchParams]);
   const [selectedBrand, setSelectedBrand] = useState(
     searchParams.get("brand") || "all"
   );

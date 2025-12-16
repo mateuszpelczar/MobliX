@@ -1,6 +1,8 @@
 package com.example.backend.controller;
 
-import com.example.backend.service.OpenSearchService;
+import com.example.backend.service.SearchSuggestionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,14 +14,16 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class SearchSuggestionsController {
 
-    private final OpenSearchService openSearchService;
+    private static final Logger log = LoggerFactory.getLogger(SearchSuggestionsController.class);
 
-    public SearchSuggestionsController(OpenSearchService openSearchService) {
-        this.openSearchService = openSearchService;
+    private final SearchSuggestionService searchSuggestionService;
+
+    public SearchSuggestionsController(SearchSuggestionService searchSuggestionService) {
+        this.searchSuggestionService = searchSuggestionService;
     }
 
     /**
-     * Endpoint dla sugestii wyszukiwania
+     * Endpoint dla sugestii wyszukiwania (PostgreSQL powered)
      * GET /api/search/suggestions?q=samsung&limit=5
      */
     @GetMapping("/suggestions")
@@ -31,10 +35,12 @@ public class SearchSuggestionsController {
         if (limit < 1) limit = 5;
 
         try {
-            List<String> suggestions = openSearchService.getSuggestions(query, limit);
+            log.info("Fetching suggestions for query: '{}', limit: {}", query, limit);
+            List<String> suggestions = searchSuggestionService.getSuggestions(query, limit);
+            log.info("Returning {} suggestions", suggestions.size());
             return ResponseEntity.ok(suggestions);
         } catch (Exception e) {
-            // Zwróć pustą listę gdy OpenSearch niedostępny
+            log.error("Error fetching suggestions: {}", e.getMessage(), e);
             return ResponseEntity.ok(List.of());
         }
     }
@@ -52,32 +58,12 @@ public class SearchSuggestionsController {
         if (limit < 1) limit = 10;
 
         try {
-            List<Map<String, Object>> results = openSearchService.search(query, limit);
+            List<Map<String, Object>> results = searchSuggestionService.search(query, limit);
             return ResponseEntity.ok(results);
         } catch (Exception e) {
-            // Zwróć pustą listę gdy OpenSearch niedostępny
+            log.error("Error searching: {}", e.getMessage(), e);
             return ResponseEntity.ok(List.of());
         }
     }
-
-    /**
-     * Endpoint do reindeksowania wszystkich istniejących ogłoszeń
-     * POST /api/search/reindex-all
-     */
-    @PostMapping("/reindex-all")
-    public ResponseEntity<Map<String, Object>> reindexAllAdvertisements() {
-        try {
-            int count = openSearchService.reindexAllAdvertisements();
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Zaindeksowano " + count + " ogłoszeń",
-                "count", count
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of(
-                "success", false,
-                "message", "Błąd reindeksowania: " + e.getMessage()
-            ));
-        }
-    }
 }
+

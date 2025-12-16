@@ -63,7 +63,7 @@ const JakDzialaMoblix: React.FC = () => {
     const fetchContent = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/content-pages/slug/zasady-bezpieczenstwa"
+          "http://localhost:8080/api/content-pages/slug/jak-dziala-moblix"
         );
         // Fix: assert response.data type
         const data = response.data as { content: string };

@@ -1,17 +1,23 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.ForgotPasswordRequest;
+import com.example.backend.dto.ResetPasswordRequest;
 import com.example.backend.dto.UserDto;
 import com.example.backend.model.User;
 import com.example.backend.others.LoginRequest;
 import com.example.backend.others.RegisterRequest;
 import com.example.backend.others.UpdateUserRequest;
 import com.example.backend.service.LogService;
+import com.example.backend.service.PasswordResetService;
 import com.example.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -19,10 +25,12 @@ public class AuthController {
 
     private final UserService userService;
     private final LogService logService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(UserService userService, LogService logService) {
+    public AuthController(UserService userService, LogService logService, PasswordResetService passwordResetService) {
         this.userService = userService;
         this.logService = logService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/register")
@@ -203,4 +211,59 @@ public class AuthController {
             throw e;
         }
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = getClientIp(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        passwordResetService.initiatePasswordReset(request.getEmail(), clientIp, userAgent);
+
+        // Always return success to prevent email enumeration
+        return ResponseEntity.ok(Map.of(
+                "message", "Jeśli podany adres email istnieje w naszym systemie, zostanie wysłana wiadomość z instrukcjami resetowania hasła."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest) {
+
+        try {
+            String clientIp = getClientIp(httpRequest);
+            passwordResetService.resetPassword(request.getToken(), request.getNewPassword(), clientIp);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Hasło zostało pomyślnie zresetowane. Możesz się teraz zalogować."
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/validate-reset-token")
+    public ResponseEntity<?> validateResetToken(@RequestParam String token) {
+        try {
+            passwordResetService.validateToken(token);
+            return ResponseEntity.ok(Map.of("valid", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "valid", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
+
 }

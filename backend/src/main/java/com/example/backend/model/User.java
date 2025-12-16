@@ -28,6 +28,7 @@ public class User {
   @NotBlank(message="Nazwa uzytkownika jest wymagana")
   private String username;
   @Email
+  @Column(unique = true)
   private String email;
  @NotBlank(message="Haslo jest wymagane")
   private String password;

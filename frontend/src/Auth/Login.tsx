@@ -84,6 +84,13 @@ const Login: React.FC = () => {
                 required
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 pr-10 text-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200"
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
             </div>
           </div>
 
@@ -94,6 +101,15 @@ const Login: React.FC = () => {
             Zaloguj
           </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <Link
+            to="/forgot-password"
+            className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+          >
+            Zapomniałeś hasła?
+          </Link>
+        </div>
 
         <p className="text-center text-gray-300 text-sm mt-6">
           Nie masz konta?{" "}
