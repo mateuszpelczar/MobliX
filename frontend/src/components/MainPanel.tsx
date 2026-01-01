@@ -14,7 +14,7 @@ import {
   Heart,
   Plus,
 } from "lucide-react";
-import SearchBar from "./SearchBar";
+import SearchBar from "./overall/SearchBar";
 import "../styles/MobileResponsive.css";
 
 interface SmartphoneData {
@@ -460,6 +460,14 @@ const MainPanel: React.FC = () => {
             <p className="text-gray-300 text-lg">
               Sprawdzone oferty • Najlepsze ceny • Bezpieczne transakcje
             </p>
+            <button
+              onClick={()=> navigate("/smartfony")}
+              className="bg-transparent  border-white text-white px-6 py-2 rounded-lg mt-6 mb-4 hover:bg-white hover:text-black transition"
+            >
+              Zobacz wszystkie ogłoszenia
+            </button>
+               
+              
           </div>
 
           {/* Wyróżnione oferty */}

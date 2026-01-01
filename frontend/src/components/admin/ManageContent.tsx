@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
-import SearchBar from "../SearchBar";
+import SearchBar from "../overall/SearchBar";
 import {
   FileText,
   Edit,

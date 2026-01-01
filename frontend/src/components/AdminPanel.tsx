@@ -18,7 +18,7 @@ import {
   Heart,
   Plus,
 } from "lucide-react";
-import SearchBar from "./SearchBar";
+import SearchBar from "./overall/SearchBar";
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();

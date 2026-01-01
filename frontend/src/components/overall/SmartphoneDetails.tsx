@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import type { SmartphoneData } from "../data/smartphoneData";
 import { smartphones } from "../data/smartphoneData";
-import SearchBar from "../SearchBar";
+import SearchBar from "./SearchBar";
 import "../../styles/MobileResponsive.css";
 
 interface FavoriteCheckResponse {

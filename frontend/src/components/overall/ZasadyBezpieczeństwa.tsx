@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
-import SearchBar from "../SearchBar";
+import SearchBar from "./SearchBar";
 import "../../styles/MobileResponsive.css";
 import {
   MessageSquare,

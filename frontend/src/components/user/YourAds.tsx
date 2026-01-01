@@ -24,7 +24,7 @@ import {
   MapPin,
 } from "lucide-react";
 import "../../styles/MobileResponsive.css";
-import SearchBar from "../SearchBar";
+import SearchBar from "../overall/SearchBar";
 
 type Ad = {
   id: number;

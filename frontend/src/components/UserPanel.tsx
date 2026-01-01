@@ -21,7 +21,7 @@ import {
 import "../styles/MobileResponsive.css";
 import "../styles/UserPanel.css";
 import axios from "axios";
-import SearchBar from "./SearchBar";
+import SearchBar from "./overall/SearchBar";
 
 type JwtPayLoad = {
   sub: string;

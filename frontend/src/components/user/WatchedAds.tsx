@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
 import "../../styles/MobileResponsive.css";
-import SearchBar from "../SearchBar";
+import SearchBar from "../overall/SearchBar";
 import {
   MessageSquare,
   ShoppingBag,

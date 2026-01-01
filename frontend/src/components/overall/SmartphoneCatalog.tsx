@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import "../../styles/MobileResponsive.css";
 import { voivodeships } from "../../data/locations";
-import SearchBar from "../SearchBar";
+import SearchBar from "./SearchBar";
 
 interface SmartphoneData {
   id: number;

@@ -20,7 +20,7 @@ import {
   Heart,
   Plus,
 } from "lucide-react";
-import SearchBar from "./SearchBar";
+import SearchBar from "./overall/SearchBar";
 
 interface StaffStats {
   pendingAdvertisements: number;

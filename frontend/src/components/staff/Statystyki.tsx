@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import SearchBar from "../SearchBar";
+import SearchBar from "../overall/SearchBar";
 import {
   User,
   ChevronDown,
