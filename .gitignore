@@ -20,6 +20,7 @@ out/
 **/application-*.properties
 !**/application-example.properties
 !**/application-local.properties.example
+!**/src/test/resources/application-test.properties
 
 # Environment variables (.env files)
 .env

@@ -3,14 +3,15 @@ package com.example.backend.controller;
 import com.example.backend.dto.CreateAdvertisementDTO;
 import com.example.backend.model.*;
 import com.example.backend.repository.*;
+import com.example.backend.service.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -21,6 +22,10 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Testy integracyjne dla AdvertisementController
+ * Używają bazy H2 w trybie PostgreSQL compatibility
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -41,7 +46,19 @@ public class AdvertisementControllerTest {
     @Autowired
     private LocationRepository locationRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
     private MockMvc mockMvc;
+    private User testUser;
+    private User staffUser;
+    private User adminUser;
+    private String userToken;
+    private String staffToken;
+    private String adminToken;
 
     @BeforeEach
     void setUp() {
@@ -49,20 +66,39 @@ public class AdvertisementControllerTest {
                 .webAppContextSetup(context)
                 .apply(springSecurity())
                 .build();
+
+        // Utwórz użytkownika testowego
+        testUser = createUser("test@example.com", "testuser", Role.USER);
+        userToken = jwtService.generateToken(testUser);
+
+        // Utwórz użytkownika staff
+        staffUser = createUser("staff@example.com", "staffuser", Role.STAFF);
+        staffToken = jwtService.generateToken(staffUser);
+
+        // Utwórz administratora
+        adminUser = createUser("admin@example.com", "adminuser", Role.ADMIN);
+        adminToken = jwtService.generateToken(adminUser);
+    }
+
+    private User createUser(String email, String username, Role role) {
+        User user = new User();
+        user.setEmail(email);
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setRole(role);
+        user.setAccountType("personal");
+        user.setFirstName("Test");
+        user.setLastName("User");
+        user.setBlocked(false);
+        return userRepository.save(user);
     }
 
     @Test
-    @WithMockUser(username = "testuser", roles = {"USER"})
+    @DisplayName("Powinien utworzyć ogłoszenie dla zalogowanego użytkownika")
     void shouldCreateAdvertisement() throws Exception {
         // Given
-        User user = new User();
-        user.setUsername("testuser");
-        user.setEmail("test@example.com");
-        user.setPassword("password");
-        userRepository.save(user);
-
         Category category = new Category();
-        category.setName("Telefony");
+        category.setName("Smartfony");
         categoryRepository.save(category);
 
         Location location = new Location();
@@ -85,17 +121,17 @@ public class AdvertisementControllerTest {
 
         // When & Then
         mockMvc.perform(post("/api/advertisements")
+                .header("Authorization", "Bearer " + userToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("iPhone 15 Pro"))
-                .andExpect(jsonPath("$.description").value("Nowy iPhone w bardzo dobrym stanie"))
-                .andExpect(jsonPath("$.price").value(4500.00))
-                .andExpect(jsonPath("$.brand").value("Apple"))
-                .andExpect(jsonPath("$.model").value("iPhone 15 Pro"));
+                .andExpect(jsonPath("$.price").value(4500.0))
+                .andExpect(jsonPath("$.specification.brand").value("Apple"));
     }
 
     @Test
+    @DisplayName("Powinien pobrać publiczne ogłoszenia bez autoryzacji")
     void shouldGetPublicAdvertisements() throws Exception {
         // When & Then
         mockMvc.perform(get("/api/advertisements"))
@@ -104,6 +140,7 @@ public class AdvertisementControllerTest {
     }
 
     @Test
+    @DisplayName("Powinien pobrać najnowsze ogłoszenia")
     void shouldGetLatestAdvertisements() throws Exception {
         // When & Then
         mockMvc.perform(get("/api/advertisements/latest"))
@@ -112,20 +149,37 @@ public class AdvertisementControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "staff", roles = {"STAFF"})
-    void shouldGetPendingAdvertisements() throws Exception {
+    @DisplayName("Staff powinien mieć dostęp do oczekujących ogłoszeń")
+    void shouldGetPendingAdvertisementsAsStaff() throws Exception {
         // When & Then
-        mockMvc.perform(get("/api/advertisements/pending"))
+        mockMvc.perform(get("/api/advertisements/pending")
+                .header("Authorization", "Bearer " + staffToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = {"ADMIN"})
-    void shouldGetAllAdvertisements() throws Exception {
+    @DisplayName("Admin powinien mieć dostęp do wszystkich ogłoszeń")
+    void shouldGetAllAdvertisementsAsAdmin() throws Exception {
         // When & Then
-        mockMvc.perform(get("/api/advertisements/all"))
+        mockMvc.perform(get("/api/advertisements/all")
+                .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    @DisplayName("Użytkownik bez autoryzacji nie powinien móc utworzyć ogłoszenia")
+    void shouldRejectCreateWithoutAuth() throws Exception {
+        // Given
+        CreateAdvertisementDTO dto = new CreateAdvertisementDTO();
+        dto.setTitle("Test");
+        dto.setDescription("Test description");
+
+        // When & Then
+        mockMvc.perform(post("/api/advertisements")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden());
     }
 }

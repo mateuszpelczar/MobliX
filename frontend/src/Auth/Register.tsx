@@ -22,13 +22,55 @@ const Register: React.FC = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [errors, setErrors] = useState({
+    phone: "",
+    nip: "",
+    regon: "",
+  });
 
   // Dane firmowe (tylko dla konta business)
   const [companyName, setCompanyName] = useState("");
   const [nip, setNip] = useState("");
   const [regon, setRegon] = useState("");
   const [address, setAddress] = useState("");
-  const [website, setWebsite] = useState("");
+  const [website, setWebsite] = useState(""); 
+  
+  
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (!/^\d*$/.test(value)) {
+          setErrors(prev => ({ ...prev, phone: "Numer telefonu może zawierać tylko cyfry" }));
+        } else if (value.length > 9) {
+          setErrors(prev => ({ ...prev, phone: "Numer telefonu nie może mieć więcej niż 9 cyfr" }));
+        } else {
+          setErrors(prev => ({ ...prev, phone: "" }));
+        }
+        setPhone(value);
+      };
+
+        const handleNipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (!/^\d*$/.test(value)) {
+          setErrors(prev => ({ ...prev, nip: "NIP może zawierać tylko cyfry" }));
+        } else if (value.length > 10) {
+          setErrors(prev => ({ ...prev, nip: "NIP nie może mieć więcej niż 10 cyfr" }));
+        } else {
+          setErrors(prev => ({ ...prev, nip: "" }));
+        }
+        setNip(value);
+      };
+
+        const handleRegonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const value = e.target.value;
+          if (!/^\d*$/.test(value)) {
+            setErrors(prev => ({ ...prev, regon: "REGON może zawierać tylko cyfry" }));
+          } else if (value.length > 9) {
+            setErrors(prev => ({ ...prev, regon: "REGON nie może mieć więcej niż 9 cyfr" }));
+          } else {
+            setErrors(prev => ({ ...prev, regon: "" }));
+          }
+          setRegon(value);
+        };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +91,24 @@ const Register: React.FC = () => {
           website,
         }),
       };
+
+              if (phone.length !== 9) {
+          setErrors(prev => ({ ...prev, phone: "Numer telefonu musi mieć dokładnie 9 cyfr" }));
+          return;
+        }
+
+        if (accountType === "business") {
+          if (nip.length !== 10) {
+            setErrors(prev => ({ ...prev, nip: "NIP musi mieć dokładnie 10 cyfr" }));
+            return;
+          }
+          if (regon.length !== 9) {
+            setErrors(prev => ({ ...prev, regon: "REGON musi mieć dokładnie 9 cyfr" }));
+            return;
+          }
+        }
+
+     
 
       const res = await axios.post(
         "http://localhost:8080/api/auth/register",
@@ -205,12 +265,13 @@ const Register: React.FC = () => {
               </label>
               <input
                 type="tel"
-                placeholder="+48 123 456 789"
+                placeholder="123456789"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 required
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
           </div>
 
@@ -243,10 +304,11 @@ const Register: React.FC = () => {
                       type="text"
                       placeholder="1234567890"
                       value={nip}
-                      onChange={(e) => setNip(e.target.value)}
+                      onChange={handleNipChange}
                       required={accountType === "business"}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
+                    {errors.nip && <p className="text-red-500 text-sm mt-1">{errors.nip}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -256,9 +318,10 @@ const Register: React.FC = () => {
                       type="text"
                       placeholder="123456789"
                       value={regon}
-                      onChange={(e) => setRegon(e.target.value)}
+                      onChange={handleRegonChange}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
+                    {errors.regon && <p className="text-red-500 text-sm mt-1">{errors.regon}</p>}
                   </div>
                 </div>
                 <div>

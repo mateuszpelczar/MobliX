@@ -1,5 +1,7 @@
 package com.example.backend.dto;
 
+import jakarta.validation.constraints.Pattern;
+
 public class UserDto {
     private Long id;
     private String email;
@@ -10,11 +12,14 @@ public class UserDto {
     private String accountType;
     private String firstName;
     private String lastName;
+    @Pattern(regexp = "\\d{9}",message="Numer telefonu musi składać się z 9 cyfr")
     private String phone;
     
     // Pola dla kont firmowych
     private String companyName;
+    @Pattern(regexp = "\\d{10}",message="Numer NIP musi składać się z 10 cyfr")
     private String nip;
+    @Pattern(regexp = "\\d{9}",message="Numer REGON musi składać się z 9 cyfr")
     private String regon;
     private String address;
     private String website;

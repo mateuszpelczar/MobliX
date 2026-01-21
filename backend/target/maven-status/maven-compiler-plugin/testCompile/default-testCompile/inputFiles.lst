@@ -1,2 +1,8 @@
 C:\MobliX\backend\src\test\java\com\example\backend\BackendApplicationTests.java
 C:\MobliX\backend\src\test\java\com\example\backend\controller\AdvertisementControllerTest.java
+C:\MobliX\backend\src\test\java\com\example\backend\service\ContentModerationServiceTest.java
+C:\MobliX\backend\src\test\java\com\example\backend\service\FavoriteAdServiceTest.java
+C:\MobliX\backend\src\test\java\com\example\backend\service\JwtServiceTest.java
+C:\MobliX\backend\src\test\java\com\example\backend\service\PasswordResetServiceTest.java
+C:\MobliX\backend\src\test\java\com\example\backend\service\SearchSuggestionServiceTest.java
+C:\MobliX\backend\src\test\java\com\example\backend\service\UserServiceTest.java
