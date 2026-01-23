@@ -1,5 +1,6 @@
 C:\MobliX\backend\src\main\java\com\example\backend\BackendApplication.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\AwsModerationConfig.java
+C:\MobliX\backend\src\main\java\com\example\backend\config\FlywayCleanupConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\SecurityConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\config\WebConfig.java
 C:\MobliX\backend\src\main\java\com\example\backend\controller\AdminController.java
@@ -18,6 +19,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\controller\SearchSuggestions
 C:\MobliX\backend\src\main\java\com\example\backend\controller\UserController.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementReportDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\AdvertisementResponseDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\CategorySuggestionDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\ConversationDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\CreateAdvertisementDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\ForgotPasswordRequest.java
@@ -26,6 +28,8 @@ C:\MobliX\backend\src\main\java\com\example\backend\dto\MessageDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\ModerationResultDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\NotificationDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\ResetPasswordRequest.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\SearchSuggestionDTO.java
+C:\MobliX\backend\src\main\java\com\example\backend\dto\SearchSuggestionsResponseDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\SellerInfoDTO.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserDto.java
 C:\MobliX\backend\src\main\java\com\example\backend\dto\UserModerationDTO.java
@@ -66,6 +70,7 @@ C:\MobliX\backend\src\main\java\com\example\backend\repository\CategoryRepositor
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ContentPageRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ConversationRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\FavoriteAdRepository.java
+C:\MobliX\backend\src\main\java\com\example\backend\repository\FullTextSearchRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\ImageRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\LocationRepository.java
 C:\MobliX\backend\src\main\java\com\example\backend\repository\LogRepository.java

@@ -1,6 +1,6 @@
 package com.example.backend.service;
 
-import com.example.backend.repository.AdvertisementRepository;
+import com.example.backend.repository.FullTextSearchRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,14 +26,14 @@ class SearchSuggestionServiceTest {
     private JdbcTemplate jdbcTemplate;
 
     @Mock
-    private AdvertisementRepository advertisementRepository;
+    private FullTextSearchRepository fullTextSearchRepository;
 
     private SearchSuggestionService searchSuggestionService;
 
     @BeforeEach
     void setUp() {
-        // Constructor requires: JdbcTemplate, AdvertisementRepository
-        searchSuggestionService = new SearchSuggestionService(jdbcTemplate, advertisementRepository);
+        // Constructor requires: JdbcTemplate, FullTextSearchRepository
+        searchSuggestionService = new SearchSuggestionService(jdbcTemplate, fullTextSearchRepository);
     }
 
     @Test
