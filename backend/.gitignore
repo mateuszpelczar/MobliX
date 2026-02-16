@@ -42,8 +42,8 @@ yarn-error.log*
 out/
 
 # File uploads and generated files
-uploads/
-uploads/images/
+#uploads/
+#uploads/images/
 temp/
 
 # OS
