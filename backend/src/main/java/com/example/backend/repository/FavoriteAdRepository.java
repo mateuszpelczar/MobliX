@@ -32,7 +32,10 @@ public interface FavoriteAdRepository extends JpaRepository<FavoriteAd, Long> {
     @Transactional
     @Query("DELETE FROM FavoriteAd f WHERE f.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
-    
-   
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM FavoriteAd f WHERE f.advertisement.user.id = :userId")
+    void deleteByAdvertisementUserId(@Param("userId") Long userId);
 
 }

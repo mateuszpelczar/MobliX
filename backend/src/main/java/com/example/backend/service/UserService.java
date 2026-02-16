@@ -6,11 +6,15 @@ import com.example.backend.model.User;
 import com.example.backend.others.LoginRequest;
 import com.example.backend.others.RegisterRequest;
 import com.example.backend.others.UpdateUserRequest;
+import com.example.backend.repository.AdvertisementReportRepository;
 import com.example.backend.repository.AdvertisementRepository;
 import com.example.backend.repository.FavoriteAdRepository;
+import com.example.backend.repository.ImageRepository;
 import com.example.backend.repository.LogRepository;
 import com.example.backend.repository.MessageRepository;
+import com.example.backend.repository.ModerationRepository;
 import com.example.backend.repository.NotificationRepository;
+import com.example.backend.repository.SmartphoneSpecificationRepository;
 import com.example.backend.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,9 +33,12 @@ public class UserService {
     private final AdvertisementRepository advertisementRepository;
     private final MessageRepository messageRepository;
     private final NotificationRepository notificationRepository;
-    
+    private final ImageRepository imageRepository;
+    private final SmartphoneSpecificationRepository smartphoneSpecificationRepository;
+    private final ModerationRepository moderationRepository;
+    private final AdvertisementReportRepository advertisementReportRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,LogRepository logRepository, FavoriteAdRepository favoriteRepository,AdvertisementRepository advertisementRepository,MessageRepository messageRepository,NotificationRepository notificationRepository ) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,LogRepository logRepository, FavoriteAdRepository favoriteRepository,AdvertisementRepository advertisementRepository,MessageRepository messageRepository,NotificationRepository notificationRepository, ImageRepository imageRepository, SmartphoneSpecificationRepository smartphoneSpecificationRepository, ModerationRepository moderationRepository, AdvertisementReportRepository advertisementReportRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -40,7 +47,10 @@ public class UserService {
         this.advertisementRepository = advertisementRepository;
         this.messageRepository = messageRepository;
         this.notificationRepository = notificationRepository;
-
+        this.imageRepository = imageRepository;
+        this.smartphoneSpecificationRepository = smartphoneSpecificationRepository;
+        this.moderationRepository = moderationRepository;
+        this.advertisementReportRepository = advertisementReportRepository;
     }
  
     
@@ -221,7 +231,14 @@ public class UserService {
             favoriteRepository.deleteByUserId(userId);
         }
 
-        
+        // Usun rekordy potomne ogloszen PRZED usunieciem ogloszen
+        // (bulk JPQL DELETE nie uruchamia kaskady JPA)
+        favoriteRepository.deleteByAdvertisementUserId(userId);
+        advertisementReportRepository.deleteByAdvertisementUserId(userId);
+        imageRepository.deleteByAdvertisementUserId(userId);
+        smartphoneSpecificationRepository.deleteByAdvertisementUserId(userId);
+        moderationRepository.deleteByAdvertisementUserId(userId);
+
         if(advertisementRepository !=null){
             advertisementRepository.deleteByUserId(userId);
         }

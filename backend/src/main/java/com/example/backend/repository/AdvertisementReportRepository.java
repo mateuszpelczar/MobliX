@@ -3,7 +3,11 @@ package com.example.backend.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.backend.model.AdvertisementReport;
 import com.example.backend.others.ReportStatus;
@@ -29,7 +33,8 @@ public interface AdvertisementReportRepository extends JpaRepository<Advertiseme
  
   long countByStatus(ReportStatus status);
 
-  
-
-  
+  @Modifying
+  @Transactional
+  @Query("DELETE FROM AdvertisementReport r WHERE r.advertisement.user.id = :userId")
+  void deleteByAdvertisementUserId(@Param("userId") Long userId);
 }
