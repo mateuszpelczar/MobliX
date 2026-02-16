@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/uploads/:path*", "destination": "https://moblix.onrender.com/uploads/:path*" },
+    { "source": "/images/:path*", "destination": "https://moblix.onrender.com/images/:path*" }
+  ]
+}
