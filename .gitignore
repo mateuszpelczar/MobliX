@@ -1,7 +1,7 @@
 # Maven / Java
 target/
 *.class
-*.jar
+target/*.jar
 *.war
 *.log
 
