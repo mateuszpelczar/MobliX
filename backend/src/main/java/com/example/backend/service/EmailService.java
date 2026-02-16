@@ -1,6 +1,5 @@
 package com.example.backend.service;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +29,9 @@ public class EmailService {
     @Async
     public void sendPasswordResetEmail(String toEmail, String token) {
         try {
+            log.info("Rozpoczynanie wysylki emaila resetujacego haslo na: {}", toEmail);
+            log.info("SMTP config - from: {}, frontendUrl: {}", fromEmail, frontendUrl);
+            
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -44,9 +46,8 @@ public class EmailService {
 
             mailSender.send(message);
             log.info("Wiadomość e-mail dotycząca resetowania hasła została pomyślnie wysłana na adres: {}", toEmail);
-        } catch (MessagingException e) {
-            log.error("Nie udało się wysłać wiadomości e-mail z linkiem do resetowania hasła na adres: {} - {}", toEmail, e.getMessage());
-            throw new RuntimeException("Nie udało się wysłać emaila resetującego hasło", e);
+        } catch (Exception e) {
+            log.error("BLAD WYSYLKI EMAILA na adres: {} - Typ: {} - Wiadomosc: {}", toEmail, e.getClass().getName(), e.getMessage(), e);
         }
     }
 
