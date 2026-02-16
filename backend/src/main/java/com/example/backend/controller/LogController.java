@@ -21,7 +21,7 @@ public class LogController {
     this.logService = logService;
   }
 
-    // Pobierz WSZYSTKIE logi (tylko ADMIN)
+    //pobieranie wszystkich logów
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<LogDTO>> getAllLogs(
@@ -32,7 +32,7 @@ public class LogController {
         return ResponseEntity.ok(logs);
     }
 
-    //pobiera wszystkie dane, dostep tylko dla ADMINA
+    //pobieranie logów według poziomu: WARN, INFO, ERROR
     @GetMapping("/level/{level}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<LogDTO>> getLogsByLevel(
@@ -40,7 +40,6 @@ public class LogController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
 
-        // Walidacja - tylko dozwolone poziomy
         if (!level.equals("INFO") && !level.equals("WARN") && !level.equals("ERROR")) {
             return ResponseEntity.badRequest().build();
         }
@@ -49,7 +48,7 @@ public class LogController {
         return ResponseEntity.ok(logs);
     }
 
-    // Pobierz logi według kategorii (tylko ADMIN)
+    //pobieranie logów według kategorii
     @GetMapping("/category/{category}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<LogDTO>> getLogsByCategory(
@@ -61,20 +60,19 @@ public class LogController {
         return ResponseEntity.ok(logs);
     }
 
-    //pobierz ostatnie aktywnosci uzytkownika (userpanel)
+    //pobieranie ostatnich aktywności zalogowanego użytkownika
     @GetMapping("/activities")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<LogDTO>> getUserActivities(
-        @RequestParam(defaultValue = "10") int limit,
-        Authentication authentication) {
-            try{
-                String userEmail = authentication.getName();
-                List<LogDTO> activities = logService.getUserActivities(userEmail, limit);
-                return ResponseEntity.ok(activities);
-            } catch (Exception e){
-                return ResponseEntity.badRequest().build();
-            }
-            
+            @RequestParam(defaultValue = "10") int limit,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            List<LogDTO> activities = logService.getUserActivities(userEmail, limit);
+            return ResponseEntity.ok(activities);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
+    }
 
 }

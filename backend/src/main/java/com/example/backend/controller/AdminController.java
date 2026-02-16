@@ -49,6 +49,7 @@ public class AdminController {
         this.reportRepository = reportRepository;
     }
 
+   //pobranie wszystkich użytkowników
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserDto>> getAllUsers() {
@@ -73,6 +74,7 @@ public class AdminController {
         return ResponseEntity.ok(userDtos);
     }
 
+    //zmiana roli użytkownika
     @PutMapping("/users/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDto> changeUserRole(
@@ -85,13 +87,13 @@ public class AdminController {
             User admin = userService.getCurrentUser(adminEmail);
             String ipAddress = logService.getClientIP(httpRequest);
             
-            // Pobierz dane użytkownika przed zmianą roli
+            //pobiera dane użytkownika przed zmianą roli
             User targetUser = userService.getUserById(userId);
             Role oldRole = targetUser.getRole();
             
             User updatedUser = userService.changeUserRole(userId, request.getRole());
             
-            // Log INFO - zmiana roli użytkownika
+            
             logService.saveLog(
                 "INFO",
                 "admin",
@@ -121,7 +123,7 @@ public class AdminController {
             return ResponseEntity.ok(userDto);
             
         } catch (Exception e) {
-            // Log ERROR - błąd zmiany roli
+            
             String adminEmail = principal.getName();
             User admin = userService.getCurrentUser(adminEmail);
             String ipAddress = logService.getClientIP(httpRequest);
@@ -140,6 +142,7 @@ public class AdminController {
         }
     }
 
+   //usunięcie użytkownika
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(
@@ -151,14 +154,14 @@ public class AdminController {
             User admin = userService.getCurrentUser(adminEmail);
             String ipAddress = logService.getClientIP(httpRequest);
             
-            // Pobierz dane użytkownika przed usunięciem
+            //pobranie danych użytkownika przed usunięciem
             User targetUser = userService.getUserById(userId);
             String targetUserEmail = targetUser.getEmail();
             String targetUserRole = targetUser.getRole().toString();
             
             userService.deleteUser(userId);
             
-            // Log WARN - usunięcie użytkownika (poważna akcja!)
+            
             logService.saveLog(
                 "WARN",
                 "admin",
@@ -172,7 +175,7 @@ public class AdminController {
             return ResponseEntity.noContent().build();
             
         } catch (Exception e) {
-            // Log ERROR - błąd usuwania użytkownika
+            
             String adminEmail = principal.getName();
             User admin = userService.getCurrentUser(adminEmail);
             String ipAddress = logService.getClientIP(httpRequest);
@@ -191,10 +194,7 @@ public class AdminController {
         }
     }
 
-    /**
-     * Pobierz wszystkich użytkowników do moderacji
-     * STAFF widzi tylko USER, ADMIN widzi wszystkich
-     */
+    //pobranie użytkowników do moderacji
     @GetMapping("/users/moderation")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<List<com.example.backend.dto.UserModerationDTO>> getUsersForModeration(Principal principal) {
@@ -203,12 +203,10 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
     
-    /**
-     * Zablokuj użytkownika
-     */
+    //blokada użytkownika
     @PostMapping("/users/{userId}/block")
-@PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
         @PathVariable Long userId,
         @RequestBody com.example.backend.others.BlockUserRequest request,
         Principal principal,
@@ -220,7 +218,7 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
     
     User blockedUser = userService.blockUser(userId, request.getDurationMinutes(), request.getReason());
     
-    // UTWÓRZ POWIADOMIENIE o zablokowaniu konta
+    //utworzenie powiadomienia o zablokowaniu konta
     notificationService.createAccountBlockedNotification(
         blockedUser, 
         request.getReason(), 
@@ -241,9 +239,7 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
     return ResponseEntity.ok(userService.convertToModerationDTO(blockedUser));
 }
     
-    /**
-     * Odblokuj użytkownika
-     */
+    //odblokowanie użytkownika
     @PostMapping("/users/{userId}/unblock")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<com.example.backend.dto.UserModerationDTO> unblockUser(
@@ -270,9 +266,7 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
         return ResponseEntity.ok(userService.convertToModerationDTO(unblockedUser));
     }
     
-    /**
-     * Pobierz logi aktywności użytkownika
-     */
+    //pobranie logów aktywności użytkownika
     @GetMapping("/users/{userId}/activity-logs")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<List<com.example.backend.dto.LogDTO>> getUserActivityLogs(@PathVariable Long userId, @RequestParam(defaultValue="10")int limit) {
@@ -282,9 +276,7 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
         return ResponseEntity.ok(logDTOs);
     }
 
-    /**
-     * Pobierz szczegóły użytkownika do moderacji
-     */
+    //pobranie szczegółów użytkownika do moderacji
     @GetMapping("/users/{userId}/details")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<UserModerationDTO> getUserModerationDetails(@PathVariable Long userId) {
@@ -299,6 +291,7 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
         return ResponseEntity.ok(dto);
     }
 
+    //edycja danych użytkownika przez admina
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<?> updateUser(
@@ -332,7 +325,7 @@ public ResponseEntity<com.example.backend.dto.UserModerationDTO> blockUser(
     
         }
 
-        //pobierz statystyki dla staff panel
+        //statystyki dla panelu moderatora
         @GetMapping("/stats/staff")
         @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
         public ResponseEntity<Map<String,Long>> getStaffStats(){

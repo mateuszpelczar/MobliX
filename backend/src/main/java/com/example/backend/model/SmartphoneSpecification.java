@@ -15,19 +15,19 @@ public class SmartphoneSpecification {
     @JoinColumn(name = "advertisement_id")
     private Advertisement advertisement;
     
-    // Obowiązkowe pola
+    // Obowiązkowe
     private String brand;
     private String model;
     private String color;
-    private String osType; // Android lub iOS
+    private String osType; 
     private String osVersion;
-    private String storage; // pamięć wewnętrzna
+    private String storage; 
     private String ram;
-    private String rearCameras; // aparat główny
-    private String frontCamera; // aparat przedni
+    private String rearCameras; 
+    private String frontCamera; 
     private String batteryCapacity;
     
-    // Opcjonalne pola
+    // Opcjonalne 
     private String displaySize;
     private String displayTech;
     private String wifi;
@@ -45,10 +45,10 @@ public class SmartphoneSpecification {
     private String condition; // NEW, VERY_GOOD, GOOD, FAIR, POOR
     private LocalDateTime dateAdded;
 
-    // Konstruktory
+    
     public SmartphoneSpecification() {}
 
-    // Gettery i Settery
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -12,10 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Controller dla PostgreSQL Full-Text Search
- * Zapewnia sugestie wyszukiwania i pełne wyszukiwanie z rankingiem
- */
+
 @RestController
 @RequestMapping("/api/search")
 @CrossOrigin(origins = "*")
@@ -29,15 +26,7 @@ public class SearchSuggestionsController {
         this.searchSuggestionService = searchSuggestionService;
     }
 
-    /**
-     * Endpoint dla prostych sugestii tekstowych (kompatybilny z istniejącym frontendem)
-     * GET /api/search/suggestions?q=samsung&limit=5
-     * 
-     * Wykorzystuje PostgreSQL Full-Text Search z:
-     * - tsvector i tsquery
-     * - Indeksy GIN
-     * - Trigram similarity dla tolerancji błędów
-     */
+    //proste sugestie tekstowe
     @GetMapping("/suggestions")
     public ResponseEntity<List<String>> getSuggestions(
             @RequestParam(name = "q", defaultValue = "") String query,
@@ -57,12 +46,7 @@ public class SearchSuggestionsController {
         }
     }
 
-    /**
-     * Endpoint dla rozszerzonych sugestii (produkty, marki, kategorie)
-     * GET /api/search/suggestions/full?q=samsung
-     * 
-     * Zwraca pełne informacje o sugestiach z rankingiem Full-Text Search
-     */
+    //rozszerzone sugestie
     @GetMapping("/suggestions/full")
     public ResponseEntity<SearchSuggestionsResponseDTO> getFullSuggestions(
             @RequestParam(name = "q", defaultValue = "") String query) {
@@ -81,10 +65,7 @@ public class SearchSuggestionsController {
         }
     }
 
-    /**
-     * Endpoint dla sugestii marek
-     * GET /api/search/brands?q=sam&limit=5
-     */
+    //sugestie marek
     @GetMapping("/brands")
     public ResponseEntity<List<String>> getBrandSuggestions(
             @RequestParam(name = "q", defaultValue = "") String query,
@@ -104,10 +85,7 @@ public class SearchSuggestionsController {
         }
     }
 
-    /**
-     * Endpoint dla sugestii modeli (opcjonalnie dla konkretnej marki)
-     * GET /api/search/models?q=galaxy&brand=Samsung&limit=5
-     */
+    //sugestie modeli
     @GetMapping("/models")
     public ResponseEntity<List<String>> getModelSuggestions(
             @RequestParam(name = "q", defaultValue = "") String query,
@@ -128,10 +106,7 @@ public class SearchSuggestionsController {
         }
     }
 
-    /**
-     * Endpoint dla sugestii kategorii
-     * GET /api/search/categories?q=smart&limit=5
-     */
+    //sugestie kategorii
     @GetMapping("/categories")
     public ResponseEntity<List<CategorySuggestionDTO>> getCategorySuggestions(
             @RequestParam(name = "q", defaultValue = "") String query,
@@ -151,10 +126,7 @@ public class SearchSuggestionsController {
         }
     }
 
-    /**
-     * Endpoint dla pełnego wyszukiwania z rankingiem Full-Text Search
-     * GET /api/search?q=samsung&limit=10
-     */
+    //pełne wyszukiwanie z rankingiem
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> search(
             @RequestParam(name = "q", defaultValue = "") String query,

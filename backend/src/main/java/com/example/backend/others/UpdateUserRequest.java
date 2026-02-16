@@ -5,16 +5,15 @@ public class UpdateUserRequest {
     private String firstName;
     private String lastName;
     private String phone;
-    private String password; // opcjonalne - tylko jeśli użytkownik chce zmienić hasło
+    private String password; 
     
-    // Pola dla kont firmowych
+    //firmowe
     private String companyName;
     private String nip;
     private String regon;
     private String address;
     private String website;
 
-    // Konstruktory
     public UpdateUserRequest() {}
 
     public UpdateUserRequest(String accountType, String firstName, String lastName, String phone,
@@ -32,7 +31,7 @@ public class UpdateUserRequest {
         this.website = website;
     }
 
-    // Gettery i Settery
+   
     public String getAccountType() { return accountType; }
     public void setAccountType(String accountType) { this.accountType = accountType; }
 

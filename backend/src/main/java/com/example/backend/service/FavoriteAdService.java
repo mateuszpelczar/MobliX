@@ -33,16 +33,14 @@ public class FavoriteAdService {
     @Autowired
     private LogService logService;
 
-    /**
-     * Dodaj ogłoszenie do ulubionych
-     */
+    // Dodawanie ogłoszenia do ulubionych
     public void addToFavorites(String userEmail, Long advertisementId) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Advertisement advertisement = advertisementRepository.findById(advertisementId)
                 .orElseThrow(() -> new RuntimeException("Advertisement not found"));
 
-        // Sprawdź czy już nie istnieje
+       
         if (!favoriteAdRepository.existsByUserAndAdvertisement(user, advertisement)) {
             FavoriteAd favorite = new FavoriteAd();
             favorite.setUser(user);
@@ -53,9 +51,7 @@ public class FavoriteAdService {
         logService.logUserActivity(user, "Dodano do ulubionych: " + advertisement.getTitle(), "advertisementId:" + advertisement.getId());
     }
 
-    /**
-     * Usuń ogłoszenie z ulubionych
-     */
+    // Usuwanie ogłoszenia z ulubionych
     public void removeFromFavorites(String userEmail, Long advertisementId) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -67,9 +63,7 @@ public class FavoriteAdService {
         logService.logUserActivity(user, "Usunieto z ulubionych: " + advertisement.getTitle(), "advertisementId:" + advertisement.getId());
 }
 
-    /**
-     * Sprawdź czy ogłoszenie jest w ulubionych
-     */
+    //sprawdzenie czy ogłoszenie jest w ulubionych
     public boolean isFavorite(String userEmail, Long advertisementId) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -79,9 +73,7 @@ public class FavoriteAdService {
         return favoriteAdRepository.existsByUserAndAdvertisement(user, advertisement);
     }
 
-    /**
-     * Pobierz wszystkie ulubione ogłoszenia użytkownika
-     */
+    // Pobieranie wszystkich ulubionych ogłoszeń użytkownika
     public List<AdvertisementResponseDTO> getUserFavorites(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -93,9 +85,7 @@ public class FavoriteAdService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Policz ile użytkownik ma ulubionych ogłoszeń
-     */
+    // Liczba ulubionych ogłoszeń użytkownika
     public long countUserFavorites(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));

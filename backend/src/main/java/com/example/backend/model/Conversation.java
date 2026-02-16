@@ -37,7 +37,7 @@ public class Conversation {
     @OneToMany(mappedBy = "conversation")
     private List<Message> messages;
 
-    // Konstruktory
+
     public Conversation() {}
 
     public Conversation(Long id, String topic, User user1, User user2, 
@@ -53,7 +53,7 @@ public class Conversation {
 
     public Long getId() { return id; }
     public String getTopic() { return topic; }
-    // Advertisement snapshot removed
+ 
     public User getUser1() { return user1; }
     public User getUser2() { return user2; }
     public LocalDateTime getCreatedAt() { return createdAt; }

@@ -14,7 +14,7 @@ public class PasswordResetToken {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 64)
-    private String tokenHash; // SHA-256 hash of the token
+    private String tokenHash; // SHA-256 
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -46,7 +46,7 @@ public class PasswordResetToken {
         return !used && !isExpired();
     }
 
-    //gettery i settery
+  
     public Long getId() {
         return id;
     }

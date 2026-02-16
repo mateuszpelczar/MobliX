@@ -7,7 +7,7 @@ public class LogDTO {
   private Long id;
   private LocalDateTime timestamp;
   private String level; // INFO, WARN, ERROR
-    private String category; // authentication, advertisement, opinion, profile, admin, system
+    private String category; //update, delete, create, login, logout, error
     private String message;
     private String details;
     private String source;
@@ -32,7 +32,7 @@ public class LogDTO {
                   }
 
   
-                //gettery i settery
+                
 
                 public Long getId(){
                   return id;

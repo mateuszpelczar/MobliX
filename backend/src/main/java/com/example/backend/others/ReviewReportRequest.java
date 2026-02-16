@@ -12,7 +12,7 @@ public class ReviewReportRequest {
       this.moderatorNote = moderatorNote;
     }
 
-    //gett i sett
+  
     public String getAction(){
       return action;
     }

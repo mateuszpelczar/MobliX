@@ -27,19 +27,17 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    // private final CustomUserDetailsService customUserDetailsService;
-
+    
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
-
+    //konfiguracja endpointow
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Statyczne zasoby - muszą być na początku!
                 .requestMatchers("/uploads/**", "/uploads/images/**", "/images/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/api/auth/forgot-password").permitAll()
@@ -96,11 +94,17 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-
+    
+    //konfiguracja CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:*","http://127.0.0.1:*"));
+        java.util.List<String> origins = new java.util.ArrayList<>(Arrays.asList("http://localhost:*", "http://127.0.0.1:*"));
+        String frontendCorsUrl = System.getenv("FRONTEND_CORS_URL");
+        if (frontendCorsUrl != null && !frontendCorsUrl.isEmpty()) {
+            origins.add(frontendCorsUrl);
+        }
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));

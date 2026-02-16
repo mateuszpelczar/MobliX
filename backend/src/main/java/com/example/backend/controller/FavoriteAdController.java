@@ -19,9 +19,7 @@ public class FavoriteAdController {
     @Autowired
     private FavoriteAdService favoriteAdService;
 
-    /**
-     * Dodaj ogłoszenie do ulubionych
-     */
+    //dodanie ogłoszenia do ulubionych
     @PostMapping("/{advertisementId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> addToFavorites(
@@ -41,9 +39,7 @@ public class FavoriteAdController {
         }
     }
 
-    /**
-     * Usuń ogłoszenie z ulubionych
-     */
+    //usuniecie ogłoszenia z ulubionych
     @DeleteMapping("/{advertisementId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> removeFromFavorites(
@@ -63,9 +59,7 @@ public class FavoriteAdController {
         }
     }
 
-    /**
-     * Sprawdź czy ogłoszenie jest w ulubionych
-     */
+    //sprawdzenie czy ogłoszenie jest w ulubionych
     @GetMapping("/{advertisementId}/check")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Boolean>> checkFavorite(
@@ -83,9 +77,7 @@ public class FavoriteAdController {
         }
     }
 
-    /**
-     * Pobierz wszystkie ulubione ogłoszenia użytkownika
-     */
+    //pobranie ulubionych ogłoszeń użytkownika
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<AdvertisementResponseDTO>> getUserFavorites(Authentication authentication) {
@@ -98,9 +90,7 @@ public class FavoriteAdController {
         }
     }
 
-    /**
-     * Policz ulubione ogłoszenia użytkownika
-     */
+    //policzenie ulubionych ogłoszeń użytkownika
     @GetMapping("/count")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Long>> countFavorites(Authentication authentication) {

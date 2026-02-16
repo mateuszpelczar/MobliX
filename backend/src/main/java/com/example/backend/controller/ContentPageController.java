@@ -19,7 +19,7 @@ public class ContentPageController {
         this.contentPageService = contentPageService;
     }
 
-    // Pobierz wszystkie strony (ADMIN only)
+    //pobranie wszystkich stron
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ContentPage>> getAllPages() {
@@ -27,7 +27,7 @@ public class ContentPageController {
         return ResponseEntity.ok(pages);
     }
 
-    // Pobierz stronę po slug (publiczne - do wyświetlania)
+    //pobranie strony po slug
     @GetMapping("/slug/{slug}")
     public ResponseEntity<ContentPage> getPageBySlug(@PathVariable String slug) {
         return contentPageService.getPageBySlug(slug)
@@ -35,7 +35,7 @@ public class ContentPageController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Pobierz stronę po ID (ADMIN only)
+    //pobranie strony po ID
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ContentPage> getPageById(@PathVariable Long id) {
@@ -44,7 +44,7 @@ public class ContentPageController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Utwórz nową stronę (ADMIN only)
+    //tworzenie nowej strony
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ContentPage> createPage(
@@ -55,7 +55,7 @@ public class ContentPageController {
         return ResponseEntity.ok(createdPage);
     }
 
-    // Zaktualizuj stronę (ADMIN only)
+   //update strony
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ContentPage> updatePage(
@@ -70,7 +70,7 @@ public class ContentPageController {
         }
     }
 
-    // Usuń stronę (ADMIN only)
+    //usuniecie strony
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePage(@PathVariable Long id) {
@@ -78,7 +78,7 @@ public class ContentPageController {
         return ResponseEntity.noContent().build();
     }
 
-    // Inicjalizuj domyślne strony (ADMIN only)
+    //inicjalizacja stron
     @PostMapping("/initialize")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> initializePages() {

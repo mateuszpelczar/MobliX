@@ -74,7 +74,7 @@ const YourAds: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -127,7 +127,7 @@ const YourAds: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:8080/api/advertisements/${adId}`,
+        `${import.meta.env.VITE_API_URL}/api/advertisements/${adId}`,
         {
           method: "DELETE",
           headers: {
@@ -174,7 +174,7 @@ const YourAds: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:8080/api/advertisements/${adId}/status`,
+        `${import.meta.env.VITE_API_URL}/api/advertisements/${adId}/status`,
         {
           method: "PATCH",
           headers: {
@@ -264,7 +264,7 @@ const YourAds: React.FC = () => {
         }
 
         const response = await fetch(
-          "http://localhost:8080/api/advertisements/user",
+          `${import.meta.env.VITE_API_URL}/api/advertisements/user`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -333,7 +333,7 @@ const YourAds: React.FC = () => {
         if (!token) return;
 
         const response = await fetch(
-          "http://localhost:8080/api/advertisements/user/stats",
+          `${import.meta.env.VITE_API_URL}/api/advertisements/user/stats`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

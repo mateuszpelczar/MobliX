@@ -12,7 +12,7 @@ public class CreateReportRequest {
       this.comment= comment;
     }
 
-    //gett i sett
+   
 
     public String getReason(){
       return reason;

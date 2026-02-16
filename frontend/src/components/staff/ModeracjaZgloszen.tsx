@@ -113,7 +113,7 @@ const ModeracjaZgloszen: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -142,7 +142,7 @@ const ModeracjaZgloszen: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response = await axios.get<AdvertisementReport[]>(
-        "http://localhost:8080/api/reports",
+        `${import.meta.env.VITE_API_URL}/api/reports`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -202,7 +202,7 @@ const ModeracjaZgloszen: React.FC = () => {
       setActionLoading(true);
       const token = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:8080/api/reports/${selectedReport.id}/review`,
+        `${import.meta.env.VITE_API_URL}/api/reports/${selectedReport.id}/review`,
         {
           action: "DELETE",
           moderatorNote: "Ogłoszenie usunięte przez moderatora",
@@ -236,7 +236,7 @@ const ModeracjaZgloszen: React.FC = () => {
       setActionLoading(true);
       const token = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:8080/api/reports/${selectedReport.id}/review`,
+        `${import.meta.env.VITE_API_URL}/api/reports/${selectedReport.id}/review`,
         {
           action: "WARNING",
           moderatorNote: warningText,
@@ -267,7 +267,7 @@ const ModeracjaZgloszen: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:8080/api/reports/${reportId}/reject`,
+        `${import.meta.env.VITE_API_URL}/api/reports/${reportId}/reject`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

@@ -15,10 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Serwis do moderacji obrazów przy użyciu Amazon Rekognition
- * Wykrywa niepożądane treści: nagość, przemoc, itp.
- */
+
 @Service
 public class ImageModerationService {
 
@@ -77,7 +74,7 @@ public class ImageModerationService {
         CATEGORY_TRANSLATIONS.put("Middle Finger", "środkowy palec");
     }
 
-    // Kategorie do blokowania (wysokie ryzyko)
+    // Kategorie do blokowania 
     private static final List<String> BLOCKED_CATEGORIES = List.of(
         "Explicit Nudity", "Nudity", "Graphic Male Nudity", "Graphic Female Nudity",
         "Sexual Activity", "Illustrated Explicit Nudity", "Adult Toys",
@@ -96,11 +93,7 @@ public class ImageModerationService {
         this.minConfidence = minConfidence;
     }
 
-    /**
-     * Moderuje listę obrazów i zwraca listę wykrytych problemów
-     * @param imageUrls Lista URL-i obrazów (np. "/uploads/images/uuid.png")
-     * @return Lista wykrytych problemów (pusta jeśli wszystko OK)
-     */
+    // Moderowanie listy obrazów
     public List<String> moderateImages(List<String> imageUrls) {
         List<String> issues = new ArrayList<>();
         
@@ -119,20 +112,18 @@ public class ImageModerationService {
                 issues.addAll(imageIssues);
             } catch (Exception e) {
                 System.err.println("[ImageModeration] Błąd moderacji obrazu " + imageUrl + ": " + e.getMessage());
-                // Nie blokujemy ogłoszenia przy błędzie technicznym
+               
             }
         }
         
         return issues;
     }
 
-    /**
-     * Moderuje pojedynczy obraz
-     */
+   // Moderowanie pojedynczego obrazu
     private List<String> moderateSingleImage(String imageUrl) throws IOException {
         List<String> issues = new ArrayList<>();
         
-        // Konwertuj URL na ścieżkę pliku
+        
         String filePath = convertUrlToFilePath(imageUrl);
         Path path = Paths.get(filePath);
         
@@ -163,7 +154,7 @@ public class ImageModerationService {
                 System.out.println("[ImageModeration] Wykryto: " + labelName + 
                                  " (pewność: " + confidence + "%, parent: " + label.parentName() + ")");
                 
-                // Sprawdź czy kategoria jest na liście blokowanych
+                // Sprawdzenie czy kategoria jest na liście blokowanych
                 if (BLOCKED_CATEGORIES.contains(labelName) && confidence >= minConfidence) {
                     String polishName = CATEGORY_TRANSLATIONS.getOrDefault(labelName, labelName);
                     if (!issues.contains(polishName)) {
@@ -179,9 +170,7 @@ public class ImageModerationService {
         return issues;
     }
 
-    /**
-     * Konwertuje URL obrazu na ścieżkę pliku
-     */
+    // Konwersja URL na ścieżkę pliku
     private String convertUrlToFilePath(String imageUrl) {
         // Usuń początkowy slash jeśli istnieje
         String normalized = imageUrl.startsWith("/") ? imageUrl.substring(1) : imageUrl;

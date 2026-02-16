@@ -53,7 +53,7 @@ const ChangeRole: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     fetchFavoriteCount();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   const fetchFavoriteCount = async () => {
@@ -61,7 +61,7 @@ const ChangeRole: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -77,7 +77,7 @@ const ChangeRole: React.FC = () => {
   const handleNotificationsClick = () => navigate("/user/notifications");
   const handleWatchedAdsClick = () => navigate("/user/watchedads");
 
-  // Close dropdown when clicking outside
+  //zamkniecie dropdowna po kliknieciu poza nim
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -105,7 +105,7 @@ const ChangeRole: React.FC = () => {
         return;
       }
 
-      // Wyświetlenie informacji o tokenie w konsoli
+     
       const tokenPreview = token.substring(0, 15) + "...";
       console.log("Używany token (fragment):", tokenPreview);
 
@@ -117,7 +117,7 @@ const ChangeRole: React.FC = () => {
           expDate: new Date(decoded.exp * 1000).toLocaleString(),
         });
 
-        // Sprawdzamy czy rola użytkownika to ADMIN
+        
         if (!(decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN")) {
           setError(
             "Brak uprawnień do wyświetlania listy użytkowników. Wymagana rola ADMIN."
@@ -132,14 +132,13 @@ const ChangeRole: React.FC = () => {
         return;
       }
 
-      // Pomijamy sprawdzanie dostępności serwera przez HEAD request,
-      // który powoduje błąd 403 i od razu wykonujemy właściwe zapytanie
+      
       console.log("Próba pobrania listy użytkowników...");
 
       try {
-        // Dodanie timeoutu dla zapytania
+       
         const response = await axios.get<User[]>(
-          "http://localhost:8080/api/admin/users",
+          `${import.meta.env.VITE_API_URL}/api/admin/users`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -187,7 +186,7 @@ const ChangeRole: React.FC = () => {
     }
   };
 
-  //zmiana roli uzytkownika
+ //zmiana roli uzytkownika
   const handleRoleChange = async (userId: number, newRole: string) => {
     try {
       setSuccessMessage(null);
@@ -200,7 +199,7 @@ const ChangeRole: React.FC = () => {
       }
 
       await axios.put(
-        `http://localhost:8080/api/admin/users/${userId}/role`,
+        `${import.meta.env.VITE_API_URL}/api/admin/users/${userId}/role`,
         { role: newRole },
         {
           headers: {
@@ -210,7 +209,7 @@ const ChangeRole: React.FC = () => {
         }
       );
 
-      // Update user role in the local state
+      
       setUsers(
         users.map((user) =>
           user.id === userId ? { ...user, role: newRole } : user
@@ -231,7 +230,7 @@ const ChangeRole: React.FC = () => {
         navigate("/");
         return;
       }
-      await axios.delete(`http://localhost:8080/api/admin/users/${userId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/admin/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -251,7 +250,7 @@ const ChangeRole: React.FC = () => {
     setIsDropdownOpen(false);
   };
 
-  // Filter users based on search term and role filter
+ //filtrowanie uzytkownikow
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,7 +260,7 @@ const ChangeRole: React.FC = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Get role icon
+  //ikona roli
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "ADMIN":
@@ -273,7 +272,7 @@ const ChangeRole: React.FC = () => {
     }
   };
 
-  // Get role color
+  //kolor roli
   const getRoleColor = (role: string) => {
     switch (role) {
       case "ADMIN":
@@ -285,7 +284,7 @@ const ChangeRole: React.FC = () => {
     }
   };
 
-  // Sprawdzanie roli użytkownika
+  //sprawdzanie roli uzytkownika
   const token = localStorage.getItem("token");
   let isAdmin = false;
   let isStaff = false;
@@ -294,7 +293,7 @@ const ChangeRole: React.FC = () => {
   if (token) {
     try {
       const decoded = jwtDecode<JwtPayLoad>(token);
-      // Poprawiona weryfikacja ról
+ 
       isAdmin = decoded.role === "ADMIN" || decoded.role === "ROLE_ADMIN";
       isStaff = decoded.role === "STAFF" || decoded.role === "ROLE_STAFF";
       isUser = decoded.role === "USER" || decoded.role === "ROLE_USER";
@@ -766,7 +765,7 @@ const ChangeRole: React.FC = () => {
         </div>
       </div>
 
-      {/* Czarna stopka jak w MainPanel */}
+      {/* czarna stopka */}
       <footer className="bg-black text-white py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-center items-center gap-6 text-sm">

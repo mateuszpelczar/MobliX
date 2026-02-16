@@ -14,10 +14,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-/**
- * Service providing search suggestions using PostgreSQL Full-Text Search
- * Wykorzystuje tsvector, tsquery, indeksy GIN oraz trigram similarity
- */
+
 @Service
 public class SearchSuggestionService {
 
@@ -31,13 +28,10 @@ public class SearchSuggestionService {
                                    FullTextSearchRepository fullTextSearchRepository) {
         this.jdbcTemplate = jdbcTemplate;
         this.fullTextSearchRepository = fullTextSearchRepository;
-        log.info("✅ PostgreSQL Full-Text Search Suggestion Service initialized");
+        log.info(" PostgreSQL Full-Text Search Suggestion Service initialized");
     }
 
-    /**
-     * Pobiera wszystkie sugestie (ogłoszenia, marki, kategorie) równolegle
-     * Używa PostgreSQL Full-Text Search z rankingiem
-     */
+    
     public SearchSuggestionsResponseDTO getAllSuggestions(String query) {
         if (query == null || query.trim().length() < 2) {
             return new SearchSuggestionsResponseDTO();
@@ -46,7 +40,7 @@ public class SearchSuggestionService {
         log.info("📝 Getting all suggestions for query: '{}'", query);
 
         try {
-            // Wykonaj zapytania równolegle dla lepszej wydajności
+           //pobieranie wszystkich sugestii (ogłoszenia, marki, kategorie) równolegle
             CompletableFuture<List<SearchSuggestionDTO>> advertisementsFuture = 
                 CompletableFuture.supplyAsync(() -> fullTextSearchRepository.getAdvertisementSuggestions(query, 8));
             
@@ -56,7 +50,7 @@ public class SearchSuggestionService {
             CompletableFuture<List<CategorySuggestionDTO>> categoriesFuture = 
                 CompletableFuture.supplyAsync(() -> fullTextSearchRepository.getCategorySuggestions(query, 5));
 
-            // Poczekaj na wszystkie wyniki
+            
             CompletableFuture.allOf(advertisementsFuture, brandsFuture, categoriesFuture).join();
 
             SearchSuggestionsResponseDTO response = new SearchSuggestionsResponseDTO();
@@ -64,7 +58,7 @@ public class SearchSuggestionService {
             response.setBrands(brandsFuture.get());
             response.setCategories(categoriesFuture.get());
 
-            log.info("✅ Found {} products, {} brands, {} categories for query: '{}'", 
+            log.info(" Found {} products, {} brands, {} categories for query: '{}'", 
                     response.getProducts().size(), 
                     response.getBrands().size(), 
                     response.getCategories().size(), 
@@ -72,15 +66,12 @@ public class SearchSuggestionService {
 
             return response;
         } catch (Exception e) {
-            log.error("❌ Error getting all suggestions: {}", e.getMessage(), e);
+            log.error(" Error getting all suggestions: {}", e.getMessage(), e);
             return new SearchSuggestionsResponseDTO();
         }
     }
 
-    /**
-     * Pobiera proste sugestie tekstowe (brand + model) dla autouzupełniania
-     * Wykorzystuje PostgreSQL Full-Text Search z trigram similarity
-     */
+    //pobieranie prostych sugestii tekstowych (brand + model) dla autouzupełniania
     public List<String> getSuggestions(String query, int limit) {
         if (query == null || query.trim().isEmpty() || query.length() < 2) {
             return Collections.emptyList();
@@ -92,7 +83,7 @@ public class SearchSuggestionService {
         try {
             Set<String> suggestions = new LinkedHashSet<>();
             
-            // Full-Text Search z trigram similarity dla tolerancji błędów
+            //Full-Text Search z trigram similarity dla tolerancji błędów
             String sql = """
                 SELECT DISTINCT 
                     ss.brand, 
@@ -125,7 +116,7 @@ public class SearchSuggestionService {
                 sql, searchQuery, query, query, searchQuery, pattern, pattern, pattern, query, query, limit * 3
             );
             
-            log.info("📝 Found {} raw results from Full-Text Search", results.size());
+            log.info(" Found {} raw results from Full-Text Search", results.size());
 
             for (Map<String, Object> row : results) {
                 String brand = (String) row.get("brand");
@@ -135,22 +126,22 @@ public class SearchSuggestionService {
                     String brandLower = brand.toLowerCase();
                     String fullName = brand + (model != null ? " " + model : "");
                     
-                    // Case 1: User typing part of brand (e.g., "sa" -> "Samsung")
+                    //wpisuje czesc nazwy marki
                     if (brandLower.startsWith(queryLower) && !brandLower.equals(queryLower)) {
                         suggestions.add(brand);
                     }
                     
-                    // Case 2: User typed brand exactly -> show models
+                    //wpisuje pelna nazwe marki i modela
                     if (brandLower.equals(queryLower) && model != null) {
                         suggestions.add(fullName);
                     }
                     
-                    // Case 3: Brand+model matches search
+                    
                     if (fullName.toLowerCase().contains(queryLower)) {
                         suggestions.add(fullName);
                     }
                     
-                    // Case 4: Similarity match - add full name
+                    
                     if (brandLower.contains(queryLower) || 
                         (model != null && model.toLowerCase().contains(queryLower))) {
                         suggestions.add(fullName);
@@ -158,7 +149,7 @@ public class SearchSuggestionService {
                 }
             }
 
-            // Sort suggestions: exact matches first, then by rank
+            //sortuje sugestie
             List<String> sortedSuggestions = suggestions.stream()
                 .sorted((a, b) -> {
                     boolean aStarts = a.toLowerCase().startsWith(queryLower);
@@ -170,24 +161,22 @@ public class SearchSuggestionService {
                 .limit(limit)
                 .collect(Collectors.toList());
 
-            log.info("✅ [Full-Text Search] Returning {} suggestions for '{}': {}", sortedSuggestions.size(), query, sortedSuggestions);
+            log.info(" [Full-Text Search] Returning {} suggestions for '{}': {}", sortedSuggestions.size(), query, sortedSuggestions);
             return sortedSuggestions;
             
         } catch (Exception e) {
-            log.error("❌ [Full-Text Search] Error: {}", e.getMessage(), e);
+            log.error(" [Full-Text Search] Error: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
 
-    /**
-     * Wyszukuje ogłoszenia z rankingiem Full-Text Search
-     */
+    //wyszukuje ogłoszenia z rankingiem Full-Text Search
     public List<Map<String, Object>> search(String query, int limit) {
         if (query == null || query.trim().isEmpty()) {
             return Collections.emptyList();
         }
 
-        log.info("📝 Searching with Full-Text Search for: '{}', limit: {}", query, limit);
+        log.info(" Searching with Full-Text Search for: '{}', limit: {}", query, limit);
 
         try {
             String searchQuery = normalizeSearchQuery(query);
@@ -220,40 +209,31 @@ public class SearchSuggestionService {
                 sql, searchQuery, searchQuery, pattern, pattern, pattern, pattern, limit
             );
 
-            log.info("✅ Found {} results for search: '{}'", results.size(), query);
+            log.info(" Found {} results for search: '{}'", results.size(), query);
             return results;
             
         } catch (Exception e) {
-            log.error("❌ Error searching: {}", e.getMessage(), e);
+            log.error("Error searching: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
 
-    /**
-     * Pobiera sugestie tylko dla marek
-     */
+    //pobiera sugestie tylko dla marek
     public List<String> getBrandSuggestions(String query, int limit) {
         return fullTextSearchRepository.getBrandSuggestions(query, limit);
     }
 
-    /**
-     * Pobiera sugestie modeli dla danej marki
-     */
+    //pobiera sugestie modeli dla danej marki
     public List<String> getModelSuggestions(String query, String brand, int limit) {
         return fullTextSearchRepository.getModelSuggestions(query, brand, limit);
     }
 
-    /**
-     * Pobiera sugestie kategorii
-     */
+    //pobiera sugestie kategorii
     public List<CategorySuggestionDTO> getCategorySuggestions(String query, int limit) {
         return fullTextSearchRepository.getCategorySuggestions(query, limit);
     }
 
-    /**
-     * Normalizuje query dla PostgreSQL tsquery
-     * Dodaje prefix matching (:*) dla każdego słowa
-     */
+   //normalizuje query dla PostgreSQL tsquery
     private String normalizeSearchQuery(String query) {
         String normalized = query.trim().toLowerCase()
                 .replaceAll("[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ\\s]", "");

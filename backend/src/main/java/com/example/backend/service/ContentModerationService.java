@@ -8,10 +8,7 @@ import software.amazon.awssdk.services.comprehend.model.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
-/**
- * Serwis do moderacji treści tekstowych przy użyciu Amazon Comprehend
- * oraz własnej listy zabronionych słów (dla języków nieobsługiwanych przez Comprehend)
- */
+
 @Service
 public class ContentModerationService {
 
@@ -26,7 +23,7 @@ public class ContentModerationService {
     private static final List<Pattern> BLOCKED_PATTERNS = new ArrayList<>();
 
     static {
-        // Polskie wulgaryzmy
+        
         BLOCKED_WORDS.addAll(Arrays.asList(
             "kurwa", "kurwy", "kurwę", "kurwo", "kurwą", "kurewski", "kurewsko",
             "chuj", "chuja", "chujem", "chuju", "chujowy", "chujowo", "chujnia",
@@ -54,13 +51,13 @@ public class ContentModerationService {
             "gnój", "gnoju", "gnoje",
             "ciul", "ciulu",
             "parch", "parchu",
-            "żyd", "żydy", "żydek", // tylko w kontekście obraźliwym
+            "żyd", "żydy", "żydek", 
             "ciapaty", "ciapak",
             "czarnuch", "czarnuchy",
             "bambus", "bambusie"
         ));
         
-        // Angielskie wulgaryzmy
+        
         BLOCKED_WORDS.addAll(Arrays.asList(
             "fuck", "fucking", "fucked", "fucker", "fucks", "motherfucker", "motherfucking",
             "shit", "shitty", "bullshit", "shitting",
@@ -86,7 +83,7 @@ public class ContentModerationService {
             "crap", "crappy"
         ));
         
-        // Niemieckie wulgaryzmy
+        
         BLOCKED_WORDS.addAll(Arrays.asList(
             "scheiße", "scheisse", "scheiss",
             "arschloch", "arsch",
@@ -113,12 +110,7 @@ public class ContentModerationService {
         this.minConfidence = minConfidence;
     }
 
-    /**
-     * Moderuje tekst i zwraca listę wykrytych problemów
-     * @param title Tytuł ogłoszenia
-     * @param description Opis ogłoszenia
-     * @return Lista wykrytych problemów (pusta jeśli wszystko OK)
-     */
+    //moderacja tekstu
     public List<String> moderateText(String title, String description) {
         List<String> issues = new ArrayList<>();
         
@@ -134,19 +126,19 @@ public class ContentModerationService {
             return issues;
         }
         
-        // 1. Sprawdź własną listę zabronionych słów (dla polskiego i innych)
+        
         List<String> blockedWordsFound = checkBlockedWords(fullText);
         if (!blockedWordsFound.isEmpty()) {
             issues.add("zawiera wulgaryzmy: " + String.join(", ", blockedWordsFound));
         }
         
-        // 2. Użyj Amazon Comprehend do wykrywania sentymentu i toksyczności
+       
         try {
-            // Wykryj język tekstu
+            
             String language = detectLanguage(fullText);
             System.out.println("[ContentModeration] Wykryty język: " + language);
             
-            // Sprawdź sentyment (dla języków obsługiwanych przez Comprehend)
+            
             if (isLanguageSupported(language)) {
                 SentimentResult sentiment = analyzeSentiment(fullText, language);
                 
@@ -154,10 +146,10 @@ public class ContentModerationService {
                     System.out.println("[ContentModeration] Sentyment: " + sentiment.sentiment + 
                                      ", negative score: " + sentiment.negativeScore);
                     
-                    // Bardzo negatywny sentyment może wskazywać na obraźliwe treści
+                    
                     if (sentiment.sentiment == SentimentType.NEGATIVE && 
                         sentiment.negativeScore > 0.9) {
-                        // Dodatkowa weryfikacja - nie blokujemy automatycznie
+                       
                         System.out.println("[ContentModeration] Wykryto silnie negatywny sentyment");
                     }
                 }
@@ -165,26 +157,24 @@ public class ContentModerationService {
             
         } catch (ComprehendException e) {
             System.err.println("[ContentModeration] Błąd Comprehend: " + e.getMessage());
-            // Nie blokujemy przy błędzie technicznym
+            
         }
         
         return issues;
     }
 
-    /**
-     * Sprawdza tekst pod kątem zabronionych słów
-     */
+    
     private List<String> checkBlockedWords(String text) {
         List<String> found = new ArrayList<>();
         String lowerText = text.toLowerCase();
         
-        // Podziel tekst na słowa
+        
         String[] words = lowerText.split("[\\s.,!?;:\"'()\\[\\]{}]+");
         
         for (String word : words) {
             if (word.isEmpty()) continue;
             
-            // Sprawdź dokładne dopasowanie
+            
             if (BLOCKED_WORDS.contains(word)) {
                 if (!found.contains(word)) {
                     found.add(maskWord(word));
@@ -192,10 +182,10 @@ public class ContentModerationService {
             }
         }
         
-        // Sprawdź wzorce regex
+        
         for (Pattern pattern : BLOCKED_PATTERNS) {
             if (pattern.matcher(lowerText).find()) {
-                // Znajdź pasujące słowo
+                
                 java.util.regex.Matcher matcher = pattern.matcher(lowerText);
                 while (matcher.find()) {
                     String match = matcher.group();
@@ -210,9 +200,7 @@ public class ContentModerationService {
         return found;
     }
 
-    /**
-     * Maskuje słowo dla wyświetlenia (np. "kurwa" -> "k***a")
-     */
+    
     private String maskWord(String word) {
         if (word.length() <= 2) {
             return word.charAt(0) + "*";
@@ -220,9 +208,7 @@ public class ContentModerationService {
         return word.charAt(0) + "*".repeat(word.length() - 2) + word.charAt(word.length() - 1);
     }
 
-    /**
-     * Wykrywa język tekstu
-     */
+    
     private String detectLanguage(String text) {
         try {
             DetectDominantLanguageRequest request = DetectDominantLanguageRequest.builder()
@@ -238,20 +224,16 @@ public class ContentModerationService {
             System.err.println("[ContentModeration] Błąd wykrywania języka: " + e.getMessage());
         }
         
-        return "pl"; // Domyślnie polski
+        return "pl"; 
     }
 
-    /**
-     * Sprawdza czy język jest obsługiwany przez Comprehend do analizy sentymentu
-     */
+    
     private boolean isLanguageSupported(String languageCode) {
         return Set.of("en", "es", "fr", "de", "it", "pt", "ar", "hi", "ja", "ko", "zh", "zh-TW")
                 .contains(languageCode);
     }
 
-    /**
-     * Analizuje sentyment tekstu
-     */
+    
     private SentimentResult analyzeSentiment(String text, String language) {
         try {
             DetectSentimentRequest request = DetectSentimentRequest.builder()
@@ -273,9 +255,7 @@ public class ContentModerationService {
         }
     }
 
-    /**
-     * Obcina tekst do maksymalnej długości
-     */
+    
     private String truncateText(String text, int maxLength) {
         if (text == null) return "";
         return text.length() > maxLength ? text.substring(0, maxLength) : text;

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-//klasa reprezentujaca regulacje i zasady korzystania z aplikacji
+
 @Entity
 @Data
 @NoArgsConstructor

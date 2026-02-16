@@ -78,7 +78,7 @@ const ModeracjaOgloszen: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -112,7 +112,7 @@ const ModeracjaOgloszen: React.FC = () => {
       }
 
       const response = await fetch(
-        "http://localhost:8080/api/advertisements/all",
+        `${import.meta.env.VITE_API_URL}/api/advertisements/all`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -177,7 +177,7 @@ const ModeracjaOgloszen: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:8080/api/advertisements/${rejectingAdId}/status`,
+        `${import.meta.env.VITE_API_URL}/api/advertisements/${rejectingAdId}/status`,
         {
           method: "PATCH",
           headers: {
@@ -215,7 +215,7 @@ const ModeracjaOgloszen: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://localhost:8080/api/advertisements/${id}/status`,
+        `${import.meta.env.VITE_API_URL}/api/advertisements/${id}/status`,
         {
           method: "PATCH",
           headers: {

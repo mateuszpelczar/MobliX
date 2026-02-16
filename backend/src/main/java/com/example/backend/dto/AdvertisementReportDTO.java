@@ -22,7 +22,7 @@ public class AdvertisementReportDTO {
 
     public AdvertisementReportDTO(){}
 
-    //gett i sett
+    
 
     public Long getId(){
       return id;

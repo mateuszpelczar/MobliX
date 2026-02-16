@@ -63,7 +63,7 @@ const ZasadyBezpieczeństwa: React.FC = () => {
     const fetchContent = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/content-pages/slug/zasady-bezpieczenstwa"
+          `${import.meta.env.VITE_API_URL}/api/content-pages/slug/zasady-bezpieczenstwa`
         );
         // Fix: assert response.data type
         const data = response.data as { content: string };

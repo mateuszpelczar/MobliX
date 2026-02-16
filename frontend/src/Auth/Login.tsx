@@ -12,15 +12,15 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:8080/api/auth/login", {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         email,
         password,
       });
       localStorage.setItem("token", String(res.data));
       const token = String(res.data);
-      // Fetch current user and persist id/role
+      
       try {
-        const me = await axios.get("http://localhost:8080/api/auth/me", {
+        const me = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const user = me.data as { id?: number; role?: string };
@@ -31,7 +31,7 @@ const Login: React.FC = () => {
           localStorage.setItem("role", String(user.role));
         }
       } catch (e) {
-        // non-fatal
+       
       }
       navigate("/main");
     } catch (err) {
@@ -44,7 +44,7 @@ const Login: React.FC = () => {
       {/* Tło z MainPanel (rozmazane) */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-      {/* Formularz logowania */}
+     
       <div className="relative bg-gray-800 rounded-2xl shadow-2xl p-12 w-full max-w-md mx-4 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-white">Logowanie</h2>

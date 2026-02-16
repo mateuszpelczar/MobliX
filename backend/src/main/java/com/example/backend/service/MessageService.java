@@ -86,9 +86,7 @@ public class MessageService {
     }
 
 
-    /**
-     * Pobierz wszystkie konwersacje użytkownika
-     */
+    //pobranie wszystkich konwersacji uzytkownika
     public List<ConversationDTO> getUserConversations(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -101,9 +99,7 @@ public class MessageService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Pobierz lub utwórz konwersację
-     */
+    //pobranie lub utworzenie konwersacji
         public ConversationDTO getOrCreateConversation(String userEmail, String otherUserEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -126,9 +122,7 @@ public class MessageService {
         return mapToConversationDTO(conversation, user);
     }
 
-    /**
-     * Pobierz wiadomości z konwersacji
-     */
+    //pobranie wiadomosci z konwersacji
     public List<MessageDTO> getConversationMessages(Long conversationId, String userEmail) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
@@ -148,9 +142,7 @@ public class MessageService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Wyślij wiadomość
-     */
+    //wyslanie wiadomosci
     public MessageDTO sendMessage(String senderEmail, String receiverEmail, String content) {
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new RuntimeException("Sender not found"));
@@ -174,7 +166,7 @@ public class MessageService {
                 return conversationRepository.save(newConv);
             });
 
-        // Utwórz wiadomość
+        //utworzenie wiadomosci
         Message message = new Message();
         message.setConversation(conversation);
         message.setSender(sender);
@@ -184,11 +176,11 @@ public class MessageService {
         message.setCreatedAt(LocalDateTime.now());
         message = messageRepository.save(message);
 
-        // Zaktualizuj czas ostatniej aktualizacji konwersacji
+        //zaktualizowanie czasu ostatniej aktualizacji konwersacji
         conversation.setUpdatedAt(LocalDateTime.now());
         conversationRepository.save(conversation);
 
-        // Log wysłania wiadomości.
+        
         String subject = "ogólna konwersacja";
         logService.saveLog(
             "INFO",
@@ -203,9 +195,7 @@ public class MessageService {
         return mapToMessageDTO(message);
     }
 
-    /**
-     * Oznacz wiadomości jako przeczytane
-     */
+    //oznaczenie wiadomosci jako przeczytane
     public void markMessagesAsRead(Long conversationId, String userEmail) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
@@ -220,19 +210,19 @@ public class MessageService {
         messageRepository.saveAll(unreadMessages);
     }
 
-    // Mapowanie do DTO
+    //mapowanie do DTO
     private ConversationDTO mapToConversationDTO(Conversation conversation, User currentUser) {
         ConversationDTO dto = new ConversationDTO();
         dto.setId(conversation.getId());
         
-        // Określ drugiego użytkownika
+        //określenie drugiego użytkownika
         User otherUser = conversation.getUser1().equals(currentUser) 
                 ? conversation.getUser2() 
                 : conversation.getUser1();
         dto.setOtherUserName(otherUser.getFirstName() + " " + otherUser.getLastName());
         dto.setOtherUserEmail(otherUser.getEmail());
 
-        // Pobierz ostatnią wiadomość
+        //pobranie ostatniej wiadomosci
         List<Message> messages = messageRepository.findByConversationOrderByCreatedAtDesc(conversation);
         if (!messages.isEmpty()) {
             Message lastMessage = messages.get(0);
@@ -240,7 +230,7 @@ public class MessageService {
             dto.setLastMessageTime(lastMessage.getCreatedAt());
         }
 
-        // Policz nieprzeczytane wiadomości
+        //policzenie nieprzeczytanych wiadomosci
         int unreadCount = messageRepository.countByConversationAndReceiverAndIsReadFalse(conversation, currentUser);
         dto.setUnreadCount(unreadCount);
 

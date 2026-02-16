@@ -43,7 +43,6 @@ public class UserService {
 
     }
  
-    // === METODY AUTORYZACJI ===
     
     public String register(RegisterRequest request) {
         User user = new User();
@@ -51,13 +50,13 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // Ustawienie nowych pól
+        
         user.setAccountType(request.getAccountType());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPhone(request.getPhone());
         
-        // Pola firmowe (tylko dla kont business)
+        //firmowe
         if ("business".equals(request.getAccountType())) {
             user.setCompanyName(request.getCompanyName());
             user.setNip(request.getNip());
@@ -132,7 +131,7 @@ public class UserService {
     public User updateUser(String email, UpdateUserRequest request) {
         User user = findByEmail(email);
         
-        // Aktualizacja podstawowych danych
+        //podstawowe dane - update
         if (request.getAccountType() != null) {
             user.setAccountType(request.getAccountType());
         }
@@ -146,12 +145,12 @@ public class UserService {
             user.setPhone(request.getPhone());
         }
         
-        // Aktualizacja hasła (jeśli podane)
+        //update hasla
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
         
-        // Aktualizacja danych firmowych
+        //update danych firmowych
         if ("business".equals(request.getAccountType())) {
             if (request.getCompanyName() != null) {
                 user.setCompanyName(request.getCompanyName());
@@ -169,7 +168,7 @@ public class UserService {
                 user.setWebsite(request.getWebsite());
             }
         } else {
-            // Jeśli zmiana na konto osobiste, wyczyść dane firmowe
+           
             user.setCompanyName(null);
             user.setNip(null);
             user.setRegon(null);
@@ -180,29 +179,18 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // === METODY DLA ADMINA (używane w AdminController) ===
-    
-    /**
-     * Pobiera wszystkich użytkowników z bazy danych
-     * Używane w AdminController.getAllUsers()
-     */
+   
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    /**
-     * Pobiera użytkownika po ID
-     * Używane w AdminController.changeUserRole() i deleteUser()
-     */
+    
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
 
-    /**
-     * Zmienia rolę użytkownika
-     * Używane w AdminController.changeUserRole()
-     */
+    //zmiana roli uzytkownika
     public User changeUserRole(Long userId, String newRole) {
         User user = getUserById(userId);
         
@@ -216,14 +204,11 @@ public class UserService {
         }
     }
 
-    /**
-     * Usuwa użytkownika z bazy danych
-     * Używane w AdminController.deleteUser()
-     */
+   //usuwanie uzytkownika
     public void deleteUser(Long userId) {
         User user = getUserById(userId);
         
-        // Zabezpieczenie - nie można usunąć ostatniego admina
+        //zabezpieczenie - nie mozna usunac ostatniego admina
         if (user.getRole() == Role.ADMIN) {
             long adminCount = userRepository.countByRole(Role.ADMIN);
             if (adminCount <= 1) {
@@ -231,41 +216,37 @@ public class UserService {
             }
         }
 
-        //1. Usuniecie powiazania z ulubionymi ogloszeniami
+       
         if(favoriteRepository !=null){
             favoriteRepository.deleteByUserId(userId);
         }
 
-        //2. Usuniecie powiazania uzytkownika z ogloszeniami
+        
         if(advertisementRepository !=null){
             advertisementRepository.deleteByUserId(userId);
         }
 
 
-        //3. Usuniecie powiazania uzytkownika z wiadomosciami
+       
         if(messageRepository !=null){
             messageRepository.deleteByUserId(userId);
         }
 
-        //4. Usuniecie powiazania uzytkownika z powiadomieniami
+       
         if(notificationRepository !=null){
             notificationRepository.deleteByUserId(userId);
         }
 
-        //5. Usuniecie powiazania z logami (ustaw user_id na NULL)
+       
         if(logRepository != null){
             logRepository.nullifyUserIdForUser(userId);
         }
         
 
-        //6. Usuniecie uzytkownika
+       
         userRepository.delete(user);
     }
 
-    /**
-     * pobrania wszystkich uzytkownikow dla moderacji
-     * staff widzi tylko user, admin widzi wszystkich
-     */
 
      public List<com.example.backend.dto.UserModerationDTO> getUsersForModeration(String currentUserEmail){
         User currentUser = findByEmail(currentUserEmail);
@@ -307,9 +288,7 @@ public class UserService {
             .collect(java.util.stream.Collectors.toList());
      }
 
-     /**
-     * Zablokuj użytkownika na określony czas
-     */
+     //blokowanie uzytkownika
     public User blockUser(Long userId, int durationMinutes, String reason) {
         User user = getUserById(userId);
         user.setBlocked(true);
@@ -318,9 +297,7 @@ public class UserService {
         return userRepository.save(user);
     }
     
-    /**
-     * Odblokuj użytkownika
-     */
+    //odblokowanie uzytkownika
     public User unblockUser(Long userId) {
         User user = getUserById(userId);
         user.setBlocked(false);
@@ -329,9 +306,7 @@ public class UserService {
         return userRepository.save(user);
     }
     
-    /**
-     * Aktualizuj ostatnią aktywność użytkownika
-     */
+    //aktualizacja ostatniej aktywnosci uzytkownika
     public void updateLastActivity(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             user.setLastActivity(java.time.LocalDateTime.now());
@@ -339,16 +314,13 @@ public class UserService {
         });
     }
 
-    /**
-     * zliczanie wszystkich aktywnych uzytkownikow - nie zablokowanych
-     */
+    //zliczanie aktywnych uzytkownikow
     public long countActiveUsers(){
         return userRepository.count() - userRepository.countByIsBlockedTrue();
     }
     
-    /**
-     * Konwersja User na UserModerationDTO
-     */
+    
+    //konwersja uzytkownika na dto
     public  com.example.backend.dto.UserModerationDTO convertToModerationDTO(User user) {
         com.example.backend.dto.UserModerationDTO dto = new com.example.backend.dto.UserModerationDTO();
         dto.setId(user.getId());
@@ -398,7 +370,7 @@ public class UserService {
     User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
     
-    // Aktualizuj dane podstawowe
+    
     if (request.getFirstName() != null) {
         user.setFirstName(request.getFirstName());
     }
@@ -409,12 +381,12 @@ public class UserService {
         user.setPhone(request.getPhone());
     }
     
-    // Aktualizuj typ konta
+    
     if (request.getAccountType() != null) {
         String oldAccountType = user.getAccountType();
         user.setAccountType(request.getAccountType());
         
-        // Jeśli zmieniamy z "business" na "private", wyczyść dane firmowe
+        
         if ("business".equals(oldAccountType) && "private".equals(request.getAccountType())) {
             user.setCompanyName(null);
             user.setNip(null);
@@ -424,7 +396,7 @@ public class UserService {
         }
     }
     
-    // Dane firmowe (tylko jeśli accountType == "business")
+    //firmowe
     if ("business".equals(user.getAccountType())) {
         if (request.getCompanyName() != null) {
             user.setCompanyName(request.getCompanyName());

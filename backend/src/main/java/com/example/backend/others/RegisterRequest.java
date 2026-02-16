@@ -5,20 +5,20 @@ public class RegisterRequest {
     private String email;
     private String password;
     
-    // Nowe pola dla kont prywatnych i firmowych
+   
     private String accountType; // "personal" lub "business"
     private String firstName;
     private String lastName;
     private String phone;
     
-    // Pola dla kont firmowych
+    //firmowe
     private String companyName;
     private String nip;
     private String regon;
     private String address;
     private String website;
 
-    // Konstruktory
+    
     public RegisterRequest() {}
 
     public RegisterRequest(String username, String email, String password,
@@ -38,7 +38,7 @@ public class RegisterRequest {
         this.website = website;
     }
 
-    // Gettery i Settery
+   
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 

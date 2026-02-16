@@ -18,7 +18,7 @@ const Register: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Dane osobowe (dla obu typów kont)
+  // osobowe
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,7 +28,7 @@ const Register: React.FC = () => {
     regon: "",
   });
 
-  // Dane firmowe (tylko dla konta business)
+  //firmowe
   const [companyName, setCompanyName] = useState("");
   const [nip, setNip] = useState("");
   const [regon, setRegon] = useState("");
@@ -111,7 +111,7 @@ const Register: React.FC = () => {
      
 
       const res = await axios.post(
-        "http://localhost:8080/api/auth/register",
+        `${import.meta.env.VITE_API_URL}/api/auth/register`,
         registrationData
       );
       localStorage.setItem("token", String(res.data));
@@ -126,7 +126,7 @@ const Register: React.FC = () => {
       {/* Tło z MainPanel (rozmazane) */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-      {/* Formularz rejestracji */}
+     
       <div className="relative bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4 border border-gray-700">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-white">Rejestracja</h2>
@@ -275,7 +275,7 @@ const Register: React.FC = () => {
             </div>
           </div>
 
-          {/* Dane firmowe (tylko dla konta business) */}
+          {/*firmowe */}
           {accountType === "business" && (
             <div className="border-t border-gray-700 pt-4 mt-2">
               <h3 className="text-lg font-semibold text-white mb-3">

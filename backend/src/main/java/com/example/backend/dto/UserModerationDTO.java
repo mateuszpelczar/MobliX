@@ -23,10 +23,10 @@ public class UserModerationDTO {
     private LocalDateTime blockedUntil;
     private String blockReason;
 
-    // Konstruktory
+   
     public UserModerationDTO() {}
 
-    // Gettery i Settery
+   
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -105,7 +105,7 @@ const Statystyki: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await axios.get<SearchStats>(
-        "http://localhost:8080/api/search-stats",
+        `${import.meta.env.VITE_API_URL}/api/search-stats`,
         { headers: getAuthHeaders() }
       );
       setStats(response.data);
@@ -120,7 +120,7 @@ const Statystyki: React.FC = () => {
   const fetchNavbarSearchesToday = async () => {
     try {
       const response = await axios.get<{ count: number }>(
-        "http://localhost:8080/api/search-stats/navbar-count?period=today",
+        `${import.meta.env.VITE_API_URL}/api/search-stats/navbar-count?period=today`,
         { headers: getAuthHeaders() }
       );
       const count = response.data?.count ?? 0;
@@ -133,7 +133,7 @@ const Statystyki: React.FC = () => {
       // Fallback: derive from recentSearchActivity if available
       try {
         const resp = await axios.get<SearchStats>(
-          "http://localhost:8080/api/search-stats",
+          `${import.meta.env.VITE_API_URL}/api/search-stats`,
           { headers: getAuthHeaders() }
         );
         if (resp.data?.recentSearchActivity) {
@@ -162,7 +162,7 @@ const Statystyki: React.FC = () => {
   const fetchBrandsByPeriod = async (period: "today" | "week" | "month") => {
     try {
       const response = await axios.get<BrandPeriodStats>(
-        `http://localhost:8080/api/search-stats/top-brands-by-period?period=${period}`,
+        `${import.meta.env.VITE_API_URL}/api/search-stats/top-brands-by-period?period=${period}`,
         { headers: getAuthHeaders() }
       );
       setBrandPeriodStats(response.data);
@@ -173,7 +173,7 @@ const Statystyki: React.FC = () => {
 
   const fetchFavoriteCount = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: getAuthHeaders(),
       });
       if (response.ok) {
@@ -197,7 +197,7 @@ const Statystyki: React.FC = () => {
   const fetchAdvertisementsList = async () => {
     try {
       const response = await axios.get<any[]>(
-        "http://localhost:8080/api/advertisements",
+        `${import.meta.env.VITE_API_URL}/api/advertisements`,
         { headers: getAuthHeaders() }
       );
       if (Array.isArray(response.data)) setAdsList(response.data);

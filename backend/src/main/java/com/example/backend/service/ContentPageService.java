@@ -18,29 +18,29 @@ public class ContentPageService {
         this.contentPageRepository = contentPageRepository;
     }
 
-    // Pobierz wszystkie strony
+    
     public List<ContentPage> getAllPages() {
         return contentPageRepository.findAll();
     }
 
-    // Pobierz stronę po slug
+   
     public Optional<ContentPage> getPageBySlug(String slug) {
         return contentPageRepository.findBySlug(slug);
     }
 
-    // Pobierz stronę po ID
+    
     public Optional<ContentPage> getPageById(Long id) {
         return contentPageRepository.findById(id);
     }
 
-    // Utwórz nową stronę
+    
     @Transactional
     public ContentPage createPage(ContentPage page) {
         page.setLastUpdated(LocalDateTime.now());
         return contentPageRepository.save(page);
     }
 
-    // Zaktualizuj istniejącą stronę
+    
     @Transactional
     public ContentPage updatePage(Long id, ContentPage updatedPage, String updatedBy) {
         ContentPage existingPage = contentPageRepository.findById(id)
@@ -54,7 +54,7 @@ public class ContentPageService {
         return contentPageRepository.save(existingPage);
     }
 
-    // Usuń stronę
+    
     @Transactional
     public void deletePage(Long id) {
         contentPageRepository.deleteById(id);

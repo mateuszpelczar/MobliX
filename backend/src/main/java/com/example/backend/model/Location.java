@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
-//klasa reprezentujaca lokalizacje ogloszen
+
 @Entity
 @Table(name="lokalizacje")
 public class Location {
@@ -23,7 +23,7 @@ public class Location {
    @OneToMany(mappedBy = "location")
    private List<Advertisement> advertisements;
 
-   // Konstruktory
+
    public Location() {}
 
    public Location(Long id, String city, String region, List<Advertisement> advertisements) {
@@ -33,7 +33,6 @@ public class Location {
      this.advertisements = advertisements;
    }
 
-   // Gettery i Settery
    public Long getId() { return id; }
    public void setId(Long id) { this.id = id; }
 

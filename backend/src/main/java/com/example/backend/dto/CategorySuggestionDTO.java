@@ -13,7 +13,7 @@ public class CategorySuggestionDTO {
     this.productCount=productCount;
   }
 
-  //gett i sett
+
    public Long getId(){
       return id;
     }

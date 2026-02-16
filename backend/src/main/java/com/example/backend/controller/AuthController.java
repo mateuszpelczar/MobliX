@@ -33,17 +33,18 @@ public class AuthController {
         this.passwordResetService = passwordResetService;
     }
 
+    //rejestracja
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         try {
             // Rejestracja użytkownika
             String token = userService.register(request);
             
-            // Pobierz utworzonego użytkownika do logowania
+            // Pobranie utworzonego użytkownika do logowania
             User user = userService.getCurrentUser(request.getEmail());
             String ipAddress = logService.getClientIP(httpRequest);
             
-            // Log SUCCESS - pomyślna rejestracja
+        
             logService.saveLog(
                 "INFO",
                 "authentication",
@@ -73,20 +74,23 @@ public class AuthController {
         }
     }
 
+
+    //logowanie
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         try {
-            // Logowanie użytkownika
+            
+            //logowanie uzytkownika
             String token = userService.login(request);
             
-            // Pobierz użytkownika do logowania
+            //pobieranie uzytkownika do logowania
             User user = userService.getCurrentUser(request.getEmail());
             String ipAddress = logService.getClientIP(httpRequest);
 
-            //aktualizuj ostatnia aktywnosc uzytkownika przy logowaniu
+            //update ostatniej aktywnosci uzytkownika
             userService.updateLastActivity(request.getEmail());
             
-            // Log SUCCESS - pomyślne logowanie
+            
             logService.saveLog(
                 "INFO",
                 "authentication",
@@ -100,7 +104,7 @@ public class AuthController {
             return ResponseEntity.ok(token);
             
         } catch (Exception e) {
-            // Log ERROR - błędne dane logowania
+            
             String ipAddress = logService.getClientIP(httpRequest);
             logService.saveLog(
                 "ERROR",
@@ -116,6 +120,8 @@ public class AuthController {
         }
     }
 
+
+    //pobranie aktualnie zalogowanego uzytkownika
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.getCurrentUser(userDetails.getUsername());
@@ -139,17 +145,19 @@ public class AuthController {
         return ResponseEntity.ok(userDto);
     }
 
+
+    //aktualizacja danych uzytkownika
     @PutMapping("/me")
     public ResponseEntity<UserDto> updateCurrentUser(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody UpdateUserRequest request,
             HttpServletRequest httpRequest) {
         try {
-            // Aktualizacja danych użytkownika
+            
             User user = userService.updateUser(userDetails.getUsername(), request);
             String ipAddress = logService.getClientIP(httpRequest);
             
-            // Zbierz informacje o zmienionych polach
+           //zbieranie informacji o zmienionych polach do logow
             StringBuilder changedFields = new StringBuilder();
             if (request.getFirstName() != null) changedFields.append("Imię, ");
             if (request.getLastName() != null) changedFields.append("Nazwisko, ");
@@ -159,12 +167,12 @@ public class AuthController {
             if (request.getRegon() != null) changedFields.append("REGON, ");
             if (request.getAddress() != null) changedFields.append("Adres, ");
             if (request.getWebsite() != null) changedFields.append("Strona www, ");
+
+            String fields = changedFields.length() > 0
+                    ? changedFields.substring(0, changedFields.length() - 2)
+                    : "Brak zmian";
             
-            String fields = changedFields.length() > 0 
-                ? changedFields.substring(0, changedFields.length() - 2) 
-                : "Brak zmian";
-            
-            // Log INFO - pomyślna aktualizacja profilu
+           
             logService.saveLog(
                 "INFO",
                 "profile",
@@ -194,7 +202,7 @@ public class AuthController {
             return ResponseEntity.ok(userDto);
             
         } catch (Exception e) {
-            // Log ERROR - błąd aktualizacji
+           
             String ipAddress = logService.getClientIP(httpRequest);
             User user = userService.getCurrentUser(userDetails.getUsername());
             
@@ -212,6 +220,7 @@ public class AuthController {
         }
     }
 
+    //inicjowanie resetowania hasla
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request,
@@ -222,12 +231,13 @@ public class AuthController {
 
         passwordResetService.initiatePasswordReset(request.getEmail(), clientIp, userAgent);
 
-        // Always return success to prevent email enumeration
         return ResponseEntity.ok(Map.of(
                 "message", "Jeśli podany adres email istnieje w naszym systemie, zostanie wysłana wiadomość z instrukcjami resetowania hasła."
         ));
     }
 
+
+    //resetowanie hasla
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request,
@@ -245,6 +255,7 @@ public class AuthController {
         }
     }
 
+    //walidacja tokenu resetowania hasla
     @GetMapping("/validate-reset-token")
     public ResponseEntity<?> validateResetToken(@RequestParam String token) {
         try {
@@ -258,6 +269,7 @@ public class AuthController {
         }
     }
 
+   //pobieranie prawdziwego IP uzytkownika
     private String getClientIp(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {

@@ -123,7 +123,7 @@ const MessageComponent: React.FC = () => {
 
     try {
       const response = await axios.get<any[]>(
-        "http://localhost:8080/api/favorites",
+        `${import.meta.env.VITE_API_URL}/api/favorites`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -166,7 +166,7 @@ const MessageComponent: React.FC = () => {
       }
 
       const response = await axios.get<Conversation>(
-        `http://localhost:8080/api/messages/conversation?advertisementId=${advertisementId}&otherUserEmail=${seller}`,
+        `${import.meta.env.VITE_API_URL}/api/messages/conversation?advertisementId=${advertisementId}&otherUserEmail=${seller}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -207,7 +207,7 @@ const MessageComponent: React.FC = () => {
       }
 
       const response = await axios.get<Conversation[]>(
-        "http://localhost:8080/api/messages/conversations",
+        `${import.meta.env.VITE_API_URL}/api/messages/conversations`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -237,7 +237,7 @@ const MessageComponent: React.FC = () => {
       }
 
       const response = await axios.get<Message[]>(
-        `http://localhost:8080/api/messages/conversation/${conversationId}`,
+        `${import.meta.env.VITE_API_URL}/api/messages/conversation/${conversationId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -247,7 +247,7 @@ const MessageComponent: React.FC = () => {
 
       // Oznacz jako przeczytane
       await axios.put(
-        `http://localhost:8080/api/messages/conversation/${conversationId}/read`,
+        `${import.meta.env.VITE_API_URL}/api/messages/conversation/${conversationId}/read`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -275,7 +275,7 @@ const MessageComponent: React.FC = () => {
 
       // Send message without advertisement association
       await axios.post(
-        "http://localhost:8080/api/messages/send",
+        `${import.meta.env.VITE_API_URL}/api/messages/send`,
         {
           receiverEmail: selectedConversation.otherUserEmail,
           // do not include advertisementId to keep messages ad-agnostic

@@ -179,7 +179,7 @@ const AddAdvertisement: React.FC = () => {
 
       try {
         const response = await axios.get<{ accountType?: string }>(
-          "http://localhost:8080/api/auth/me",
+          `${import.meta.env.VITE_API_URL}/api/auth/me`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -273,7 +273,7 @@ const AddAdvertisement: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:8080/api/advertisements/upload-images",
+        `${import.meta.env.VITE_API_URL}/api/advertisements/upload-images`,
         {
           method: "POST",
           headers: {
@@ -376,7 +376,7 @@ const AddAdvertisement: React.FC = () => {
         isUser ? "USER" : isAdmin ? "ADMIN" : isStaff ? "STAFF" : "unknown"
       );
 
-      const response = await fetch("http://localhost:8080/api/advertisements", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/advertisements`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

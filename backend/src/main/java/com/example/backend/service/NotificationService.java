@@ -29,7 +29,7 @@ public class NotificationService {
     @Autowired
     private FavoriteAdRepository favoriteAdRepository;
 
-    // Konwersja Notification -> NotificationDTO
+    //konwersja powiadomienia do DTO
     private NotificationDTO convertToDTO(Notification notification) {
         return new NotificationDTO(
             notification.getId(),
@@ -44,7 +44,7 @@ public class NotificationService {
         );
     }
 
-    // Pobierz wszystkie powiadomienia użytkownika
+    //pobranie wszystkich powiadomien uzytkownika
     public List<NotificationDTO> getUserNotifications(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
             .orElseThrow(() -> new RuntimeException("User not found"));
@@ -55,7 +55,7 @@ public class NotificationService {
             .collect(Collectors.toList());
     }
 
-    // Pobierz nieprzeczytane powiadomienia
+    //pobranie nieprzeczytanych powiadomien
     public List<NotificationDTO> getUnreadNotifications(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
             .orElseThrow(() -> new RuntimeException("User not found"));
@@ -74,7 +74,7 @@ public class NotificationService {
         return notificationRepository.countByUserAndIsRead(user, false);
     }
 
-    // Oznacz powiadomienie jako przeczytane
+    //oznaczenie powiadomienia jako przeczytane
     @Transactional
     public void markAsRead(String userEmail, Long notificationId) {
         User user = userRepository.findByEmail(userEmail)
@@ -91,7 +91,7 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    // Oznacz wszystkie jako przeczytane
+    //oznaczenie wszystkich powiadomien jako przeczytane
     @Transactional
     public void markAllAsRead(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
@@ -106,7 +106,7 @@ public class NotificationService {
         notificationRepository.saveAll(unreadNotifications);
     }
 
-    // Utwórz powiadomienie o zmianie ceny
+    //utworzenie powiadomienia o zmianie ceny
     @Transactional
     public void createPriceChangeNotification(Advertisement advertisement, Double oldPrice, Double newPrice) {
         List<FavoriteAd> favorites = favoriteAdRepository.findByAdvertisement(advertisement);
@@ -125,7 +125,7 @@ public class NotificationService {
         }
     }
 
-    // Utwórz powiadomienie o zmianie zdjęć
+    //utworzenie powiadomienia o zmianie zdjec
     @Transactional
     public void createImagesChangedNotification(Advertisement advertisement) {
         List<FavoriteAd> favorites = favoriteAdRepository.findByAdvertisement(advertisement);
@@ -142,7 +142,7 @@ public class NotificationService {
         }
     }
 
-    // Utwórz powiadomienie o zmianie opisu
+    //utworzenie powiadomienia o zmianie opisu
     @Transactional
     public void createDescriptionChangedNotification(Advertisement advertisement) {
         List<FavoriteAd> favorites = favoriteAdRepository.findByAdvertisement(advertisement);
@@ -159,7 +159,7 @@ public class NotificationService {
         }
     }
 
-    // Utwórz powiadomienie o usunięciu ogłoszenia
+    //utworzenie powiadomienia o usunieciu ogloszenia
     @Transactional
     public void createAdDeletedNotification(Advertisement advertisement) {
         List<FavoriteAd> favorites = favoriteAdRepository.findByAdvertisement(advertisement);
@@ -167,11 +167,9 @@ public class NotificationService {
         for (FavoriteAd favorite : favorites) {
             Notification notification = new Notification();
             notification.setUser(favorite.getUser());
-            // Do not set the Advertisement entity here to avoid referencing a transient/soon-to-be-deleted
-            // entity during the same transaction. Store no direct link; front-end can use title/message.
+            
             notification.setAdvertisement(null);
-            // AD_DELETED is not present in DB CHECK constraint (V7 migration)
-            // use ADVERTISEMENT_DELETED which is allowed by the constraint
+            
             notification.setType(NotificationType.ADVERTISEMENT_DELETED);
             notification.setTitle(advertisement.getTitle());
             notification.setMessage("Ogłoszenie zostało usunięte i nie jest już dostępne");
@@ -180,7 +178,7 @@ public class NotificationService {
         }
     }
 
-    // Create ad-deleted notifications for a list of user IDs. Does not reference Advertisement entity.
+   //utworzenie powiadomienia o usunieciu ogloszenia dla listy userow
     @Transactional
     public void createAdDeletedNotificationForUserIds(List<Long> userIds, String advertisementTitle) {
         for (Long userId : userIds) {
@@ -196,7 +194,7 @@ public class NotificationService {
         }
     }
 
-    // Utwórz powiadomienie o zakończeniu ogłoszenia
+   //utworzenie powiadomienia o zakonczeniu ogloszenia
     @Transactional
     public void createAdEndedNotification(Advertisement advertisement) {
         List<FavoriteAd> favorites = favoriteAdRepository.findByAdvertisement(advertisement);
@@ -213,7 +211,7 @@ public class NotificationService {
         }
     }
 
-    // Utwórz powiadomienie o zmianie regulaminu (dla wszystkich użytkowników)
+    //utworzenie powiadomienia o zmianie regulaminu
     @Transactional
     public void createTermsUpdatedNotification() {
         List<User> allUsers = userRepository.findAll();
@@ -230,7 +228,7 @@ public class NotificationService {
         }
     }
 
-    // Usuń powiadomienie
+    //usuniecie powiadomienia
     @Transactional
     public void deleteNotification(String userEmail, Long notificationId) {
         User user = userRepository.findByEmail(userEmail)
@@ -246,7 +244,7 @@ public class NotificationService {
         notificationRepository.delete(notification);
     }
 
-    //utworz powiadomienie o zablokowaniu konta
+    //utworzenie powiadomienia o zablokowaniu konta
     public void createAccountBlockedNotification(User user, String reason, String blockedBy, java.time.LocalDateTime blockedUntil){
 
         Notification notification  = new Notification();
@@ -269,7 +267,7 @@ public class NotificationService {
 
     }
 
-    //powiadomienie o usunieciu oglsozenia przez moderatora
+    //utworzenie powiadomienia o usunieciu ogloszenia przez moderatora
     public void createAdvertisementDeletedNotification(User user, String advertisementTitle, String reason){
         Notification notification = new Notification();
         notification.setUser(user);
@@ -284,7 +282,7 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    //powiadomienie o ostrzezeniu ogloszenia
+    //utworzenie powiadomienia o ostrzezeniu ogloszenia
     public void createAdvertisementWarningNotification(User user, String advertisementTitle, String warningMessage){
         Notification notification = new Notification();
         notification.setUser(user);
@@ -298,7 +296,7 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    //powiadomienie o odrzuceniu ogloszenia przez moderatora
+    //utworzenie powiadomienia o odrzuceniu ogloszenia przez moderatora
     public void createAdvertisementRejectedNotification(User user, String advertisementTitle, String rejectReason){
         Notification notification = new Notification();
         notification.setUser(user);

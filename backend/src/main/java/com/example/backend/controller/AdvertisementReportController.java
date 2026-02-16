@@ -23,37 +23,30 @@ public class AdvertisementReportController {
       this.reportService = reportService;
     }
 
-    /** 
-    stworzenie nowego zgloszenia dla uzytkownika
-    niezalogowany uzytkownik nie moze stworzyc zgloszenia
-    */
+    //tworzenie zgloszenia
     @PostMapping("/{advertisementId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createReport(
-        @PathVariable Long advertisementId,
-        @RequestBody CreateReportRequest request,
-        Authentication authentication
-        ){
-          
-          if(request.getReason() == null || request.getReason().trim().isEmpty()){
-            return ResponseEntity.badRequest().body("Prosze podac powod zgloszenia");
-          }
-          try{
-          String userEmail = authentication.getName();
-          AdvertisementReportDTO report = reportService.createReport(advertisementId, userEmail, request);
-          return ResponseEntity.status(HttpStatus.CREATED).body(report);
-        }catch (IllegalStateException e){
-          return ResponseEntity.badRequest().body(e.getMessage());
-        }catch (Exception e) {
-          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body("Blad podczas tworzenia zgloszenia: " + e.getMessage());
-        }
-        }
+            @PathVariable Long advertisementId,
+            @RequestBody CreateReportRequest request,
+            Authentication authentication) {
 
-      /**
-       * pobierz wszystkie zgloszenia (staff panel)
-       * 
-       */
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Prosze podac powod zgloszenia");
+        }
+        try {
+            String userEmail = authentication.getName();
+            AdvertisementReportDTO report = reportService.createReport(advertisementId, userEmail, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(report);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Blad podczas tworzenia zgloszenia: " + e.getMessage());
+        }
+    }
+
+      //pobieranie zgloszen
       @GetMapping
       @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
         public ResponseEntity<List<AdvertisementReportDTO>> getAllReports(
@@ -74,16 +67,14 @@ public class AdvertisementReportController {
         }
     }
 
-    /**
-     * Ocena zgloszenia - zaakceptowanie = usuniecie ogloszenia lub ostrzezenie
-     **/
+    //rozpatrywanie zgloszenia
     @PostMapping("/{reportId}/review")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<?> reviewReport(
             @PathVariable Long reportId,
             @RequestBody ReviewReportRequest request,
             Authentication authentication) {
-        
+
         if (request.getAction() == null || request.getAction().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Wymagane jest usuniecie lub odrzucenie");
         }
@@ -92,18 +83,18 @@ public class AdvertisementReportController {
             return ResponseEntity.badRequest().body("Akcja wymaga usunieta lub wyslaniaostrzezenie ");
         }
 
-        if (request.getAction().equals("WARNING") && 
-            (request.getModeratorNote() == null || request.getModeratorNote().trim().isEmpty())) {
+        if (request.getAction().equals("WARNING") &&
+                (request.getModeratorNote() == null || request.getModeratorNote().trim().isEmpty())) {
             return ResponseEntity.badRequest().body("komentarz moderatora nie jest wymagany");
         }
 
         try {
             String moderatorEmail = authentication.getName();
             AdvertisementReportDTO report = reportService.reviewReport(
-                    reportId, 
-                    moderatorEmail, 
+                    reportId,
+                    moderatorEmail,
                     request);
-            
+
             return ResponseEntity.ok(report);
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -113,9 +104,7 @@ public class AdvertisementReportController {
         }
     }
 
-    /**
-     * odrzucenie zgloszenia
-     */
+    //odrzucenie zgloszenia
     @PostMapping("/{reportId}/reject")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public ResponseEntity<?> rejectReport(

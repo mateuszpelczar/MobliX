@@ -13,7 +13,7 @@ public class MessageDTO {
     private Boolean isRead;
     private LocalDateTime createdAt;
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

@@ -27,15 +27,15 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     List<Advertisement> findByUserAndStatus(User user, AdvertisementStatus status);
 
     
-    // Liczenie ogłoszeń według statusu dla użytkownika
+    
     long countByUserAndStatus(User user, AdvertisementStatus status);
     long countByUser(User user);
 
-    //do staff panel
+    
     long countByStatus(AdvertisementStatus status);
 
     
-    // Zapytania związane ze specyfikacją smartfona
+   
     @Query("SELECT a FROM Advertisement a WHERE a.smartphoneSpecification.status = ?1")
     List<Advertisement> findBySmartphoneSpecificationStatus(String status);
     
@@ -45,7 +45,7 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     @Query("SELECT a FROM Advertisement a WHERE a.smartphoneSpecification.status = 'ACTIVE' AND a.smartphoneSpecification.dateAdded IS NOT NULL ORDER BY a.smartphoneSpecification.dateAdded DESC")
     List<Advertisement> findTop4ByOrderBySmartphoneSpecificationDateAddedDesc();
 
-    // Najczęściej wystawiane marki (dla statystyk) - tylko aktywne ogłoszenia, limit 5
+    //najczesciej wystawiane marki - limit 5
         @Query(value = "SELECT s.brand, COUNT(a.id) as count FROM ogloszenia a " +
             "INNER JOIN smartphone_specifications s ON s.advertisement_id = a.id " +
             "WHERE a.status = 'ACTIVE' AND s.brand IS NOT NULL " +
@@ -54,7 +54,7 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
             "LIMIT 5", nativeQuery = true)
     List<Object[]> findTopListedBrands();
 
-    //metody do panelu admina
+    
     long countByCreatedAtAfter(LocalDateTime date);
     long countByCreatedAtBefore(LocalDateTime date);
 

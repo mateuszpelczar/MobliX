@@ -9,21 +9,22 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.comprehend.ComprehendClient;
 import software.amazon.awssdk.services.rekognition.RekognitionClient;
 
-/**
- * Konfiguracja klientów AWS dla usług moderacji treści
- */
+
 @Configuration
 public class AwsModerationConfig {
 
+
+    //klucze dostępu, region oraz tajny klucz do AWS
     @Value("${aws.access-key-id}")
     private String accessKeyId;
-
+    
     @Value("${aws.secret-access-key}")
     private String secretAccessKey;
 
     @Value("${aws.moderation.region:eu-central-1}")
     private String region;
 
+    //klient AWS do analizy obrazów
     @Bean
     public RekognitionClient rekognitionClient() {
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
@@ -34,6 +35,7 @@ public class AwsModerationConfig {
                 .build();
     }
 
+    //klient AWS do analizy tekstu
     @Bean
     public ComprehendClient comprehendClient() {
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);

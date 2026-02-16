@@ -41,7 +41,7 @@ const ResetPassword: React.FC = () => {
 
     // Validate token
     axios
-      .get(`http://localhost:8080/api/auth/validate-reset-token?token=${token}`)
+      .get(`${import.meta.env.VITE_API_URL}/api/auth/validate-reset-token?token=${token}`)
       .then(() => {
         setTokenValid(true);
       })
@@ -85,7 +85,7 @@ const ResetPassword: React.FC = () => {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:8080/api/auth/reset-password", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, {
         token,
         newPassword,
       });
@@ -221,7 +221,7 @@ const ResetPassword: React.FC = () => {
             </div>
           </div>
 
-          {/* Password strength indicators */}
+        
           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
             <p className="text-sm font-medium text-gray-700 mb-2">
               Wymagania hasła:

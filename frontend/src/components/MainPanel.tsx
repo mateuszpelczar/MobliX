@@ -67,7 +67,7 @@ const MainPanel: React.FC = () => {
       try {
         setLoading(true);
         const response = await fetch(
-          "http://localhost:8080/api/advertisements/latest"
+          `${import.meta.env.VITE_API_URL}/api/advertisements/latest`
         );
         if (response.ok) {
           const data = await response.json();
@@ -201,7 +201,7 @@ const MainPanel: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {

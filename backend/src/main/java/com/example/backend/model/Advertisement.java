@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name="ogloszenia")
 public class Advertisement {
-//klasa reprezentujaca ogloszenia
+
    @Id
    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
@@ -42,7 +42,7 @@ public class Advertisement {
     @OneToOne(mappedBy = "advertisement", cascade = CascadeType.ALL)
     private SmartphoneSpecification smartphoneSpecification;
 
-    // Nowe pola do moderacji
+  
     @Enumerated(EnumType.STRING)
     private AdvertisementStatus status = AdvertisementStatus.PENDING;
 
@@ -61,7 +61,7 @@ public class Advertisement {
     @Column(name = "updated_at")
     private java.time.LocalDateTime updatedAt;
 
-    // Dodatkowe informacje
+   
     @Column(name = "includes_charger")
     private Boolean includesCharger;
 
@@ -71,19 +71,19 @@ public class Advertisement {
     @Column(name = "condition_description", length = 500)
     private String condition;
 
-    // Pole określające czy ogłoszenie wystawione jako firma czy osoba prywatna
+    
     @Column(name = "seller_type")
     private String sellerType; // "personal" lub "business"
 
     @Column(name="view_count", columnDefinition = "BIGINT DEFAULT 0")
     private Long viewCount = 0L;
 
-    // Konstruktory
+   
     public Advertisement() {
         this.viewCount = 0L;
     }
 
-    // Gettery i Settery
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -153,7 +153,7 @@ public class Advertisement {
     }
 
 
-    //methods
+  
     @PrePersist
     protected void onCreate() {
         createdAt = java.time.LocalDateTime.now();
@@ -165,7 +165,7 @@ public class Advertisement {
         updatedAt = java.time.LocalDateTime.now();
     }
 
-    //metody do pobierania obrazow do ogloszen
+    //pobrania zdjec do ogloszen
     public String getMainImageUrl(){
         if(images != null && !images.isEmpty()){
             return images.get(0).getUrl(); 
@@ -173,7 +173,7 @@ public class Advertisement {
         return null;
        
     }
-
+    //pobranie id zdjec do ogloszen
     public Long getMainImageId(){
         if(images != null && !images.isEmpty()){
             return images.get(0).getId();

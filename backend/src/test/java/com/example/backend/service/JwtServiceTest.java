@@ -32,80 +32,84 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(jwtService, "jwtExpirationInMs", EXPIRATION_MS);
     }
 
+    //Sprawdza czy serwis poprawnie generuje token JWT dla użytkownika
     @Test
     @DisplayName("Powinien wygenerować poprawny token JWT dla użytkownika")
     void shouldGenerateValidToken() {
-        // Given
+       
         User user = createTestUser();
 
-        // When
+       
         String token = jwtService.generateToken(user);
 
-        // Then
+       
         assertNotNull(token);
         assertFalse(token.isEmpty());
         assertTrue(token.split("\\.").length == 3); // JWT ma 3 części
     }
-
+    //Sprawdza czy serwis poprawnie wyekstrahowuje email z tokenu
     @Test
     @DisplayName("Powinien wyekstrahować email z tokenu")
     void shouldExtractUsernameFromToken() {
-        // Given
+        
         User user = createTestUser();
         String token = jwtService.generateToken(user);
 
-        // When
+       
         String extractedEmail = jwtService.extractUsername(token);
 
-        // Then
+        
         assertEquals(user.getEmail(), extractedEmail);
     }
 
+    //Sprawdza czy serwis poprawnie waliduje token
     @Test
     @DisplayName("Powinien walidować poprawny token")
     void shouldValidateCorrectToken() {
-        // Given
+        
         User user = createTestUser();
         String token = jwtService.generateToken(user);
         
         UserDetails userDetails = mock(UserDetails.class);
         when(userDetails.getUsername()).thenReturn(user.getEmail());
 
-        // When
+        
         boolean isValid = jwtService.isTokenValid(token, userDetails);
 
-        // Then
+        
         assertTrue(isValid);
     }
 
+    //Sprawdza czy serwis odrzuca token z innym emailem
     @Test
     @DisplayName("Powinien odrzucić token z innym emailem")
     void shouldRejectTokenWithDifferentEmail() {
-        // Given
+        
         User user = createTestUser();
         String token = jwtService.generateToken(user);
         
         UserDetails userDetails = mock(UserDetails.class);
         when(userDetails.getUsername()).thenReturn("inny@email.com");
 
-        // When
+        
         boolean isValid = jwtService.isTokenValid(token, userDetails);
 
-        // Then
+        
         assertFalse(isValid);
     }
 
+    //Sprawdza czy serwis poprawnie dodaje rolę użytkownika do tokenu
     @Test
     @DisplayName("Powinien zawierać rolę użytkownika w tokenie")
     void shouldContainUserRoleInToken() {
-        // Given
+        
         User user = createTestUser();
         user.setRole(Role.ADMIN);
 
-        // When
+       
         String token = jwtService.generateToken(user);
 
-        // Then
+       
         Claims claims = Jwts.parser()
                 .setSigningKey(SECRET_KEY.getBytes())
                 .parseClaimsJws(token)
@@ -114,16 +118,17 @@ class JwtServiceTest {
         assertEquals("ADMIN", claims.get("role"));
     }
 
+    //Sprawdza czy serwis poprawnie dodaje username do tokenu
     @Test
     @DisplayName("Powinien zawierać username w tokenie")
     void shouldContainUsernameInToken() {
-        // Given
+       
         User user = createTestUser();
 
-        // When
+     
         String token = jwtService.generateToken(user);
 
-        // Then
+     
         Claims claims = Jwts.parser()
                 .setSigningKey(SECRET_KEY.getBytes())
                 .parseClaimsJws(token)
@@ -132,17 +137,18 @@ class JwtServiceTest {
         assertEquals(user.getUsername(), claims.get("username"));
     }
 
+    //Sprawdza czy serwis poprawnie ustawia datę wygaśnięcia tokenu
     @Test
     @DisplayName("Token powinien mieć poprawną datę wygaśnięcia")
     void shouldHaveCorrectExpirationDate() {
-        // Given
+        
         User user = createTestUser();
         long beforeGeneration = System.currentTimeMillis();
 
-        // When
+        
         String token = jwtService.generateToken(user);
 
-        // Then
+       
         Claims claims = Jwts.parser()
                 .setSigningKey(SECRET_KEY.getBytes())
                 .parseClaimsJws(token)

@@ -16,7 +16,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.persistence.PrePersist;
 
-//klasa reprezentujaca uzytkownika w systemie
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -36,29 +36,29 @@ public class User {
   @Enumerated(EnumType.STRING)
   private Role role;
 
-  // Nowe pola dla kont prywatnych i firmowych
+  
   private String accountType; // "personal" lub "business"
   private String firstName;
   private String lastName;
   private String phone;
   
-  // Pola dla kont firmowych
+  //firmowe
   private String companyName;
   private String nip;
   private String regon;
   private String address;
   private String website;
 
-  // pola do blokowania konta
+  //blokada konta
   @Column(name="is_blocked", nullable= false)
   private Boolean isBlocked = false;
   private LocalDateTime blockedUntil;
   private String blockReason;
 
-  //ostatnia aktywnosc
+ 
   private LocalDateTime lastActivity;
 
-  // Data utworzenie konta
+
   private LocalDateTime createdAt;
   @PrePersist
   protected void onCreate(){
@@ -90,7 +90,6 @@ public class User {
   @OneToMany(mappedBy = "user")
   private List<Log> logs;
 
-  // Konstruktory
   public User() {}
 
   public User(Long id, String username, String email, String password, Role role,
@@ -120,7 +119,7 @@ public class User {
     this.logs = logs;
   }
 
-  // Gettery i Settery
+
   public Long getId() { return id; }
   public void setId(Long id) { this.id = id; }
 
@@ -151,7 +150,7 @@ public class User {
   public List<Log> getLogs() { return logs; }
   public void setLogs(List<Log> logs) { this.logs = logs; }
 
-  // Gettery i Settery dla nowych pól
+
   public String getAccountType() { return accountType; }
   public void setAccountType(String accountType) { this.accountType = accountType; }
 

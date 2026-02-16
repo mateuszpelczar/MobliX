@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-//klasa reprezentujaca moderacje ogloszen
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -21,7 +21,7 @@ public class Moderation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String action; // zatwierdz, usun itd..
+    private String action; 
     private Date timestamp;
     private String reason;
 

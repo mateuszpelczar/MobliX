@@ -92,7 +92,7 @@ const SmartphoneDetails: React.FC = () => {
       if (!id) return;
 
       try {
-        await axios.post(`http://localhost:8080/api/advertisements/${id}/view`);
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/advertisements/${id}/view`);
         console.log("View count incremented");
       } catch (error) {
         console.error("Error incrementing view count:", error);
@@ -129,7 +129,7 @@ const SmartphoneDetails: React.FC = () => {
         setLoading(true);
         setError(null);
         const response = await fetch(
-          `http://localhost:8080/api/advertisements/${id}`
+          `${import.meta.env.VITE_API_URL}/api/advertisements/${id}`
         );
 
         console.log("📡 Response status:", response.status);
@@ -156,7 +156,7 @@ const SmartphoneDetails: React.FC = () => {
                     // If the backend returned a relative path like "/uploads/images/.." or "/images/...",
                     // request it from the backend server instead of the Vite dev server.
                     if (u.startsWith("http")) return u;
-                    if (u.startsWith("/")) return `http://localhost:8080${u}`;
+                    if (u.startsWith("/")) return `${import.meta.env.VITE_API_URL}${u}`;
                     return u;
                   })
                 : ["https://dummyimage.com/400x500/ccc/fff&text=Brak+zdjęcia"],
@@ -233,7 +233,7 @@ const SmartphoneDetails: React.FC = () => {
         }
 
         const response = await fetch(
-          `http://localhost:8080/api/advertisements/${id}/seller`,
+          `${import.meta.env.VITE_API_URL}/api/advertisements/${id}/seller`,
           { headers }
         );
 
@@ -258,7 +258,7 @@ const SmartphoneDetails: React.FC = () => {
 
         // Pobierz wszystkie ogłoszenia
         const adsResponse = await fetch(
-          `http://localhost:8080/api/advertisements`,
+          `${import.meta.env.VITE_API_URL}/api/advertisements`,
           { headers }
         );
 
@@ -347,7 +347,7 @@ const SmartphoneDetails: React.FC = () => {
 
       try {
         const response = await axios.get<FavoriteCheckResponse>(
-          `http://localhost:8080/api/favorites/${id}/check`,
+          `${import.meta.env.VITE_API_URL}/api/favorites/${id}/check`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -373,7 +373,7 @@ const SmartphoneDetails: React.FC = () => {
 
     try {
       const response = await axios.get<any[]>(
-        "http://localhost:8080/api/favorites",
+        `${import.meta.env.VITE_API_URL}/api/favorites`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -511,7 +511,7 @@ const SmartphoneDetails: React.FC = () => {
 
     try {
       if (isFavorite) {
-        await axios.delete(`http://localhost:8080/api/favorites/${id}`, {
+        await axios.delete(`${import.meta.env.VITE_API_URL}/api/favorites/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -520,7 +520,7 @@ const SmartphoneDetails: React.FC = () => {
         alert("Usunięto z ulubionych");
       } else {
         await axios.post(
-          `http://localhost:8080/api/favorites/${id}`,
+          `${import.meta.env.VITE_API_URL}/api/favorites/${id}`,
           {},
           {
             headers: {
@@ -593,7 +593,7 @@ const SmartphoneDetails: React.FC = () => {
       };
 
       const response = await axios.post(
-        `http://localhost:8080/api/reports/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/reports/${id}`,
         {
           reason: reasonMap[reportForm.reason],
           comment: reportForm.description,

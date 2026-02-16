@@ -8,14 +8,14 @@ public class UserDto {
     private String username;
     private String role;
     
-    // Nowe pola dla kont prywatnych i firmowych
+    
     private String accountType;
     private String firstName;
     private String lastName;
     @Pattern(regexp = "\\d{9}",message="Numer telefonu musi składać się z 9 cyfr")
     private String phone;
     
-    // Pola dla kont firmowych
+    
     private String companyName;
     @Pattern(regexp = "\\d{10}",message="Numer NIP musi składać się z 10 cyfr")
     private String nip;
@@ -24,7 +24,7 @@ public class UserDto {
     private String address;
     private String website;
 
-    // Konstruktory
+    
     public UserDto() {}
 
     public UserDto(Long id, String email, String username, String role,
@@ -45,7 +45,7 @@ public class UserDto {
         this.website = website;
     }
 
-    // Gettery i Settery
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

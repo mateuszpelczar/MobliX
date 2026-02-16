@@ -54,7 +54,7 @@ const StaffPanel: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -88,7 +88,7 @@ const StaffPanel: React.FC = () => {
       }
 
       const response = await axios.get<StaffStats>(
-        "http://localhost:8080/api/admin/stats/staff",
+        `${import.meta.env.VITE_API_URL}/api/admin/stats/staff`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

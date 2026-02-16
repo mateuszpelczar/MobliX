@@ -24,7 +24,7 @@ public class LogService {
     this.logRepository=logRepository;
   }
 
-  // Zapisz log z obiektem User (zalecane - pełna relacja)
+  
     public void saveLog(String level, String category, String message, String details, 
                        String source, User user, String ipAddress) {
         try {
@@ -37,7 +37,7 @@ public class LogService {
         }
     }
 
-    // zapisanie aktywnosci uzytkownika (userpanel)
+    
     public void logUserActivity(User user, String message, String details){
         try{
             Log log = new Log("INFO", "user_activity", message, details, "User_ACTION",user,null );
@@ -47,7 +47,7 @@ public class LogService {
         }
     }
 
-    // pobranie ostatnich aktywnosci uzytkownika do userpanel
+    
     public List<LogDTO> getUserActivities(String userEmail, int limit){
         Pageable pageable = PageRequest.of(0, limit);
         List<Log> activities = logRepository.findUserActivities(userEmail, pageable);
@@ -56,21 +56,21 @@ public class LogService {
          .collect(Collectors.toList());
     }
 
-    // Pobierz wszystkie logi z paginacją (najnowsze pierwsze)
+    
     public Page<LogDTO> getAllLogs(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         Page<Log> logs = logRepository.findAll(pageable);
         return logs.map(this::convertToDTO);
     }
 
-    // Pobierz logi według poziomu: INFO, WARN, ERROR
+    
     public Page<LogDTO> getLogsByLevel(String level, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         Page<Log> logs = logRepository.findByLevel(level, pageable);
         return logs.map(this::convertToDTO);
     }
 
-    // Pobierz logi według kategorii
+   
     public Page<LogDTO> getLogsByCategory(String category, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         Page<Log> logs = logRepository.findByCategory(category, pageable);
@@ -78,7 +78,7 @@ public class LogService {
     }
   
 
-    // Konwertuj Log (model bazodanowy) na LogDTO (do wysłania przez API)
+    
     private LogDTO convertToDTO(Log log) {
         return new LogDTO(
             log.getId(),
@@ -93,7 +93,7 @@ public class LogService {
         );
     }
 
-    //pomocnicza metoda do wykrywania prawdziwego IP uzytkownika
+    
     public String getClientIP(HttpServletRequest request){
       if(request == null){
         return null;
@@ -121,7 +121,7 @@ public class LogService {
         return ip;
     }
 
-    //pobierz logi wedlug email uzytkownika
+   
     public List<Log> getLogsByUserEmail(String userEmail){
         return logRepository.findByUserEmail(userEmail);
     }

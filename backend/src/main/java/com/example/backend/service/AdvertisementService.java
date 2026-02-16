@@ -145,11 +145,11 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
     Advertisement ad = advertisementRepository.findById(advertisementId)
         .orElseThrow(() -> new RuntimeException("Advertisement not found"));
     
-    // Zwiększ licznik
+    
     ad.setViewCount(ad.getViewCount() + 1);
     advertisementRepository.save(ad);
     
-    // Zaloguj wyświetlenie
+    
     User currentUser = null;
     String userEmail = null;
     try {
@@ -163,7 +163,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
             }
         }
     } catch (Exception e) {
-        // Użytkownik niezalogowany lub brak kontekstu uwierzytelnienia
+       
     }
     
    
@@ -254,18 +254,18 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
                 );
                 
                 if (moderationResult.isApproved()) {
-                    // Automatyczne zatwierdzenie - ogłoszenie przeszło moderację
+                    
                     advertisement.setStatus(AdvertisementStatus.ACTIVE);
                     advertisement.setRejectReason(null);
                     logService.logUserActivity(user, 
                         "Ogłoszenie automatycznie zatwierdzone przez moderację AI: " + advertisement.getTitle(), 
                         "advertisementId:" + advertisement.getId());
                 } else {
-                    // Automatyczne odrzucenie - wykryto problemy
+                    
                     advertisement.setStatus(AdvertisementStatus.REJECTED);
                     advertisement.setRejectReason(moderationResult.getRejectionReason());
                     
-                    // Powiadomienie użytkownika o odrzuceniu
+                    
                     if (notificationService != null) {
                         notificationService.createAdvertisementRejectedNotification(
                             user,
@@ -281,7 +281,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
                 }
                 advertisement = advertisementRepository.save(advertisement);
             } catch (Exception e) {
-                // W przypadku błędu moderacji - ogłoszenie pozostaje PENDING (ręczna weryfikacja)
+                
                 logService.logUserActivity(user, 
                     "Błąd automatycznej moderacji, ogłoszenie wymaga ręcznej weryfikacji: " + e.getMessage(), 
                     "advertisementId:" + advertisement.getId());
@@ -293,7 +293,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         "Utworzono ogłoszenie: " + advertisement.getTitle(), 
         "advertisementId:" + advertisement.getId());
 
-        // PostgreSQL search - sugestie pobierane bezpośrednio z bazy (nie wymaga indeksacji)
+        
 
         return convertToResponseDTO(advertisement);
     }
@@ -413,24 +413,24 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         return advertisementRepository.findByStatus(status);
     }
 
-    // Helper: delete a stored image file given its stored URL (e.g. "/uploads/images/uuid.jpg" or "uploads/images/uuid.jpg")
+    
     private void deleteImageFileByUrl(String url) {
         if (url == null || url.trim().isEmpty()) return;
         try {
             String normalized = url;
             if (normalized.startsWith("/")) normalized = normalized.substring(1);
-            // Expecting uploads/images/<filename>
+            
             if (normalized.startsWith("uploads/images/")) {
                 String filename = normalized.substring("uploads/images/".length());
                 Path filePath = Paths.get(uploadDir).resolve(filename);
                 try {
                     Files.deleteIfExists(filePath);
                 } catch (Exception e) {
-                    // swallow: don't fail delete flow because file removal failed
+                    
                     System.err.println("Failed to delete image file: " + filePath + "; " + e.getMessage());
                 }
             } else {
-                // If url was stored differently, try to extract filename and delete
+                
                 Path filePath = Paths.get(uploadDir).resolve(Paths.get(normalized).getFileName());
                 try {
                     Files.deleteIfExists(filePath);
@@ -623,7 +623,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         
       
         if (meaningfulChange) {
-            // Automatyczna moderacja AWS przy zmianie (Rekognition + Comprehend)
+           
             if (moderationEnabled && advertisementModerationService != null) {
                 try {
                     List<String> imageUrls = updateDto.getImageUrls() != null ? updateDto.getImageUrls() : new ArrayList<>();
@@ -634,18 +634,18 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
                     );
                     
                     if (moderationResult.isApproved()) {
-                        // Automatyczne zatwierdzenie po aktualizacji
+                        
                         advertisement.setStatus(AdvertisementStatus.ACTIVE);
                         advertisement.setRejectReason(null);
                         logService.logUserActivity(user, 
                             "Zaktualizowane ogłoszenie automatycznie zatwierdzone przez moderację AI: " + advertisement.getTitle(), 
                             "advertisementId:" + advertisement.getId());
                     } else {
-                        // Automatyczne odrzucenie - wykryto problemy
+                        
                         advertisement.setStatus(AdvertisementStatus.REJECTED);
                         advertisement.setRejectReason(moderationResult.getRejectionReason());
                         
-                        // Powiadomienie użytkownika o odrzuceniu
+                       
                         if (notificationService != null) {
                             notificationService.createAdvertisementRejectedNotification(
                                 user,
@@ -660,14 +660,14 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
                             "advertisementId:" + advertisement.getId());
                     }
                 } catch (Exception e) {
-                    // W przypadku błędu moderacji - ogłoszenie pozostaje PENDING
+                    
                     advertisement.setStatus(AdvertisementStatus.PENDING);
                     logService.logUserActivity(user, 
                         "Błąd moderacji aktualizacji, ogłoszenie wymaga ręcznej weryfikacji: " + e.getMessage(), 
                         "advertisementId:" + advertisement.getId());
                 }
             } else {
-                // Brak moderacji - status PENDING jak wcześniej
+                
                 if (advertisement.getStatus() != AdvertisementStatus.PENDING) {
                     advertisement.setStatus(AdvertisementStatus.PENDING);
                 }
@@ -678,7 +678,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
 
         logService.logUserActivity(user, "Zaktualizowano ogloszenie: " + advertisement.getTitle(), "advertisementId:" + advertisement.getId());
         
-        // Create notifications for users who favorited this ad
+       
         if (notificationService != null) {
             if (priceChanged) {
                 notificationService.createPriceChangeNotification(advertisement, oldPrice, updateDto.getPrice());
@@ -739,7 +739,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
                         try {
                             notificationService.createAdDeletedNotificationForUserIds(favoriteUserIds, advertisementTitle);
                         } catch (Exception e) {
-                            // swallow to avoid affecting commit flow; logging could be added
+                            
                             System.err.println("Failed to create post-commit ad-deleted notifications: " + e.getMessage());
                         }
                     }
@@ -749,7 +749,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         
        try {
             
-            // 3) Usuń powiadomienia, ulubione
+           
             if (notificationRepository != null) {
                 try { notificationRepository.deleteByAdvertisementId(id); } catch (Exception ignored) {}
             }
@@ -757,11 +757,11 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
                 try { favoriteAdRepository.deleteByAdvertisementId(id); } catch (Exception ignored) {}
             }
 
-            // 3.1) Usuń zgloszenia powiazane z ogloszeniem (zgloszone_ogloszenia)
+            
             if (advertisementReportRepository != null) {
                 try { advertisementReportRepository.deleteByAdvertisementId(id); } catch (Exception ignored) {}
             }
-            // 4) Usuń obrazy (jeśli nie są kaskadowo usuwane) — usuń najpierw pliki z dysku, potem rekordy w DB
+            
             if (advertisement.getImages() != null && !advertisement.getImages().isEmpty()) {
                 for (com.example.backend.model.Image img : advertisement.getImages()) {
                     try { deleteImageFileByUrl(img.getUrl()); } catch (Exception ignored) {}
@@ -789,7 +789,7 @@ public void incrementViewCount(Long advertisementId, HttpServletRequest request)
         }
     }
 
-    //metoda ktora sumuje wszystkie aktywne ogloszenia danego uzytkownika
+    
     public long getTotalViewsForActiveAds(String email){
         User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new RuntimeException("User not found"));

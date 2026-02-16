@@ -24,13 +24,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     
     void deleteByUser(User user);
 
-    // Usuń powiadomienia powiązane z danym ogłoszeniem (jeśli Notification ma pole 'advertisement')
+    //usuwa powiadomienia powiazane z danym ogloszeniem
     @Modifying
     @Transactional
     @Query("DELETE FROM Notification n WHERE n.advertisement.id = :adId")
     void deleteByAdvertisementId(@Param("adId") Long advertisementId);
 
-    // Jeżeli istnieje metoda usuwająca powiadomienia użytkownika:
+    //usuwa powiadomienia powiazane z danym uzytkownikiem
     @Modifying
     @Transactional
     @Query("DELETE FROM Notification n WHERE n.user.id = :userId")

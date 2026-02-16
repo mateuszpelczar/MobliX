@@ -20,7 +20,8 @@ public class AdminStatsController {
   public AdminStatsController(AdminStatsService adminStatsService){
     this.adminStatsService = adminStatsService;
   }
-
+  
+  //statystyki dla panelu admina
   @GetMapping("/dashboard")
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Map<String, Object>> getDashboardStats(){

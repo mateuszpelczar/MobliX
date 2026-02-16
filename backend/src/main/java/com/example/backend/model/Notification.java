@@ -43,7 +43,7 @@ public class Notification {
     @Column(name = "new_value")
     private String newValue;
 
-    // Constructors
+
     public Notification() {
         this.createdAt = LocalDateTime.now();
         this.isRead = false;
@@ -59,7 +59,7 @@ public class Notification {
         this.isRead = false;
     }
 
-    // Getters and Setters
+  
     public Long getId() {
         return id;
     }

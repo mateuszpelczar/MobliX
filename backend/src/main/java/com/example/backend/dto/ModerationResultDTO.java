@@ -3,9 +3,7 @@ package com.example.backend.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DTO zawierające wynik moderacji ogłoszenia (zdjęć i tekstu)
- */
+
 public class ModerationResultDTO {
     
     private boolean approved;
@@ -66,7 +64,7 @@ public class ModerationResultDTO {
         return this.rejectionReason;
     }
 
-    // Getters and Setters
+    
     public boolean isApproved() { return approved; }
     public void setApproved(boolean approved) { this.approved = approved; }
     

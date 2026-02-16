@@ -38,7 +38,7 @@ const AdminPanel: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -58,7 +58,7 @@ const AdminPanel: React.FC = () => {
 
       try {
         const response = await fetch(
-          "http://localhost:8080/api/admin/stats/dashboard",
+          `${import.meta.env.VITE_API_URL}/api/admin/stats/dashboard`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

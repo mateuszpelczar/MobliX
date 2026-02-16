@@ -26,7 +26,7 @@ public class SearchSuggestionDTO {
   }
   
   
-  //gett i sett
+  
     public Long getId(){
       return id;
     }

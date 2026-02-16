@@ -19,7 +19,7 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    // Pobierz wszystkie powiadomienia użytkownika
+    //pobranie powiadomień użytkownika
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<NotificationDTO>> getUserNotifications(Authentication authentication) {
@@ -28,7 +28,7 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    // Pobierz nieprzeczytane powiadomienia
+    //pobranie nieprzeczytanych powiadomień
     @GetMapping("/unread")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<NotificationDTO>> getUnreadNotifications(Authentication authentication) {
@@ -37,7 +37,7 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    // Pobierz liczbę nieprzeczytanych powiadomień
+    //pobranie liczby nieprzeczytanych powiadomień
     @GetMapping("/unread/count")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Long>> getUnreadCount(Authentication authentication) {
@@ -49,7 +49,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
-    // Oznacz powiadomienie jako przeczytane
+    //oznaczanie powiadomienia jako przeczytane
     @PutMapping("/{id}/read")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> markAsRead(
@@ -63,7 +63,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
-    // Oznacz wszystkie jako przeczytane
+   //oznaczanie wszystkich powiadomień jako przeczytane
     @PutMapping("/read-all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> markAllAsRead(Authentication authentication) {
@@ -75,7 +75,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
-    // Usuń powiadomienie
+    //usuniecie powiadomienia
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> deleteNotification(
@@ -89,7 +89,7 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
-    // Admin endpoint - wyślij powiadomienie o zmianie regulaminu do wszystkich
+    //wysyłanie powiadomienia o zmianie regulaminu do wszystkich
     @PostMapping("/admin/terms-updated")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, String>> notifyTermsUpdate() {

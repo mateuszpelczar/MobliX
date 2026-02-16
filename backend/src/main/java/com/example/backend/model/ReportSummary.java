@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-//klasa reprezentujaca podsumowanie raportu szczeglowego
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -17,7 +17,7 @@ public class ReportSummary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String type; // SALES, SEARCH, etc.
+    private String type;
     private String description;
     private Date createdAt;
 

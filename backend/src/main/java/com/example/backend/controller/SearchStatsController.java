@@ -26,13 +26,13 @@ public class SearchStatsController {
         this.searchLogRepository = searchLogRepository;
     }
 
-    // Endpoint dla statystyk wyszukiwań (Staff Panel - Statystyki.tsx)
+   //statystyki wyszukiwań dla panelu moderatora
     @GetMapping
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getSearchStatistics() {
         Map<String, Object> stats = searchLogService.getSearchStatistics();
 
-        // Dodaj najczęściej wystawiane marki (aktywne ogłoszenia, limit 5)
+        //najczęściej wystawiane marki
         List<Object[]> topListedBrands = advertisementRepository.findTopListedBrands();
         List<Map<String, Object>> listedBrandStats = topListedBrands.stream()
                 .map(row -> {
@@ -44,27 +44,27 @@ public class SearchStatsController {
                 .collect(Collectors.toList());
         stats.put("topListedBrands", listedBrandStats);
 
-        // Dodaj przedziały cenowe według marek - teraz z agregacji search_logs
+        //przedziały cenowe z agregacji search_logs
         stats.put("priceRangesByBrand", searchLogService.getTopListedBrandsByPriceBuckets());
 
         return ResponseEntity.ok(stats);
     }
 
-    // Metodo do sekcji Analiza cen według marek w pliku statystyki
-    public List<Map<String, Object>> getPriceRangesByBrand(){
+    //najczęściej wyszukiwane przedziały cenowe dla każdej marki
+    public List<Map<String, Object>> getPriceRangesByBrand() {
         List<Object[]> results = searchLogRepository.findMostCommonPriceRangesByBrand();
 
         return results.stream().map(row -> {
             Map<String, Object> item = new HashMap<>();
             item.put("brand", row[0]);
             item.put("count", row[1]);
-            item.put("minPrice", null);  
-            item.put("maxPrice", null);  
+            item.put("minPrice", null);
+            item.put("maxPrice", null);
             return item;
         }).collect(Collectors.toList());
     }
 
-    // Nowy endpoint dla najczęściej wyszukiwanych marek z podziałem na okresy
+    //najczęściej wyszukiwane marki z podziałem na okresy
     @GetMapping("/top-brands-by-period")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getTopBrandsByPeriod(@RequestParam(defaultValue = "today") String period) {
@@ -72,7 +72,7 @@ public class SearchStatsController {
         return ResponseEntity.ok(result);
     }
 
-    // Endpoint: navbar-only counts (today or per-day for a period)
+    //liczba wyszukiwań dla paska nawigacyjnego
     @GetMapping("/navbar-count")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getNavbarCount(@RequestParam(defaultValue = "today") String period) {

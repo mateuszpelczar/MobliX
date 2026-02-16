@@ -101,7 +101,7 @@ const PersonalDetails: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -123,7 +123,7 @@ const PersonalDetails: React.FC = () => {
 
       try {
         const response = await axios.get<UserData>(
-          "http://localhost:8080/api/auth/me",
+          `${import.meta.env.VITE_API_URL}/api/auth/me`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -203,7 +203,7 @@ const PersonalDetails: React.FC = () => {
         }),
       };
 
-      await axios.put("http://localhost:8080/api/auth/me", updateData, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/auth/me`, updateData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

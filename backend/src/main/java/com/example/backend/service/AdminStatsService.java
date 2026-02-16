@@ -37,21 +37,21 @@ public class AdminStatsService {
   public Map<String,Object> getAdminDashboard(){
     Map<String, Object> stats = new HashMap<>();
 
-    //podstawowe statystyki
+    
     stats.put("totalUsers",userRepository.count());
     stats.put("activeAds", advertisementRepository.countByStatus(AdvertisementStatus.ACTIVE));
     stats.put("todayActivity", getTodayActivityCount());
 
-    //analiza uzytkownikow
+   
     stats.put("newUsersLast7Days", getNewUsersLast7Days());
     stats.put("activeUsersToday", getActiveUsersToday());
 
-    //raporty zawartosci
+    
     stats.put("newAdsLast24h", getNewAdsLast24Hours());
     stats.put("pendingModeration", advertisementRepository.countByStatus(AdvertisementStatus.PENDING));
     stats.put("activeReports", reportRepository.countByStatus(ReportStatus.PENDING));
 
-    //wzrost procentowy
+    
     stats.put("userGrowthPercent", calculateUserGrowth());
     stats.put("adGrowthPercent", calculateAdGrowth());
     stats.put("activityGrowthPercent", calculateActivityGrowth());
@@ -70,7 +70,7 @@ public class AdminStatsService {
       searchCount = 0;
     }
     try {
-      // zliczamy wszystkie logowania (każde logowanie jako jedno zdarzenie)
+      
       loginCount = logRepository.countByCategoryAndTimestampAfter("authentication", startOfDay);
     } catch (Exception ex) {
       loginCount = 0;
@@ -85,11 +85,10 @@ public class AdminStatsService {
 
     private long getActiveUsersToday() {
         LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
-        // Liczba unikalnych użytkowników, którzy wykonali wyszukiwania dzisiaj
-        //ignoruj null userId - niezalogowani uzytkownicy
+        
         long searchActiveUsers = searchLogRepository.countDistinctUserIdByCreatedAtAfter(startOfDay);
         
-        // Użytkownicy, którzy dodali ogłoszenia
+       
         long adActiveUsers = advertisementRepository.countDistinctUserByCreatedAtAfter(startOfDay);
 
         long loginDistinct = 0;
@@ -131,7 +130,7 @@ public class AdminStatsService {
 
       long todayActivity = getTodayActivityCount();
 
-      // wyszukiwania z okresu twoDaysAgo..yesterday (tak jak wcześniej)
+      
       long yesterdaySearch = 0;
       try {
         yesterdaySearch = searchLogRepository.countByCreatedAtBetween(twoDaysAgo, yesterday);
@@ -139,7 +138,7 @@ public class AdminStatsService {
         yesterdaySearch = 0;
       }
 
-      // logowania w okresie twoDaysAgo..yesterday
+      
       long yesterdayLogin = 0;
       try {
         long sinceTwoDays = logRepository.countByCategoryAndTimestampAfter("authentication", twoDaysAgo);

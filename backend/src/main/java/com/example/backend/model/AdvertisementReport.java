@@ -21,28 +21,27 @@ public class AdvertisementReport {
     
     @ManyToOne
     @JoinColumn(name="reporter_id",nullable=false)
-    private User reporter; //kto zglosil
+    private User reporter; 
 
     @ManyToOne
     @JoinColumn(name="adveritsement_owner", nullable=false)
     private User advertisementOwner;
 
     @Column(nullable=false)
-    private String reason; //powod zgloszenia
+    private String reason; 
 
     @Column(length = 1000)
-    private String comment; //opcjonalny komentarz do zgloszenia
-
+    private String comment; 
     @Column(nullable=false)
     @Enumerated(EnumType.STRING)
-    private ReportStatus status; //status zgloszenia
+    private ReportStatus status; 
 
     @Column(length=1000)
-    private String moderatorNote; //notatka dla moderatora(w przypadku ostrzezenia)
+    private String moderatorNote; 
 
     @ManyToOne
     @JoinColumn(name="reviewed_by")
-    private User reviewedBy; // Ktory moderator rozpatrzyl
+    private User reviewedBy; 
 
     @Column
     private LocalDateTime createdAt;
@@ -60,7 +59,7 @@ public class AdvertisementReport {
     }
 
 
-    //get i set
+  
 
     public Long getId() {
         return id;

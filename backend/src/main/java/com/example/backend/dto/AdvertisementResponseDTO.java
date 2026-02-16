@@ -14,26 +14,26 @@ public class AdvertisementResponseDTO {
     private String categoryName;
     private Long locationId;
     private String locationName;
-    private String location; // pełna lokalizacja "Miasto, Województwo"
-    private String voivodeship; // województwo
+    private String location; 
+    private String voivodeship; 
     private List<String> imageUrls;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime dateAdded;
-    private String status; // status ogłoszenia
-    private String condition; // stan urządzenia
+    private String status; 
+    private String condition; 
     private String imageUrl;
     private Long imageId;
     private Long viewCount;
     
-    // Dodatkowe informacje
+   
     private Boolean includesCharger;
     private String warranty;
     
-    // Specyfikacja smartfona
+    
     private SmartphoneSpecificationDTO specification;
 
-    // Konstruktory
+    
     public AdvertisementResponseDTO() {}
 
     public AdvertisementResponseDTO(Long id, String title, String description, Double price, 
@@ -64,7 +64,7 @@ public class AdvertisementResponseDTO {
         this.specification = specification;
     }
 
-    // Gettery i Settery
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -165,7 +165,7 @@ public class AdvertisementResponseDTO {
         private String status;
         private LocalDateTime dateAdded;
 
-        // Konstruktory
+      
         public SmartphoneSpecificationDTO() {}
 
         public SmartphoneSpecificationDTO(String brand, String model, String color, String osType, 
@@ -201,7 +201,7 @@ public class AdvertisementResponseDTO {
             this.dateAdded = dateAdded;
         }
 
-        // Gettery i Settery
+       
         public String getBrand() { return brand; }
         public void setBrand(String brand) { this.brand = brand; }
 

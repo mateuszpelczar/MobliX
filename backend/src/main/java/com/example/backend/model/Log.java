@@ -2,7 +2,8 @@ package com.example.backend.model;
 
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
-//klasa reprezentujaca logi dzialan uzytkownikow
+
+
 @Entity
 
 @Table(name = "logs")
@@ -52,11 +53,11 @@ public class Log {
         this.details = details;
         this.source = source;
         this.user = user;
-        this.userEmail = user != null ? user.getEmail() : null; // Automatycznie ustaw email z User
+        this.userEmail = user != null ? user.getEmail() : null; 
         this.ipAddress = ipAddress;
     }
 
-    //gettery i settery
+
     public Long getId(){
         return id;
     }
@@ -135,7 +136,7 @@ public class Log {
 
     public void setUser(User user) {
         this.user = user;
-        // Automatycznie aktualizuj userEmail gdy ustawiasz User
+        
         this.userEmail = user != null ? user.getEmail() : null;
     }
 }

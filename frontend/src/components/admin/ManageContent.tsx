@@ -85,7 +85,7 @@ const ManageContent: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get<ContentPage[]>(
-        "http://localhost:8080/api/content-pages",
+        `${import.meta.env.VITE_API_URL}/api/content-pages`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -112,7 +112,7 @@ const ManageContent: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -162,7 +162,7 @@ const ManageContent: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.put<ContentPage>(
-        `http://localhost:8080/api/content-pages/${editingPage.id}`,
+        `${import.meta.env.VITE_API_URL}/api/content-pages/${editingPage.id}`,
         {
           title: editedTitle,
           content: editedContent,
@@ -200,7 +200,7 @@ const ManageContent: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        "http://localhost:8080/api/content-pages/initialize",
+        `${import.meta.env.VITE_API_URL}/api/content-pages/initialize`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

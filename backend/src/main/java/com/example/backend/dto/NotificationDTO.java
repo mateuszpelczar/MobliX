@@ -16,7 +16,7 @@ public class NotificationDTO {
     private String oldValue;
     private String newValue;
 
-    // Constructors
+    
     public NotificationDTO() {}
 
     public NotificationDTO(Long id, NotificationType type, String title, String message, 
@@ -33,7 +33,7 @@ public class NotificationDTO {
         this.newValue = newValue;
     }
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

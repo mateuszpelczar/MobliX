@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
-//klasa reprezentujaca kategorie ogloszen
+
 @Entity
 @Table(name="categories")
 public class Category {
@@ -22,7 +22,7 @@ public class Category {
   @OneToMany(mappedBy = "category")
   private List<Advertisement> advertisements;
 
-  // Konstruktory
+ 
   public Category() {}
 
   public Category(Long id, String name, List<Advertisement> advertisements) {
@@ -31,7 +31,7 @@ public class Category {
     this.advertisements = advertisements;
   }
 
-  // Gettery i Settery
+  
   public Long getId() { return id; }
   public void setId(Long id) { this.id = id; }
 

@@ -20,7 +20,7 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
-    // Stare endpointy dla systemu moderacji
+    //pobieranie wiadomości użytkownika
     @GetMapping("/user")
     public ResponseEntity<?> getUserMessages(Authentication authentication) {
         try {
@@ -30,6 +30,7 @@ public class MessageController {
         }
     }
 
+    //pobieranie wiadomości o odrzuceniach ogłoszeń
     @GetMapping("/user/rejections")
     public ResponseEntity<?> getUserRejectionMessages(Authentication authentication) {
         try {
@@ -41,9 +42,7 @@ public class MessageController {
 
    
 
-    /**
-     * Pobierz wszystkie konwersacje użytkownika
-     */
+    //pobieranie konwersacji użytkownika
     @GetMapping("/conversations")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ConversationDTO>> getUserConversations(Principal principal) {
@@ -52,13 +51,10 @@ public class MessageController {
         return ResponseEntity.ok(conversations);
     }
 
-    /**
-     * Pobierz konwersację z użytkownikiem dotyczącą ogłoszenia
-     * (jeśli nie istnieje, utwórz ją)
-     */
+    //pobieranie lub tworzenie konwersacji
     @GetMapping("/conversation")
     @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<ConversationDTO> getOrCreateConversation(
+    public ResponseEntity<ConversationDTO> getOrCreateConversation(
             @RequestParam String otherUserEmail,
             Principal principal) {
         String userEmail = principal.getName();
@@ -67,9 +63,7 @@ public class MessageController {
         return ResponseEntity.ok(conversation);
     }
 
-    /**
-     * Pobierz wiadomości z konwersacji
-     */
+    //pobieranie wiadomości z konwersacji
     @GetMapping("/conversation/{conversationId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MessageDTO>> getConversationMessages(
@@ -80,9 +74,7 @@ public class MessageController {
         return ResponseEntity.ok(messages);
     }
 
-    /**
-     * Wyślij wiadomość
-     */
+    //wysyłanie wiadomości
     @PostMapping("/send")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MessageDTO> sendMessage(
@@ -97,9 +89,7 @@ public class MessageController {
         return ResponseEntity.ok(message);
     }
 
-    /**
-     * Oznacz wiadomości jako przeczytane
-     */
+    //oznaczanie wiadomości jako przeczytane
     @PutMapping("/conversation/{conversationId}/read")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> markAsRead(

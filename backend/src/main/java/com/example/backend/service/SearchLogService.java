@@ -20,20 +20,20 @@ public class SearchLogService {
         this.searchLogRepository = searchLogRepository;
     }
 
-    // Zapisz log wyszukiwania
+    
     @Transactional
     public SearchLog saveSearchLog(SearchLog searchLog) {
         return searchLogRepository.save(searchLog);
     }
 
-    // Statystyki dla Staff Panel - Statystyki.tsx
+    
     public Map<String, Object> getSearchStatistics() {
         Map<String, Object> stats = new HashMap<>();
 
-        // 1. Wyszukiwania dzisiaj
+       
         stats.put("searchesToday", searchLogRepository.countTodaySearches());
 
-        // 2. Najczęściej wyszukiwane marki (top 10)
+        // Najczęściej wyszukiwane marki - dzisiaj
         List<Object[]> topBrands = searchLogRepository.findTopSearchedBrandsToday();
         List<Map<String, Object>> brandStats = topBrands.stream()
                 .limit(10)
@@ -46,7 +46,7 @@ public class SearchLogService {
                 .collect(Collectors.toList());
         stats.put("topSearchedBrands", brandStats);
 
-        // 3. Trendy wyszukiwań (ostatnie 7 dni)
+        
         LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
         List<Object[]> trends = searchLogRepository.findSearchTrendsByDate(sevenDaysAgo);
         List<Map<String, Object>> trendStats = trends.stream()
@@ -59,7 +59,7 @@ public class SearchLogService {
                 .collect(Collectors.toList());
         stats.put("searchTrends", trendStats);
 
-        // 4. Analiza cen wyszukiwanych
+        
         Object[] avgPrices = searchLogRepository.findAveragePriceRange();
         Map<String, Object> priceAnalysis = new HashMap<>();
         if (avgPrices != null && avgPrices.length >= 2) {
@@ -71,7 +71,7 @@ public class SearchLogService {
         }
         stats.put("priceAnalysis", priceAnalysis);
 
-        // 5. Analiza cen według marek (top 5)
+       // Średnie ceny wyszukiwań według marki
         List<Object[]> pricesByBrand = searchLogRepository.findPriceAnalysisByBrand();
         List<Map<String, Object>> brandPriceStats = pricesByBrand.stream()
                 .limit(5)
@@ -86,9 +86,9 @@ public class SearchLogService {
                 .collect(Collectors.toList());
         stats.put("priceAnalysisByBrand", brandPriceStats);
 
-        // 6. Ostatnia aktywność wyszukiwań (ostatnie 20)
+        
         List<SearchLog> recentSearches = searchLogRepository.findRecentSearches();
-        // Only include navbar searches and catalog_filter entries (brand filters)
+        
         List<Map<String, Object>> recentActivity = recentSearches.stream()
                 .filter(log -> {
                     String src = log.getSearchSource();
@@ -105,20 +105,20 @@ public class SearchLogService {
                     item.put("maxPrice", log.getMaxPrice());
                     item.put("createdAt", log.getCreatedAt().toString());
                     item.put("resultsCount", log.getResultsCount());
-                    // Include the original search source so frontend can distinguish navbar/catalog/filter
+                    
                     item.put("searchSource", log.getSearchSource());
                     return item;
                 })
                 .collect(Collectors.toList());
         stats.put("recentSearchActivity", recentActivity);
 
-        // 7. Unikalni użytkownicy dzisiaj
+       
         stats.put("uniqueUsersToday", searchLogRepository.countUniqueUsersToday());
 
-        // 8. Unikalne sesje (anonimowe) dzisiaj
+        
         stats.put("uniqueSessionsToday", searchLogRepository.countUniqueSessionsToday());
 
-        // 9. Top modele
+        // Najczęściej wyszukiwane modele
         List<Object[]> topModels = searchLogRepository.findTopSearchedModels();
         List<Map<String, Object>> modelStats = topModels.stream()
                 .limit(10)
@@ -131,17 +131,16 @@ public class SearchLogService {
                 .collect(Collectors.toList());
         stats.put("topSearchedModels", modelStats);
 
-        // 10. Najczęściej wystawiane marki wg przedziałów cenowych (0-1500,1500-5000,5000+)
+        
         stats.put("priceRangesByBrand", getTopListedBrandsByPriceBuckets());
 
         return stats;
     }
 
-    // Aggregation: top listed/searching brands per price bucket based on search_logs
     public List<Map<String, Object>> getTopListedBrandsByPriceBuckets() {
         List<Map<String, Object>> result = new java.util.ArrayList<>();
 
-        // low bucket
+        // Przedziały cenowe wyszukiwań - niskie
         List<Object[]> low = searchLogRepository.findTopBrandsBySearchPriceRangeLow();
         if (low != null && !low.isEmpty()) {
             Object[] row = low.get(0);
@@ -160,7 +159,7 @@ public class SearchLogService {
             result.add(emptyLow);
         }
 
-        // mid bucket
+    // Przedziały cenowe wyszukiwań - średnie
         List<Object[]> mid = searchLogRepository.findTopBrandsBySearchPriceRangeMid();
         if (mid != null && !mid.isEmpty()) {
             Object[] row = mid.get(0);
@@ -179,7 +178,7 @@ public class SearchLogService {
             result.add(emptyMid);
         }
 
-        // high bucket
+      // Przedziały cenowe wyszukiwań - wysokie
         List<Object[]> high = searchLogRepository.findTopBrandsBySearchPriceRangeHigh();
         if (high != null && !high.isEmpty()) {
             Object[] row = high.get(0);
@@ -201,7 +200,7 @@ public class SearchLogService {
         return result;
     }
 
-        // Navbar-only counts helper (today total or per-day breakdown)
+        // Liczba wyszukiwań w nawiasie - dzisiaj lub podział na dni
         public Map<String, Object> getNavbarCounts(String period) {
             Map<String, Object> result = new HashMap<>();
             if (period == null || period.equalsIgnoreCase("today")) {
@@ -264,7 +263,7 @@ public class SearchLogService {
                 })
                 .collect(Collectors.toList());
 
-        // Pobierz szczegóły według źródła
+        // Pobieranie szczegółów według źródła
         List<Object[]> brandsBySource = searchLogRepository.findTopSearchedBrandsBySourceAndPeriod(startDate);
         Map<String, Map<String, Long>> sourceBreakdown = new HashMap<>();
 
@@ -284,10 +283,9 @@ public class SearchLogService {
         return result;
     }
 
-    // Najczęściej wystawiane marki - z tabeli advertisements
+   // Najczęściej wystawiane marki - z tabeli advertisements
     public List<Map<String, Object>> getTopListedBrands() {
-        // To będzie wymagało zapytania do AdvertisementRepository
-        // Na razie zwrócimy pustą listę, zaimplementujemy to w kontrolerze
+        
         return List.of();
     }
 }

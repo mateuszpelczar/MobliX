@@ -45,16 +45,16 @@ public class PasswordResetService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @Value("${password.reset.token.expiration:3600000}") // 1 hour default
+    @Value("${password.reset.token.expiration:3600000}") // 1 godzina
     private long tokenExpirationMs;
 
     @Value("${password.reset.max.attempts:3}")
     private int maxAttempts;
 
-    @Value("${password.reset.lockout.duration:900000}") // 15 minutes
+    @Value("${password.reset.lockout.duration:900000}") // 15 minut
     private long lockoutDurationMs;
 
-    // Rate limiting: max 3 requests per IP per 15 minutes
+    //limitowanie liczby zapytań o reset hasła per IP
     private final LoadingCache<String, Integer> requestCountsPerIp = CacheBuilder.newBuilder()
             .expireAfterWrite(15, TimeUnit.MINUTES)
             .build(new CacheLoader<>() {
@@ -68,12 +68,12 @@ public class PasswordResetService {
 
     @Transactional
     public void initiatePasswordReset(String email, String requestIp, String userAgent) {
-        // Rate limiting check
+        
         try {
             int requestCount = requestCountsPerIp.get(requestIp);
             if (requestCount >= maxAttempts) {
                 log.warn("Rate limit exceeded for IP: {}", requestIp);
-                // Still return success to prevent email enumeration
+                
                 return;
             }
             requestCountsPerIp.put(requestIp, requestCount + 1);
@@ -81,33 +81,33 @@ public class PasswordResetService {
             log.error("Error checking rate limit", e);
         }
 
-        // Find user - but don't reveal if email exists
+       
         User user = userRepository.findByEmail(email).orElse(null);
 
         if (user == null) {
             log.info("Password reset requested for non-existent email: {}", email);
-            // Don't reveal that email doesn't exist - return success anyway
+            
             return;
         }
 
-        // Check if user has too many recent reset requests
+       
         LocalDateTime recentRequestThreshold = LocalDateTime.now().minusMinutes(15);
         long recentTokenCount = tokenRepository.countRecentTokensByUser(user, recentRequestThreshold);
 
         if (recentTokenCount >= maxAttempts) {
             log.warn("Too many password reset attempts for user: {}", user.getEmail());
-            // Don't reveal this to the user - return success anyway
+            
             return;
         }
 
-        // Invalidate all previous tokens for this user
+        
         tokenRepository.deleteByUser(user);
 
-        // Generate strong random token (UUID v4 + additional randomness)
+       
         String rawToken = generateSecureToken();
         String tokenHash = hashToken(rawToken);
 
-        // Create token entity
+        
         PasswordResetToken token = new PasswordResetToken();
         token.setTokenHash(tokenHash);
         token.setUser(user);
@@ -120,8 +120,7 @@ public class PasswordResetService {
 
         tokenRepository.save(token);
 
-        // Send email asynchronously (rawToken, not hash!)
-        // Email is sent in background thread, user doesn't wait
+       
         emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
         log.info("Password reset token created for user: {}, email will be sent asynchronously", user.getEmail());
     }
@@ -133,29 +132,29 @@ public class PasswordResetService {
         PasswordResetToken token = tokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new IllegalArgumentException("Nieprawidłowy lub wygasły token resetowania hasła"));
 
-        // Validate token
+       
         if (!token.isValid()) {
             throw new IllegalArgumentException("Token resetowania hasła wygasł lub został już użyty");
         }
 
-        // Check attempt count (protect against brute force)
+       
         if (token.getAttemptCount() >= maxAttempts) {
             throw new IllegalArgumentException("Przekroczono maksymalną liczbę prób. Poproś o nowy link resetujący");
         }
 
-        // Validate password strength
+        
         validatePasswordStrength(newPassword);
 
-        // Update user password
+        
         User user = token.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        // Mark token as used
+        
         token.setUsed(true);
         tokenRepository.save(token);
 
-        // Delete all other tokens for this user
+        
         tokenRepository.deleteByUser(user);
 
         log.info("Password successfully reset for user: {} from IP: {}", user.getEmail(), requestIp);
@@ -172,19 +171,19 @@ public class PasswordResetService {
             throw new IllegalArgumentException("Token resetowania hasła wygasł lub został już użyty");
         }
 
-        // Increment attempt count
+       
         token.setAttemptCount(token.getAttemptCount() + 1);
         tokenRepository.save(token);
     }
 
     private String generateSecureToken() {
-        // UUID v4 + additional random bytes for extra security
+        
         UUID uuid = UUID.randomUUID();
         byte[] randomBytes = new byte[16];
         secureRandom.nextBytes(randomBytes);
 
         String combined = uuid + Base64.getUrlEncoder().encodeToString(randomBytes);
-        return combined.replace("=", ""); // Remove padding
+        return combined.replace("=", ""); 
     }
 
     private String hashToken(String token) {
@@ -214,7 +213,7 @@ public class PasswordResetService {
         }
     }
 
-    // Clean up expired tokens every hour
+    
     @Scheduled(fixedRate = 3600000)
     @Transactional
     public void cleanupExpiredTokens() {

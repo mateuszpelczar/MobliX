@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080";
+const API_URL = `${import.meta.env.VITE_API_URL}`;
 
 /**
  * Interfejsy dla PostgreSQL Full-Text Search
@@ -39,21 +39,9 @@ export interface SearchResult {
   rank?: number;
 }
 
-/**
- * Serwis wyszukiwania wykorzystujący PostgreSQL Full-Text Search
- *
- * Funkcjonalności:
- * - tsvector i tsquery dla pełnotekstowego wyszukiwania
- * - Indeksy GIN dla szybkiego wyszukiwania
- * - Trigram similarity dla tolerancji błędów pisowni
- * - Prefix matching dla autouzupełniania
- * - Ranking wyników według trafności
- */
+
 export const searchService = {
-  /**
-   * Pobiera proste sugestie tekstowe (kompatybilne z istniejącym SearchBar)
-   * GET /api/search/suggestions?q=samsung&limit=5
-   */
+  //pobieranie sugestii
   getSuggestions: async (
     query: string,
     limit: number = 5,
@@ -74,10 +62,7 @@ export const searchService = {
     }
   },
 
-  /**
-   * Pobiera pełne sugestie (produkty, marki, kategorie) z Full-Text Search
-   * GET /api/search/suggestions/full?q=samsung
-   */
+  //pobieranie pelnych sugestii
   getFullSuggestions: async (query: string): Promise<SuggestionsResponse> => {
     if (!query || query.length < 2) {
       return { products: [], brands: [], categories: [] };
@@ -95,10 +80,7 @@ export const searchService = {
     }
   },
 
-  /**
-   * Pobiera sugestie marek
-   * GET /api/search/brands?q=sam&limit=5
-   */
+  //pobieranie sugestii marek
   getBrandSuggestions: async (
     query: string,
     limit: number = 5,
@@ -119,10 +101,7 @@ export const searchService = {
     }
   },
 
-  /**
-   * Pobiera sugestie modeli (opcjonalnie dla konkretnej marki)
-   * GET /api/search/models?q=galaxy&brand=Samsung&limit=5
-   */
+  //pobieranie sugestii modeli
   getModelSuggestions: async (
     query: string,
     brand?: string,
@@ -144,10 +123,7 @@ export const searchService = {
     }
   },
 
-  /**
-   * Pobiera sugestie kategorii
-   * GET /api/search/categories?q=smart&limit=5
-   */
+  //pobieranie sugestii kategorii
   getCategorySuggestions: async (
     query: string,
     limit: number = 5,
@@ -168,10 +144,7 @@ export const searchService = {
     }
   },
 
-  /**
-   * Wyszukuje ogłoszenia z rankingiem Full-Text Search
-   * GET /api/search?q=samsung&limit=10
-   */
+  //wyszukiwanie ogłoszen
   search: async (
     query: string,
     limit: number = 10,

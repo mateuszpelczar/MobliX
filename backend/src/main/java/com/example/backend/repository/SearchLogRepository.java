@@ -13,63 +13,67 @@ import java.util.List;
 @Repository
 public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
 
-    // Liczenie wyszukiwań dzisiaj - tylko z navbar, catalog_search, catalog_filter
+    // liczba wyszukiwań w danym dniu
     @Query("SELECT COUNT(s) FROM SearchLog s WHERE CAST(s.createdAt AS date) = CURRENT_DATE AND s.searchSource IN ('navbar', 'catalog_search', 'catalog_filter')")
     Long countTodaySearches();
 
-    // Count only navbar searches for today
+    // liczba wyszukiwań w danym dniu z paska nawigacji
     @Query("SELECT COUNT(s) FROM SearchLog s WHERE CAST(s.createdAt AS date) = CURRENT_DATE AND s.searchSource = 'navbar'")
     Long countNavbarToday();
 
-    // Najczęściej wyszukiwane marki (top 10)
+    // top wyszukiwane marki
     @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findTopSearchedBrands();
 
-    // Najczęściej wyszukiwane marki dzisiaj
+    // top wyszukiwane marki w danym dniu
     @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND CAST(s.createdAt AS date) = CURRENT_DATE GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findTopSearchedBrandsToday();
 
-    // Trendy wyszukiwań (ostatnie 7 dni, pogrupowane po dniach)
+    // trendy wyszukiwań w danym okresie
     @Query("SELECT CAST(s.createdAt AS date) as date, COUNT(s) as count FROM SearchLog s WHERE s.createdAt >= :startDate GROUP BY CAST(s.createdAt AS date) ORDER BY CAST(s.createdAt AS date) DESC")
     List<Object[]> findSearchTrendsByDate(@Param("startDate") LocalDateTime startDate);
 
-    // Średnia cena wyszukiwanych ogłoszeń
+    // średnia cena wyszukiwanych produktów
     @Query("SELECT AVG(s.minPrice) as avgMin, AVG(s.maxPrice) as avgMax FROM SearchLog s WHERE s.minPrice IS NOT NULL OR s.maxPrice IS NOT NULL")
     Object[] findAveragePriceRange();
 
-    // Analiza cen według marek
+    // analiza cenowa według marek
     @Query("SELECT s.brand, AVG(s.minPrice) as avgMin, AVG(s.maxPrice) as avgMax, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND (s.minPrice IS NOT NULL OR s.maxPrice IS NOT NULL) GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findPriceAnalysisByBrand();
 
-    // Ostatnia aktywność wyszukiwań (ostatnie 20)
+    // ostatnie wyszukiwania
     @Query("SELECT s FROM SearchLog s ORDER BY s.createdAt DESC")
     List<SearchLog> findRecentSearches();
 
-    // Wyszukiwania w danym przedziale czasowym
+    // wyszukiwania w danym przedziale czasowym
     List<SearchLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
-    // Navbar counts grouped by day since startDate
+    // liczba wyszukiwań w danym okresie z paska nawigacji
     @Query("SELECT CAST(s.createdAt AS date) as date, COUNT(s) as count FROM SearchLog s WHERE s.createdAt >= :startDate AND s.searchSource = 'navbar' GROUP BY CAST(s.createdAt AS date) ORDER BY CAST(s.createdAt AS date) ASC")
     List<Object[]> findNavbarCountsByDate(@Param("startDate") LocalDateTime startDate);
 
-    // Najpopularniejsze modele
+    // top wyszukiwane modele
     @Query("SELECT s.model, COUNT(s) as count FROM SearchLog s WHERE s.model IS NOT NULL GROUP BY s.model ORDER BY count DESC")
     List<Object[]> findTopSearchedModels();
 
-    // Liczba unikalnych użytkowników dzisiaj
+    // liczba unikalnych użytkowników w danym dniu
     @Query("SELECT COUNT(DISTINCT s.userId) FROM SearchLog s WHERE s.userId IS NOT NULL AND CAST(s.createdAt AS date) = CURRENT_DATE")
     Long countUniqueUsersToday();
 
-    // Wyszukiwania według IP (dla anonimowych)
+    // liczba unikalnych sesji w danym dniu
     @Query("SELECT COUNT(DISTINCT s.ipAddress) FROM SearchLog s WHERE s.userId IS NULL AND CAST(s.createdAt AS date) = CURRENT_DATE")
     Long countUniqueSessionsToday();
 
+    // liczba wyszukiwań po danym dniu
     long countByCreatedAtAfter(LocalDateTime date);
+    // liczba wyszukiwań w danym przedziale czasowym
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
+    // liczba unikalnych użytkowników po danym dniu
     @Query("SELECT COUNT(DISTINCT s.userId) FROM SearchLog s WHERE s.createdAt >= :date AND s.userId IS NOT NULL")
     long countDistinctUserIdByCreatedAtAfter(@Param("date") LocalDateTime date);
 
+    // top wyszukiwane marki
     @Query("""
         SELECT s.brand, COUNT(*) as searchCount
         FROM SearchLog s
@@ -79,17 +83,20 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
         """)
     List<Object[]> findMostCommonPriceRangesByBrand();
 
-    // --- New: top listed brands per search within price buckets, consider searchSource in navbar/catalog_search/catalog_filter ---
+    
+    // top wyszukiwane marki w przedziale 0-1500 zł
     @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND s.searchSource IN ('navbar','catalog_search','catalog_filter') AND ((s.minPrice >= 0 AND s.maxPrice <= 1500) OR (s.minPrice IS NULL AND s.maxPrice <= 1500) OR (s.maxPrice IS NULL AND s.minPrice <= 1500)) GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findTopBrandsBySearchPriceRangeLow();
 
+    // top wyszukiwane marki w przedziale 1500-5000 zł
     @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND s.searchSource IN ('navbar','catalog_search','catalog_filter') AND ((s.minPrice >= 1500 AND s.maxPrice <= 5000) OR (s.minPrice >= 1500 AND s.maxPrice IS NULL AND s.minPrice <= 5000) OR (s.minPrice IS NULL AND s.maxPrice <= 5000 AND s.maxPrice >= 1500)) GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findTopBrandsBySearchPriceRangeMid();
-
+    
+    // top wyszukiwane marki w przedziale 5000+ zł
     @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND s.searchSource IN ('navbar','catalog_search','catalog_filter') AND ((s.minPrice >= 5000) OR (s.maxPrice >= 5000)) GROUP BY s.brand ORDER BY count DESC")
     List<Object[]> findTopBrandsBySearchPriceRangeHigh();
 
-    // Najczęściej wyszukiwane marki - dzisiaj (ostatnie 24h) - tylko z navbar, catalog_search, catalog_filter
+    
     @Query(value = "SELECT COALESCE(s.brand, " +
            "CASE " +
            "WHEN LOWER(s.search_query) LIKE '%apple%' OR LOWER(s.search_query) LIKE '%iphone%' THEN 'Apple' " +
@@ -124,6 +131,7 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
            "OR LOWER(s.search_query) LIKE '%sony%') " +
            "GROUP BY detected_brand " +
            "ORDER BY count DESC", nativeQuery = true)
+    // top wyszukiwane marki w danym okresie
     List<Object[]> findTopSearchedBrandsByPeriod(@Param("startDate") LocalDateTime startDate);
 
     @Query(value = "SELECT COALESCE(s.brand, " +
@@ -163,15 +171,16 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
            "ORDER BY count DESC", nativeQuery = true)
     List<Object[]> findTopSearchedBrandsBySourceAndPeriod(@Param("startDate") LocalDateTime startDate);
 
-        // Top 3 marki dla przedziału 0-1500 zł (legacy)
+       
+        // top marki w przedziale 0-1500 zł
         @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND s.searchSource = 'catalog_filter' AND ((s.minPrice >= 0 AND s.maxPrice <= 1500) OR (s.minPrice IS NULL AND s.maxPrice <= 1500) OR (s.minPrice >= 0 AND s.maxPrice IS NULL AND s.minPrice <= 1500)) GROUP BY s.brand ORDER BY count DESC")
         List<Object[]> findTopBrandsPriceRangeLow();
 
-        // Top 3 marki dla przedziału 1500-5000 zł (legacy)
+        // top marki w przedziale 1500-5000 zł
         @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND s.searchSource = 'catalog_filter' AND ((s.minPrice >= 1500 AND s.maxPrice <= 5000) OR (s.minPrice >= 1500 AND s.maxPrice IS NULL AND s.minPrice <= 5000) OR (s.minPrice IS NULL AND s.maxPrice <= 5000 AND s.maxPrice >= 1500)) GROUP BY s.brand ORDER BY count DESC")
         List<Object[]> findTopBrandsPriceRangeMid();
 
-        // Top 3 marki dla przedziału 5000+ zł (legacy)
+        // top marki w przedziale 5000+ zł
         @Query("SELECT s.brand, COUNT(s) as count FROM SearchLog s WHERE s.brand IS NOT NULL AND s.searchSource = 'catalog_filter' AND ((s.minPrice >= 5000) OR (s.maxPrice >= 5000)) GROUP BY s.brand ORDER BY count DESC")
         List<Object[]> findTopBrandsPriceRangeHigh();
 

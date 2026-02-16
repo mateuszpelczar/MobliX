@@ -19,16 +19,15 @@ public interface UserRepository extends JpaRepository<User,Long> {
   long countByRole(Role role);
   boolean existsByEmail(String email);
   
-  // Pobierz wszystkich użytkowników z daną rolą
+  
   List<User> findByRole(Role role);
   
-  // Pobierz użytkowników z wieloma rolami
+ 
   List<User> findByRoleIn(List<Role> roles);
 
-  //zliczanie zablokowanych uzytkownikow
+ 
   long countByIsBlockedTrue();
 
-  //metody do statystyk admina
   long countByCreatedAtAfter(LocalDateTime date);
   long countByCreatedAtBefore(LocalDateTime date);
 

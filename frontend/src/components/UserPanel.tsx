@@ -47,6 +47,7 @@ const UserPanel: React.FC = () => {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [favoriteCount, setFavoriteCount] = useState(0);
 
+  //pobieranie roli uzytkownika
   const getUserRole = () => {
     const token = localStorage.getItem("token");
     if (!token) return null;
@@ -74,12 +75,13 @@ const UserPanel: React.FC = () => {
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
 
+  //pobieranie liczby ulubionych ogloszen
   const fetchFavoriteCount = async () => {
     try {
       const token = localStorage.getItem("token");
       if (token) {
         const response = await axios.get<{ count: number }>(
-          "http://localhost:8080/api/favorites/count",
+          `${import.meta.env.VITE_API_URL}/api/favorites/count`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setFavoriteCount(response.data.count || 0);
@@ -111,13 +113,13 @@ const UserPanel: React.FC = () => {
         const dashboardResponse = await axios.get<{
           activeAds: number;
           totalViews: number;
-        }>("http://localhost:8080/api/advertisements/user/dashboard-stats", {
+        }>(`${import.meta.env.VITE_API_URL}/api/advertisements/user/dashboard-stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         //pobranie liczby ulubionych ogloszen
         const favoritesResponse = await axios.get<{ count: number }>(
-          "http://localhost:8080/api/favorites/count",
+          `${import.meta.env.VITE_API_URL}/api/favorites/count`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -149,7 +151,7 @@ const UserPanel: React.FC = () => {
           return;
         }
         const response = await axios.get<UserActivity[]>(
-          "http://localhost:8080/api/logs/activities?limit=3",
+          `${import.meta.env.VITE_API_URL}/api/logs/activities?limit=3`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -261,7 +263,7 @@ const UserPanel: React.FC = () => {
               MobliX
             </div>
 
-            {/* Wyszukiwarka z AI */}
+            {/* Wyszukiwarka z full text search */}
             <div className="flex-1 max-w-2xl">
               <SearchBar />
             </div>
@@ -424,7 +426,7 @@ const UserPanel: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Quick Stats - wyraźnie oddzielone */}
+              {/* szybkie statystyki */}
               <div className="bg-gray-800 rounded-lg p-6 border-2 border-purple-500">
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <BarChart3 className="w-6 h-6 text-purple-400" />
@@ -475,14 +477,14 @@ const UserPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Action Buttons - z nagłówkiem */}
+              {/* szybkie akcje */}
               <div>
                 <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                   <ShoppingBag className="w-6 h-6 text-purple-400" />
                   Szybkie akcje
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Primary Actions */}
+                  {/*dodaj ogloszenie*/}
                   <button
                     onClick={() => navigate("/user/addadvertisement")}
                     className="bg-gradient-to-br from-pink-600 to-pink-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
@@ -502,6 +504,7 @@ const UserPanel: React.FC = () => {
                     </div>
                   </button>
 
+                  {/*moje ogloszenia*/}
                   <button
                     onClick={() => navigate("/user/your-ads")}
                     className="bg-gradient-to-br from-orange-600 to-orange-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
@@ -521,6 +524,7 @@ const UserPanel: React.FC = () => {
                     </div>
                   </button>
 
+                  {/*wiadomosci*/}
                   <button
                     onClick={() => navigate("/user/message")}
                     className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
@@ -538,7 +542,7 @@ const UserPanel: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Secondary Actions */}
+                  {/*obserwowane ogloszenia*/}
                   <button
                     onClick={() => navigate("/user/watchedads")}
                     className="bg-gradient-to-br from-green-600 to-green-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
@@ -556,6 +560,7 @@ const UserPanel: React.FC = () => {
                     </div>
                   </button>
 
+                  {/*powiadomienia*/}
                   <button
                     onClick={() => navigate("/user/notifications")}
                     className="bg-gradient-to-br from-red-600 to-red-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
@@ -573,6 +578,7 @@ const UserPanel: React.FC = () => {
                     </div>
                   </button>
 
+                  {/*dane osobowe*/}
                   <button
                     onClick={() => navigate("/user/personaldetails")}
                     className="bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-2xl"
@@ -590,7 +596,7 @@ const UserPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Recent Activity Section */}
+              {/* ostatnia aktywnosc */}
               <div className="mt-8">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-purple-400" />
@@ -662,7 +668,7 @@ const UserPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Czarna stopka jak w MainPanel */}
+        {/* stopka */}
         <footer className="bg-black text-white py-6 mt-auto">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-wrap justify-center items-center gap-6 text-sm">

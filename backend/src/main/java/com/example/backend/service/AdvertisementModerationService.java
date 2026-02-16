@@ -5,9 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Główny serwis moderacji ogłoszeń łączący moderację obrazów i tekstu
- */
+
 @Service
 public class AdvertisementModerationService {
 
@@ -21,20 +19,13 @@ public class AdvertisementModerationService {
         this.contentModerationService = contentModerationService;
     }
 
-    /**
-     * Przeprowadza pełną moderację ogłoszenia (obrazy + tekst)
-     * 
-     * @param title Tytuł ogłoszenia
-     * @param description Opis ogłoszenia
-     * @param imageUrls Lista URL-i obrazów
-     * @return Wynik moderacji
-     */
+    //moderacja ogłoszenia
     public ModerationResultDTO moderateAdvertisement(String title, String description, List<String> imageUrls) {
         ModerationResultDTO result = new ModerationResultDTO();
         
         System.out.println("[Moderation] Rozpoczynam moderację ogłoszenia: " + title);
         
-        // 1. Moderacja treści tekstowej
+        //tekst
         try {
             List<String> textIssues = contentModerationService.moderateText(title, description);
             for (String issue : textIssues) {
@@ -43,10 +34,10 @@ public class AdvertisementModerationService {
             }
         } catch (Exception e) {
             System.err.println("[Moderation] Błąd moderacji tekstu: " + e.getMessage());
-            // Nie blokujemy przy błędzie technicznym
+            
         }
         
-        // 2. Moderacja obrazów
+        //zdjecia
         try {
             List<String> imageIssues = imageModerationService.moderateImages(imageUrls);
             for (String issue : imageIssues) {
@@ -55,10 +46,10 @@ public class AdvertisementModerationService {
             }
         } catch (Exception e) {
             System.err.println("[Moderation] Błąd moderacji obrazów: " + e.getMessage());
-            // Nie blokujemy przy błędzie technicznym
+           
         }
         
-        // 3. Buduj powód odrzucenia jeśli są problemy
+       //powód odrzucenia
         if (!result.isApproved()) {
             result.buildRejectionReason();
             System.out.println("[Moderation] Ogłoszenie ODRZUCONE: " + result.getRejectionReason());

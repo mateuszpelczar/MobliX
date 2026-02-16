@@ -16,7 +16,7 @@ public class SearchSuggestionsResponseDTO {
         this.categories = categories != null ? categories : new ArrayList<>();
     }
 
-    // Getters and Setters
+    
     public List<SearchSuggestionDTO> getProducts() {
         return products;
     }

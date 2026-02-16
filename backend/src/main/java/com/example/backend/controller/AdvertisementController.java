@@ -39,6 +39,7 @@ public class AdvertisementController {
         this.userService = userService;
     }
 
+    //pobieranie danych sprzedawcy
     @GetMapping("/{id}/seller")
     public ResponseEntity<SellerInfoDTO> getSellerInfo(@PathVariable Long id, Authentication authentication) {
         boolean isAuthenticated = authentication != null && authentication.isAuthenticated();
@@ -46,6 +47,7 @@ public class AdvertisementController {
         return ResponseEntity.ok(sellerInfo);
     }
 
+    //tworzenie ogłoszenia
     @PostMapping
     public ResponseEntity<AdvertisementResponseDTO> createAdvertisement(
             @Valid @RequestBody CreateAdvertisementDTO createDto,
@@ -58,7 +60,7 @@ public class AdvertisementController {
             
             AdvertisementResponseDTO createdAd = advertisementService.createAdvertisement(createDto, userEmail);
             
-            // Log INFO - pomyślne utworzenie ogłoszenia
+            
             logService.saveLog(
                 "INFO",
                 "advertisement",
@@ -72,7 +74,7 @@ public class AdvertisementController {
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAd);
             
         } catch (Exception e) {
-            // Log ERROR - błąd tworzenia ogłoszenia
+            
             String userEmail = authentication.getName();
             User user = userService.getCurrentUser(userEmail);
             String ipAddress = logService.getClientIP(httpRequest);
@@ -91,27 +93,21 @@ public class AdvertisementController {
         }
     }
 
-    //pobranie szczegolow ogloszenia po ID
-
+    //pobieranie szczegółów ogłoszenia
     @GetMapping("/{id}")
-public ResponseEntity<AdvertisementResponseDTO> getAdvertisementById(
-        @PathVariable Long id,
-        HttpServletRequest request) { // ⭐ DODAJ TEN PARAMETR
-    try {
-        AdvertisementResponseDTO ad = advertisementService.getAdvertisementById(id);
-        
-        // Zwiększ licznik wyświetleń
-        advertisementService.incrementViewCount(id, request); // ⭐ TERAZ request ISTNIEJE
-        
-        return ResponseEntity.ok(ad);
-    } catch (RuntimeException e) {
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<AdvertisementResponseDTO> getAdvertisementById(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        try {
+            AdvertisementResponseDTO ad = advertisementService.getAdvertisementById(id);
+            advertisementService.incrementViewCount(id, request);
+            return ResponseEntity.ok(ad);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
-}
 
-/**
- * Zwiększa licznik wyświetleń dla ogłoszenia (opcjonalny osobny endpoint)
- */
+//zwiększanie licznika wyświetleń
 @PostMapping("/{id}/view")
 public ResponseEntity<Void> incrementViewCount(
         @PathVariable Long id,
@@ -148,6 +144,7 @@ public ResponseEntity<Void> incrementViewCount(
         return ResponseEntity.ok(allAds);
     }
 
+    //pobieranie ogłoszeń oczekujących na moderację
     @GetMapping("/pending")
     public ResponseEntity<List<Advertisement>> getPendingAdvertisements(Authentication authentication) {
         try {
@@ -162,6 +159,7 @@ public ResponseEntity<Void> incrementViewCount(
         }
     }
 
+    //zmiana statusu ogłoszenia
     @PatchMapping("/{id}/status")
     public ResponseEntity<AdvertisementResponseDTO> updateAdvertisementStatus(
             @PathVariable Long id,
@@ -177,9 +175,9 @@ public ResponseEntity<Void> incrementViewCount(
             
             AdvertisementResponseDTO updated = advertisementService.updateAdvertisementStatus(id, status, rejectReason, userEmail);
             
-            // Logowanie zależnie od akcji moderacji
+           //logowanie zależnie od akcji moderacji
             if (status.equals("APPROVED")) {
-                // Log INFO - zatwierdzenie ogłoszenia
+               
                 logService.saveLog(
                     "INFO",
                     "advertisement",
@@ -190,7 +188,7 @@ public ResponseEntity<Void> incrementViewCount(
                     ipAddress
                 );
             } else if (status.equals("REJECTED")) {
-                // Log WARN - odrzucenie ogłoszenia
+              
                 logService.saveLog(
                     "WARN",
                     "advertisement",
@@ -201,7 +199,7 @@ public ResponseEntity<Void> incrementViewCount(
                     ipAddress
                 );
             } else {
-                // Log INFO - zmiana statusu (np. SOLD, PAUSED przez użytkownika)
+               
                 logService.saveLog(
                     "INFO",
                     "advertisement",
@@ -216,7 +214,7 @@ public ResponseEntity<Void> incrementViewCount(
             return ResponseEntity.ok(updated);
             
         } catch (Exception e) {
-            // Log ERROR - błąd zmiany statusu
+            
             String userEmail = authentication.getName();
             User user = userService.getCurrentUser(userEmail);
             String ipAddress = logService.getClientIP(httpRequest);
@@ -235,6 +233,7 @@ public ResponseEntity<Void> incrementViewCount(
         }
     }
 
+    //wysyłanie zdjecia
     @PostMapping(value = "/upload-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
@@ -245,7 +244,7 @@ public ResponseEntity<Void> incrementViewCount(
                     .body(Map.of("error", "Blad podczas zapisywania zdjecia: " + e.getMessage()));
         }
     }
-
+    //wysyłanie zdjec
     @PostMapping(value = "/upload-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> uploadImages(@RequestParam("files") MultipartFile[] files) {
         try {
@@ -257,6 +256,7 @@ public ResponseEntity<Void> incrementViewCount(
         }
     }
 
+    //usuwanie ogłoszenia
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAdvertisement(
             @PathVariable Long id, 
@@ -267,12 +267,12 @@ public ResponseEntity<Void> incrementViewCount(
             User user = userService.getCurrentUser(userEmail);
             String ipAddress = logService.getClientIP(httpRequest);
             
-            // Pobierz dane ogłoszenia przed usunięciem (do logowania)
+           //pobieranie danych ogłoszenia przed usunięciem
             AdvertisementResponseDTO ad = advertisementService.getAdvertisementById(id);
             
             advertisementService.deleteAdvertisement(id, userEmail);
             
-            // Log INFO - usunięcie ogłoszenia
+         
             logService.saveLog(
                 "INFO",
                 "advertisement",
@@ -286,7 +286,7 @@ public ResponseEntity<Void> incrementViewCount(
             return ResponseEntity.noContent().build();
             
         } catch (Exception e) {
-            // Log ERROR - błąd usuwania
+           
             String userEmail = authentication.getName();
             User user = userService.getCurrentUser(userEmail);
             String ipAddress = logService.getClientIP(httpRequest);
@@ -305,6 +305,7 @@ public ResponseEntity<Void> incrementViewCount(
         }
     }
 
+    //edycja ogłoszenia
     @PutMapping("/{id}")
     public ResponseEntity<AdvertisementResponseDTO> updateAdvertisement(
             @PathVariable Long id,
@@ -318,7 +319,7 @@ public ResponseEntity<Void> incrementViewCount(
             
             AdvertisementResponseDTO updated = advertisementService.updateAdvertisement(id, updateDto, userEmail);
             
-            // Log INFO - edycja ogłoszenia
+            
             logService.saveLog(
                 "INFO",
                 "advertisement",
@@ -332,7 +333,7 @@ public ResponseEntity<Void> incrementViewCount(
             return ResponseEntity.ok(updated);
             
         } catch (Exception e) {
-            // Log ERROR - błąd edycji
+          
             User user = userService.getCurrentUser(authentication.getName());
             String ipAddress = logService.getClientIP(httpRequest);
             
@@ -357,10 +358,10 @@ public ResponseEntity<Void> incrementViewCount(
         return ResponseEntity.ok(stats);
     }
 
-    //Pobranie statystyki(wszystkie aktywne ogloszenie danego uzytkownika) w userpanel
+    //statystyki dashboardu użytkownika
     @GetMapping("/user/dashboard-stats")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, Long>>getUserDashboardStats(Authentication authenctication){
+    public ResponseEntity<Map<String, Long>> getUserDashboardStats(Authentication authenctication){
         String userEmail = authenctication.getName();
 
         Map<String, Long> stats = new HashMap<>();
@@ -370,34 +371,33 @@ public ResponseEntity<Void> incrementViewCount(
         return ResponseEntity.ok(stats);
     }
 
-    //udostepnianie linku ogloszenia
+   //logowanie udostępnienia ogłoszenia
     @PostMapping("/{id}/share")
     public ResponseEntity<Void> shareAdvertisement(
-        @PathVariable Long id,
-        Authentication authentication,
-        HttpServletRequest request
-    ){
+            @PathVariable Long id,
+            Authentication authentication,
+            HttpServletRequest request) {
         User currentUser = null;
-        if(authentication !=null && authentication.isAuthenticated()){
-            try{
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
                 currentUser = userService.findByEmail(authentication.getName());
-            }catch (Exception e){
-                // niezalogowany uzytkownik
+            } catch (Exception e) {
+                // niezalogowany użytkownik - currentUser zostaje null
             }
         }
-    Advertisement ad = advertisementService.findById(id);
-    String ipAddress = logService.getClientIP(request);
+        Advertisement ad = advertisementService.findById(id);
+        String ipAddress = logService.getClientIP(request);
 
-    logService.saveLog(
-        "INFO",
-        "advertisement",
-        "Udostepniono ogloszenie: " + ad.getTitle(),
-        "ID: " + id,
-        "AdvertisementController.shareAdvertisement",
-        currentUser,
-        ipAddress
-    );
-    return ResponseEntity.ok().build();
+        logService.saveLog(
+            "INFO",
+            "advertisement",
+            "Udostepniono ogloszenie: " + ad.getTitle(),
+            "ID: " + id,
+            "AdvertisementController.shareAdvertisement",
+            currentUser,
+            ipAddress
+        );
+        return ResponseEntity.ok().build();
     }
 
     

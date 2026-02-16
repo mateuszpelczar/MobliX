@@ -64,7 +64,7 @@ const WatchedAds: React.FC = () => {
       try {
         setLoading(true);
         const response = await axios.get<FavoriteAd[]>(
-          "http://localhost:8080/api/favorites",
+          `${import.meta.env.VITE_API_URL}/api/favorites`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -114,7 +114,7 @@ const WatchedAds: React.FC = () => {
     if (!token) return;
 
     try {
-      await axios.delete(`http://localhost:8080/api/favorites/${adId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/favorites/${adId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -103,10 +103,10 @@ const SystemLogs: React.FC = () => {
 
       if (level === "all") {
         // Wszystkie logi
-        url = `http://localhost:8080/api/logs?page=${page}&size=${pageSize}`;
+        url = `${import.meta.env.VITE_API_URL}/api/logs?page=${page}&size=${pageSize}`;
       } else {
         // Filtrowanie po poziomie (INFO, WARN, ERROR)
-        url = `http://localhost:8080/api/logs/level/${level}?page=${page}&size=${pageSize}`;
+        url = `${import.meta.env.VITE_API_URL}/api/logs/level/${level}?page=${page}&size=${pageSize}`;
       }
 
       const response = await axios.get<PageResponse>(url, {
@@ -148,7 +148,7 @@ const SystemLogs: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {

@@ -99,7 +99,7 @@ const normalizeImageUrl = (imageUrl: string): string => {
     }
     return imageUrl;
   }
-  return `http://localhost:8080${imageUrl}`;
+  return `${import.meta.env.VITE_API_URL}${imageUrl}`;
 };
 
 const EditAd: React.FC = () => {
@@ -188,7 +188,7 @@ const EditAd: React.FC = () => {
     try {
       if (token) {
         const response = await axios.get<{ count: number }>(
-          "http://localhost:8080/api/favorites/count",
+          `${import.meta.env.VITE_API_URL}/api/favorites/count`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setFavoriteCount(response.data.count || 0);
@@ -213,7 +213,7 @@ const EditAd: React.FC = () => {
 
       try {
         const response = await axios.get<Advertisement[]>(
-          "http://localhost:8080/api/advertisements/all",
+          `${import.meta.env.VITE_API_URL}/api/advertisements/all`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -427,7 +427,7 @@ const EditAd: React.FC = () => {
       };
 
       await axios.put(
-        `http://localhost:8080/api/advertisements/${editingAd.id}`,
+        `${import.meta.env.VITE_API_URL}/api/advertisements/${editingAd.id}`,
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -436,7 +436,7 @@ const EditAd: React.FC = () => {
 
       // Refresh the advertisements list
       const response = await axios.get<Advertisement[]>(
-        "http://localhost:8080/api/advertisements/all",
+        `${import.meta.env.VITE_API_URL}/api/advertisements/all`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -478,7 +478,7 @@ const EditAd: React.FC = () => {
         formData.append("file", files[i]);
 
         const response = await axios.post<{ imageUrl: string }>(
-          "http://localhost:8080/api/advertisements/upload",
+          `${import.meta.env.VITE_API_URL}/api/advertisements/upload`,
           formData,
           {
             headers: {
@@ -560,7 +560,7 @@ const EditAd: React.FC = () => {
 
     try {
       await axios.delete(
-        `http://localhost:8080/api/advertisements/${adToDelete}`,
+        `${import.meta.env.VITE_API_URL}/api/advertisements/${adToDelete}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

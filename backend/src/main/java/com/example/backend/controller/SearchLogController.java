@@ -16,7 +16,7 @@ public class SearchLogController {
         this.searchLogService = searchLogService;
     }
 
-    // Endpoint do zapisywania wyszukiwania
+    //zapisywanie wyszukiwania
     @PostMapping
     public ResponseEntity<SearchLog> logSearch(
             @RequestBody SearchLogRequest request,
@@ -38,7 +38,7 @@ public class SearchLogController {
         return ResponseEntity.ok(savedLog);
     }
 
-    // metoda pomocnicza do pobierania ip klienta
+    //pobieranie prawdziwego IP klienta
     private String getClientIP(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null) {
@@ -47,7 +47,7 @@ public class SearchLogController {
         return xfHeader.split(",")[0];
     }
 
-    // DTO dla zapytan
+  
     public static class SearchLogRequest {
         private String searchQuery;
         private String brand;
@@ -59,7 +59,7 @@ public class SearchLogController {
         private Integer resultsCount;
         private String searchSource;
 
-        // Gett i sett
+        
         public String getSearchQuery() {
             return searchQuery;
         }

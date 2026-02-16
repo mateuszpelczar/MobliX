@@ -7,7 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-//klasa reprezentujaca zdjecia ogloszen
+
 @Entity
 @Table(name="zdjecia")
 public class Image {
@@ -20,7 +20,7 @@ public class Image {
     @ManyToOne
     private Advertisement advertisement;
 
-    // Konstruktory
+   
     public Image() {}
 
     public Image(Long id, String url, Advertisement advertisement) {
@@ -29,7 +29,7 @@ public class Image {
         this.advertisement = advertisement;
     }
 
-    // Gettery i Settery
+   
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

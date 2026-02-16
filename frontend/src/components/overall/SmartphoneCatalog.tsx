@@ -104,7 +104,7 @@ const SmartphoneCatalog: React.FC = () => {
       try {
         setLoading(true);
         const response = await fetch(
-          "http://localhost:8080/api/advertisements"
+          `${import.meta.env.VITE_API_URL}/api/advertisements`
         );
         if (response.ok) {
           const data = await response.json();
@@ -174,7 +174,7 @@ const SmartphoneCatalog: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/favorites", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -192,7 +192,7 @@ const SmartphoneCatalog: React.FC = () => {
 
     try {
       const response = await axios.get<any[]>(
-        "http://localhost:8080/api/favorites",
+        `${import.meta.env.VITE_API_URL}/api/favorites`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -218,14 +218,14 @@ const SmartphoneCatalog: React.FC = () => {
 
     try {
       if (favoriteIds.includes(adId)) {
-        await axios.delete(`http://localhost:8080/api/favorites/${adId}`, {
+        await axios.delete(`${import.meta.env.VITE_API_URL}/api/favorites/${adId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFavoriteIds((prev) => prev.filter((id) => id !== adId));
         setFavoriteCount((c) => Math.max(0, c - 1));
       } else {
         await axios.post(
-          `http://localhost:8080/api/favorites/${adId}`,
+          `${import.meta.env.VITE_API_URL}/api/favorites/${adId}`,
           {},
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -297,7 +297,7 @@ const SmartphoneCatalog: React.FC = () => {
         }
       }
 
-      await axios.post("http://localhost:8080/api/search-logs", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/search-logs`, {
         searchQuery: searchTerm || null,
         brand: selectedBrand !== "all" ? selectedBrand : null,
         model: null, // Model nie jest dostępny w filtrach

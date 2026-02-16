@@ -2,19 +2,19 @@ package com.example.backend.dto;
 
 public class SellerInfoDTO {
     private String sellerType; // "personal" lub "business"
-    private String name; // Imię i nazwisko lub nazwa firmy
+    private String name; 
     private String phone;
     private String email;
     private Integer yearJoined; // Rok pierwszego ogłoszenia
     
-    // Dla firm - dodatkowe dane
+    
     private String companyName;
     private String address;
     private String website;
     private String nip;
     private String regon;
 
-    // Konstruktory
+    
     public SellerInfoDTO() {}
 
     public SellerInfoDTO(String sellerType, String name, String phone, String email, 
@@ -32,7 +32,7 @@ public class SellerInfoDTO {
         this.regon = regon;
     }
 
-    // Gettery i Settery
+    
     public String getSellerType() { return sellerType; }
     public void setSellerType(String sellerType) { this.sellerType = sellerType; }
 

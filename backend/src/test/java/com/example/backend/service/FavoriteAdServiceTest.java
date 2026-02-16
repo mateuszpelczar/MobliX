@@ -14,8 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,115 +61,123 @@ class FavoriteAdServiceTest {
         testAd.setDescription("Nowy telefon");
     }
 
+    //Sprawdza czy serwis poprawnie dodaje ogłoszenie do ulubionych
     @Test
     @DisplayName("Powinien dodać ogłoszenie do ulubionych")
     void shouldAddToFavorites() {
-        // Given
+       
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(advertisementRepository.findById(100L)).thenReturn(Optional.of(testAd));
         when(favoriteAdRepository.existsByUserAndAdvertisement(testUser, testAd)).thenReturn(false);
 
-        // When
+       
         favoriteAdService.addToFavorites("test@example.com", 100L);
 
-        // Then
+      
         verify(favoriteAdRepository).save(any(FavoriteAd.class));
         verify(logService).logUserActivity(eq(testUser), contains("Dodano do ulubionych"), anyString());
     }
 
+    //Sprawdza czy serwis nie dodaje duplikatu do ulubionych
     @Test
     @DisplayName("Nie powinien dodać duplikatu do ulubionych")
     void shouldNotAddDuplicateFavorite() {
-        // Given
+       
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(advertisementRepository.findById(100L)).thenReturn(Optional.of(testAd));
         when(favoriteAdRepository.existsByUserAndAdvertisement(testUser, testAd)).thenReturn(true);
 
-        // When
+     
         favoriteAdService.addToFavorites("test@example.com", 100L);
 
-        // Then
+       
         verify(favoriteAdRepository, never()).save(any(FavoriteAd.class));
     }
 
+    //Sprawdza czy serwis poprawnie usuwa ogłoszenie z ulubionych
     @Test
     @DisplayName("Powinien usunąć ogłoszenie z ulubionych")
     void shouldRemoveFromFavorites() {
-        // Given
+       
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(advertisementRepository.findById(100L)).thenReturn(Optional.of(testAd));
 
-        // When
+       
         favoriteAdService.removeFromFavorites("test@example.com", 100L);
 
-        // Then
+       
         verify(favoriteAdRepository).deleteByUserAndAdvertisement(testUser, testAd);
         verify(logService).logUserActivity(eq(testUser), contains("Usunieto z ulubionych"), anyString());
     }
 
+    //Sprawdza czy serwis poprawnie zwraca true gdy ogłoszenie jest w ulubionych
     @Test
     @DisplayName("Powinien zwrócić true gdy ogłoszenie jest w ulubionych")
     void shouldReturnTrueWhenFavorite() {
-        // Given
+       
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(advertisementRepository.findById(100L)).thenReturn(Optional.of(testAd));
         when(favoriteAdRepository.existsByUserAndAdvertisement(testUser, testAd)).thenReturn(true);
 
-        // When
+      
         boolean isFavorite = favoriteAdService.isFavorite("test@example.com", 100L);
 
-        // Then
+        
         assertTrue(isFavorite);
     }
 
+    //Sprawdza czy serwis poprawnie zwraca false gdy ogłoszenie nie jest w ulubionych
     @Test
     @DisplayName("Powinien zwrócić false gdy ogłoszenie nie jest w ulubionych")
     void shouldReturnFalseWhenNotFavorite() {
-        // Given
+        
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(advertisementRepository.findById(100L)).thenReturn(Optional.of(testAd));
         when(favoriteAdRepository.existsByUserAndAdvertisement(testUser, testAd)).thenReturn(false);
 
-        // When
+       
         boolean isFavorite = favoriteAdService.isFavorite("test@example.com", 100L);
 
-        // Then
+        
         assertFalse(isFavorite);
     }
 
+    //Sprawdza czy serwis poprawnie liczy ulubione ogłoszenia użytkownika
     @Test
     @DisplayName("Powinien policzyć ulubione ogłoszenia użytkownika")
     void shouldCountUserFavorites() {
-        // Given
+        
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(favoriteAdRepository.countByUser(testUser)).thenReturn(5L);
 
-        // When
+       
         long count = favoriteAdService.countUserFavorites("test@example.com");
 
-        // Then
+        
         assertEquals(5L, count);
     }
 
+    //Sprawdza czy serwis rzuci wyjątek dla nieistniejącego użytkownika
     @Test
     @DisplayName("Powinien rzucić wyjątek dla nieistniejącego użytkownika")
     void shouldThrowForNonExistentUser() {
-        // Given
+        
         when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
-        // When & Then
+       
         assertThrows(RuntimeException.class, 
             () -> favoriteAdService.addToFavorites("nonexistent@example.com", 100L));
     }
 
+    //Sprawdza czy serwis rzuci wyjątek dla nieistniejącego ogłoszenia
     @Test
     @DisplayName("Powinien rzucić wyjątek dla nieistniejącego ogłoszenia")
     void shouldThrowForNonExistentAdvertisement() {
-        // Given
+        
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(advertisementRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // When & Then
+       
         assertThrows(RuntimeException.class, 
             () -> favoriteAdService.addToFavorites("test@example.com", 999L));
     }

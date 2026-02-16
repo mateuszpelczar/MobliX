@@ -37,26 +37,26 @@ public class AdvertisementReportService {
   this.favoriteAdRepository = favoriteAdRepository;
 }
 
-  //utworznie zgloszenia
+  
   @Transactional
   public AdvertisementReportDTO createReport(Long advertisementId, String reporterEmail, CreateReportRequest request){
      Advertisement advertisement = advertisementRepository.findById(advertisementId)
      .orElseThrow(() -> new RuntimeException("Ogloszenie nie znalezione"));
        
-  //znajdz zglaszajacego
+  
   User reporter = userRepository.findByEmail(reporterEmail) 
     .orElseThrow(() -> new RuntimeException("Uzytkownik nie zostal znaleziony"));
 
-    //sprawdzenie czy uzytkownik juz zglosil do ogloszenie
+    
     if(reportRepository.existsByAdvertisementIdAndReporterId(advertisementId, reporter.getId())){
        throw new RuntimeException("Juz zglosiles to ogloszenie");
 
     }
 
-    //wlasciciel ogloszenia
+    
     User owner = advertisement.getUser();
 
-    //utworz zgloszenie
+    
     AdvertisementReport report = new AdvertisementReport();
     report.setAdvertisement(advertisement);
     report.setReporter(reporter);
@@ -71,7 +71,7 @@ public class AdvertisementReportService {
 
   }
 
-  //pobierz wszystkie zgloszenia
+  
   public List<AdvertisementReportDTO> getAllReports(){
     return reportRepository.findAllByOrderByCreatedAtDesc().stream()
           .map(this::convertToDTO)
@@ -79,7 +79,7 @@ public class AdvertisementReportService {
     
   }
 
-  //pobierz zgloszenia wedlug statusu
+  
   public List<AdvertisementReportDTO> getReportsByStatus(String status){
     ReportStatus reportStatus = ReportStatus.valueOf(status.toUpperCase());
     return reportRepository.findByStatusOrderByCreatedAtDesc(reportStatus).stream()
@@ -87,9 +87,7 @@ public class AdvertisementReportService {
     .collect(Collectors.toList());
   }
 
-  /**
-     * Rozpatrz zgłoszenie (zaakceptuj z akcją)
-     */
+  //rozpatrzenie zgloszenia
     @Transactional
     public AdvertisementReportDTO reviewReport(Long reportId, String moderatorEmail, ReviewReportRequest request) {
         AdvertisementReport report = reportRepository.findById(reportId)
@@ -106,11 +104,11 @@ public class AdvertisementReportService {
         Advertisement advertisement = report.getAdvertisement();
         User owner = report.getAdvertisementOwner();
 
-        //zapisanie tytulu oraz id ogloszenia przed usunieciem
+        
         String advertisementTitle = advertisement.getTitle();
         Long advertisementId = advertisement.getId();
 
-        // Ustaw status i dane moderatora
+        
         report.setStatus(ReportStatus.ACCEPTED);
         report.setReviewedBy(moderator);
         report.setReviewedAt(LocalDateTime.now());
@@ -120,18 +118,18 @@ public class AdvertisementReportService {
 
         if ("DELETE".equals(request.getAction())) {
 
-            //ustawienie ogloszenia na null przed usunieciem
+            
             report.setAdvertisement(null);
 
-            //zapisanie zgloszenia(bez referencji do ogloszenia)
+            
             AdvertisementReport savedReport = reportRepository.save(report);
 
             favoriteAdRepository.deleteByAdvertisementId(advertisementId);
   
-            // usuniecie ogloszenia dopiero po jego zapisie
+            
             advertisementRepository.delete(advertisement);
 
-            // Wyślij powiadomienie do właściciela
+            
             notificationService.createAdvertisementDeletedNotification(
                     owner,
                     advertisementTitle,
@@ -142,10 +140,10 @@ public class AdvertisementReportService {
 
         } else if ("WARNING".equals(request.getAction())) {
 
-            //zapisanie zgloszenia(ogloszenie pozostaje)
+            
             AdvertisementReport savedReport = reportRepository.save(report);
         
-            // Wyślij powiadomienie-ostrzeżenie do właściciela
+            
             notificationService.createAdvertisementWarningNotification(
                     owner,
                     advertisement.getTitle(),
@@ -154,7 +152,7 @@ public class AdvertisementReportService {
             return convertToDTO(savedReport);
         }
 
-        //domyslne zapisanie zgloszenia
+        
         AdvertisementReport savedReport = reportRepository.save(report);
         return convertToDTO(savedReport);
         
@@ -162,9 +160,7 @@ public class AdvertisementReportService {
 
     
 
-    /**
-     * Odrzuć zgłoszenie
-     */
+   //odrzucenie zgloszenia
     @Transactional
     public AdvertisementReportDTO rejectReport(Long reportId, String moderatorEmail) {
         AdvertisementReport report = reportRepository.findById(reportId)
@@ -185,15 +181,13 @@ public class AdvertisementReportService {
         return convertToDTO(savedReport);
     }
 
-    /**
-     * Konwersja na DTO
-     */
+    
     private AdvertisementReportDTO convertToDTO(AdvertisementReport report) {
         AdvertisementReportDTO dto = new AdvertisementReportDTO();
         dto.setId(report.getId());
         
 
-        //sprawdzenie czy ogloszenie dalej istnieje (moze byc usuniete)
+        
         Advertisement advertisement = report.getAdvertisement();
         if(advertisement != null){
             dto.setAdvertisementId(advertisement.getId());
@@ -202,12 +196,12 @@ public class AdvertisementReportService {
             dto.setAdvertisementTitle("Ogloszenie zostalo usuniete");
         }
         
-        // Dane zgłaszającego
+        
         User reporter = report.getReporter();
         dto.setReporterName(reporter.getFirstName() + " " + reporter.getLastName());
         dto.setReporterEmail(reporter.getEmail());
         
-        // Dane właściciela
+       
         User owner = report.getAdvertisementOwner();
         dto.setOwnerName(owner.getFirstName() + " " + owner.getLastName());
         dto.setOwnerEmail(owner.getEmail());
@@ -228,9 +222,7 @@ public class AdvertisementReportService {
         return dto;
     }
 
-    /**
-     * Pobierz czytelną nazwę powodu
-     */
+    
     private String getReasonLabel(String reason) {
         switch (reason) {
             case "SPAM": return "Spam / treści promocyjne";

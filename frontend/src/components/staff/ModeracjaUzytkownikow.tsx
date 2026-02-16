@@ -149,7 +149,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get<{ count: number }>(
-        "http://localhost:8080/api/user/watched-ads/count",
+        `${import.meta.env.VITE_API_URL}/api/user/watched-ads/count`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -186,7 +186,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
       console.log("Token:", token);
       console.log("User role:", getUserRole());
       const response = await axios.get<UserModeration[]>(
-        "http://localhost:8080/api/admin/users/moderation",
+        `${import.meta.env.VITE_API_URL}/api/admin/users/moderation`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -227,7 +227,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get<UserDetails>(
-        `http://localhost:8080/api/admin/users/${userId}/details`,
+        `${import.meta.env.VITE_API_URL}/api/admin/users/${userId}/details`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -258,7 +258,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:8080/api/admin/users/${userDetails.id}`,
+        `${import.meta.env.VITE_API_URL}/api/admin/users/${userDetails.id}`,
         editForm,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -278,7 +278,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get<UserActivity[]>(
-        `http://localhost:8080/api/admin/users/${userId}/activity-logs?limit=4`,
+        `${import.meta.env.VITE_API_URL}/api/admin/users/${userId}/activity-logs?limit=4`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -296,7 +296,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:8080/api/admin/users/${selectedUser.id}/block`,
+        `${import.meta.env.VITE_API_URL}/api/admin/users/${selectedUser.id}/block`,
         {
           durationMinutes: blockDuration,
           reason: blockReason,
@@ -319,7 +319,7 @@ const ModeracjaUzytkownikow: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:8080/api/admin/users/${userId}/unblock`,
+        `${import.meta.env.VITE_API_URL}/api/admin/users/${userId}/unblock`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

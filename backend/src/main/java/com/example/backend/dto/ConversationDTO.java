@@ -10,7 +10,6 @@ public class ConversationDTO {
     private LocalDateTime lastMessageTime;
     private Integer unreadCount;
 
-  
     public Long getId() {
         return id;
     }

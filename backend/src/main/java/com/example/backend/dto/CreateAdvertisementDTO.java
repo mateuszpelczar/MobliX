@@ -5,7 +5,7 @@ import java.util.List;
 
 public class CreateAdvertisementDTO {
     
-    // Podstawowe informacje
+    
     @NotBlank(message = "Tytuł jest wymagany")
     private String title;
     
@@ -21,13 +21,13 @@ public class CreateAdvertisementDTO {
     
     private Long locationId;
     
-    // Alternatywnie można podać region i miasto zamiast locationId
-    private String region; // województwo
-    private String city;   // miejscowość
+    
+    private String region; 
+    private String city;   
     
     private List<String> imageUrls;
     
-    // Specyfikacja smartfona - obowiązkowe
+    //podstawowe
     @NotBlank(message = "Marka jest wymagana")
     private String brand;
     
@@ -52,7 +52,7 @@ public class CreateAdvertisementDTO {
     private String frontCamera;
     private String batteryCapacity;
     
-    // Specyfikacja smartfona - opcjonalne
+    //opcjonalne
     private String displaySize;
     private String displayTech;
     private String wifi;
@@ -65,18 +65,18 @@ public class CreateAdvertisementDTO {
     private String screenResolution;
     private String refreshRate;
     
-    // Dodatkowe informacje
+    // Dodatkowe 
     private Boolean includesCharger;
     private String warranty;
     private String condition;
 
-    // Typ sprzedawcy - czy ogłoszenie jako osoba prywatna czy firma
+    
     private String sellerType; // "personal" lub "business"
 
-    // Konstruktory
+    
     public CreateAdvertisementDTO() {}
 
-    // Gettery i Settery
+    
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 

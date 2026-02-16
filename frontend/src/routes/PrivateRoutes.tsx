@@ -27,7 +27,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     const decoded = jwtDecode<JwtPayload>(token);
 
     if (requiredRole) {
-      // Jeśli requiredRole to tablica, sprawdź czy rola użytkownika jest w tablicy
+      //jesli requiredRole to tablica, sprawdz czy rola uzytkownika jest w tablicy
       if (Array.isArray(requiredRole)) {
         if (!requiredRole.includes(decoded.role)) {
           return <Navigate to="/unauthorized" replace />;

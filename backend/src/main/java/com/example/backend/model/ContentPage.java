@@ -12,10 +12,10 @@ public class ContentPage {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String slug; // zasady-bezpieczenstwa, regulamin, etc.
+    private String slug; 
 
     @Column(nullable = false)
-    private String title; // Zasady Bezpieczeństwa, Regulamin, etc.
+    private String title; 
 
     @Column(columnDefinition = "TEXT")
     private String content; 
@@ -24,14 +24,14 @@ public class ContentPage {
     private LocalDateTime lastUpdated;
 
     @Column(name = "updated_by")
-    private String updatedBy; // nazwa admina, ktory edytowal
+    private String updatedBy; 
 
     @PreUpdate
     protected void onUpdate() {
         lastUpdated = LocalDateTime.now();
     }
 
-    // Constructors
+ 
     public ContentPage() {
         this.lastUpdated = LocalDateTime.now();
     }
@@ -43,7 +43,7 @@ public class ContentPage {
         this.lastUpdated = LocalDateTime.now();
     }
 
-    // Getters and Setters
+  
     public Long getId() {
         return id;
     }

@@ -13,10 +13,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Repository dla PostgreSQL Full-Text Search
- * Wykorzystuje tsvector, tsquery, indeksy GIN oraz trigram similarity
- */
+
 @Repository
 public class FullTextSearchRepository {
 
@@ -25,10 +22,7 @@ public class FullTextSearchRepository {
     @PersistenceContext
     private EntityManager entityManager;
 
-    /**
-     * Pobiera sugestie ogłoszeń (smartfonów) używając PostgreSQL Full-Text Search
-     * Łączy dane z tabeli ogloszenia i smartphone_specifications
-     */
+    //pobiera sugestie ogłoszeń (smartfonów) używając PostgreSQL Full-Text Search
     public List<SearchSuggestionDTO> getAdvertisementSuggestions(String query, int limit) {
         if (query == null || query.trim().length() < 2) {
             return new ArrayList<>();
@@ -104,9 +98,7 @@ public class FullTextSearchRepository {
         }
     }
 
-    /**
-     * Pobiera sugestie marek używając Full-Text Search i trigram similarity
-     */
+    //pobiera sugestie marek używając Full-Text Search i trigram similarity
     public List<String> getBrandSuggestions(String query, int limit) {
         if (query == null || query.trim().length() < 2) {
             return new ArrayList<>();
@@ -152,9 +144,7 @@ public class FullTextSearchRepository {
         }
     }
 
-    /**
-     * Pobiera sugestie modeli dla danej marki używając Full-Text Search i trigram similarity
-     */
+    //pobiera sugestie modeli dla danej marki używając Full-Text Search i trigram similarity
     public List<String> getModelSuggestions(String query, String brand, int limit) {
         if (query == null || query.trim().length() < 1) {
             return new ArrayList<>();
@@ -224,9 +214,7 @@ public class FullTextSearchRepository {
         }
     }
 
-    /**
-     * Pobiera sugestie kategorii używając Full-Text Search
-     */
+    //pobiera sugestie kategorii używając Full-Text Search
     public List<CategorySuggestionDTO> getCategorySuggestions(String query, int limit) {
         if (query == null || query.trim().length() < 2) {
             return new ArrayList<>();
@@ -277,10 +265,7 @@ public class FullTextSearchRepository {
         }
     }
 
-    /**
-     * Wyszukuje ogłoszenia z pełnym rankingiem Full-Text Search
-     * Używane do głównego wyszukiwania (nie tylko sugestii)
-     */
+    //wyszukuje ogłoszenia z pełnym rankingiem Full-Text Search
     public List<SearchSuggestionDTO> searchAdvertisementsWithRanking(String query, int page, int pageSize) {
         if (query == null || query.trim().isEmpty()) {
             return new ArrayList<>();
@@ -350,11 +335,7 @@ public class FullTextSearchRepository {
         }
     }
 
-    /**
-     * Normalizuje query dla PostgreSQL tsquery
-     * Dodaje prefix matching (:*) dla każdego słowa
-     * Przykład: "samsung galaxy" -> "samsung:* & galaxy:*"
-     */
+    //normalizuje zapytanie dla PostgreSQL tsquery
     private String normalizeSearchQuery(String query) {
         String normalized = query.trim().toLowerCase()
                 .replaceAll("[^a-zA-Z0-9ąćęłńóśźżĄĆĘŁŃÓŚŹŻ\\s]", ""); // Usuń znaki specjalne
