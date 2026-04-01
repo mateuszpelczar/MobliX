@@ -235,3 +235,16 @@ UPDATE users SET role = 'ADMIN' WHERE email = 'your_email@example.com';
 3. Log in — the admin panel will be accessible from the navigation.
 
 > Subsequent role changes (USER ↔ STAFF ↔ ADMIN) can be done through the admin panel UI without direct database access.
+
+<img width="1563" height="856" alt="image" src="https://github.com/user-attachments/assets/1ae83e59-2714-4932-8f15-144f24e5ae46" />
+<img width="1451" height="912" alt="image" src="https://github.com/user-attachments/assets/390b1931-348e-4707-a468-d3ba84c905c1" />
+<img width="1410" height="847" alt="image" src="https://github.com/user-attachments/assets/e7ecb572-e03c-4d11-9b3d-3d64f20c66c9" />
+<img width="1018" height="778" alt="image" src="https://github.com/user-attachments/assets/cea046d0-ae9b-4c6d-a25e-00c14e54ff62" />
+<img width="1414" height="875" alt="image" src="https://github.com/user-attachments/assets/1f05d8ee-66a2-4cc6-93ab-b8719fd20011" />
+<img width="1304" height="907" alt="image" src="https://github.com/user-attachments/assets/9a180f8c-b8a4-4942-9f52-4b139dcc4d7e" />
+
+
+
+
+
+
