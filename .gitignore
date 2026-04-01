@@ -61,6 +61,9 @@ Thumbs.db
 *.swo
 *~
 
+# Claude Code
+CLAUDE.md
+
 # Backup files
 *.backup
 *.bak
